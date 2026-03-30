@@ -3,7 +3,7 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   title: "HMG xClass 조직관리 교육",
-  description: "현대자동차그룹 리더 조직관리 역량 개발 플랫폼",
+  description: "현대자동차그룹 실장급 리더 조직관리 역량 개발 플랫폼",
 };
 
 export default function RootLayout({

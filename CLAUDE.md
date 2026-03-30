@@ -1,7 +1,7 @@
 # HMG xClass 조직관리 교육 플랫폼
 
 ## 프로젝트 개요
-현대자동차그룹(HMG) 리더 대상 조직관리 교육 플랫폼.
+현대자동차그룹(HMG) **실장급 리더** 대상 조직관리 교육 플랫폼.
 교육 당일 챗봇 실습 → 마스터플랜 도출 → 교육 이후 액션플랜 트래킹까지 하나로 연결.
 
 ## 기술 스택
@@ -24,6 +24,7 @@ ADMIN_PASSWORD=
 ```
 /app
   /page.tsx                    ← 교육생 로그인 + 홈 대시보드 (진행 현황 + 다음 단계 안내)
+  /problem-definition/page.tsx ← 카드 실습 전 고객 진짜 문제 정의 (Step1~4 + AI 코치)
   /chat/page.tsx               ← 오전 세션: 카드 1~3 Step1~4 챗봇 + 요약 확정
   /masterplan/page.tsx         ← 오후 세션: Step5 코칭 + 마스터플랜 AI 도출 + 편집
   /actionplan/page.tsx         ← 연간 플랜(Q1~Q4) + 30일 체크리스트 + AI 보완 챗봇
@@ -38,6 +39,7 @@ ADMIN_PASSWORD=
     /progress/route.ts         ← 교육생 전체 진행 현황 (홈 대시보드용)
     /tracking/route.ts         ← 트래킹 로그 GET/PATCH(상태+메모 업데이트)
     /leaderboard/route.ts      ← 전체 참가자 점수 순위
+    /problem-definition/route.ts ← 진짜문제정의 GET/POST(AI 코칭 스트리밍)/PUT(저장)
     /admin/
       /auth/route.ts           ← 관리자 비밀번호 검증
       /progress/route.ts       ← 관리자용 전체 진행 현황
@@ -105,7 +107,19 @@ return new Response(readable, {
 - 터치 친화적 버튼 크기 (최소 44px)
 - 채팅창 키보드 올라올 때 레이아웃 밀리지 않도록 처리
 
-### 5. 프롬프트 관리
+### 5. 용어 규칙 (실장급 대상)
+전체 UI·프롬프트에서 실장급에 맞는 용어를 일관되게 사용:
+
+| 사용 금지 | 사용 표현 |
+|-----------|-----------|
+| 팀원 | 구성원 |
+| 팀 (조직 단위) | 조직 / 실(본부) |
+| 리더 (단독 호칭) | 실장님 / 실장급 리더 |
+
+- 프롬프트는 **실(본부) 단위 거시적 관점**으로 질문 (개인 행동이 아닌 조직 구조·문화 레벨)
+- "팀장·팀원" 용어는 절대 사용 금지
+
+### 6. 프롬프트 관리
 - 모든 프롬프트는 `/lib/prompts.ts`에서 중앙 관리
 - 컴포넌트나 API route에 프롬프트 문자열 직접 작성 금지
 - 카드별, 단계별 프롬프트 함수로 분리
@@ -119,8 +133,9 @@ return new Response(readable, {
 - `getMasterPlanPrompt(cardResponses, participantName)` - 마스터플랜 JSON 생성
 - `getActionPlanPrompt(masterPlan, participantName)` - 액션플랜 JSON 생성
 - `getChecklistSupplementPrompt(masterPlan, monthlyChecklist)` - 체크리스트 보완 코칭
+- `getProblemDefinitionSystemPrompt(stepResponses)` - 진짜문제정의 AI 코칭
 
-### 6. 에러 처리
+### 7. 에러 처리
 - API 호출 실패 시 사용자에게 친절한 한국어 에러 메시지 표시
 - Gemini API 오류 시 재시도 버튼 제공
 - 네트워크 끊김 대비 중간 저장 로직 포함
@@ -203,6 +218,18 @@ return new Response(readable, {
 | memo | text | 메모 |
 | updated_at | timestamp | |
 
+### `problem_definitions`
+| 컬럼 | 타입 | 설명 |
+|------|------|------|
+| id | uuid | PK |
+| participant_id | uuid | FK → participants |
+| step1_customer | text | 나의 고객 |
+| step2_problem | text | 고객의 문제 |
+| step3_definition | text | 한 문장 정의 |
+| step4_keywords | text | 핵심 키워드 |
+| chat_history | jsonb | ChatMessage[] |
+| is_confirmed | boolean | |
+
 ### `admin_progress_view` (Supabase 뷰)
 관리자 대시보드용 집계 뷰.
 
@@ -273,8 +300,12 @@ const CARD_COLOR   = { 1: '#DC2626', 2: '#2563EB', 3: '#16A34A' }
   - CSV 내보내기 (UTF-8 BOM, Excel 호환)
 - Supabase `admin_progress_view` 뷰 활용
 
-## 구현 완료 현황 (2026-03-28 기준)
+## 구현 완료 현황 (2026-03-31 기준)
 - [x] 교육생 로그인 + 홈 대시보드 (진행 현황, 다음 단계 안내)
+- [x] 고객 진짜 문제 정의 페이지 (`/problem-definition`) + AI 코치 + PDF 저장
+  - Step1~4 입력 중 debounce 자동저장 (1초, 홈 이탈 후 복귀 시 유지)
+  - "AI 코치에게 검토 받기" 클릭 시 즉시 저장
+  - AI 스트리밍 완료마다 채팅 기록 자동저장
 - [x] 카드 1~3 Step1~4 챗봇 + AI 요약 + 확정 저장
 - [x] Step5 코칭 (마스터플랜 페이지에서)
 - [x] 마스터플랜 AI 도출 + 편집 + 자동저장 + 확정
@@ -285,4 +316,5 @@ const CARD_COLOR   = { 1: '#DC2626', 2: '#2563EB', 3: '#16A34A' }
 - [x] 점수 시스템 + 리더보드 바텀시트
 - [x] 관리자 대시보드 + 개인별 상세 + CSV 내보내기
 - [x] PDF 저장 (html-to-image + jsPDF)
+- [x] 전체 용어 실장급 기준 통일 (구성원/조직/실장님)
 - [ ] 이메일 알림 (SendGrid) - 미구현

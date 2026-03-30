@@ -151,10 +151,33 @@ export default function ProblemDefinitionPage() {
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const chatInitiatedRef = useRef(false)
   const stepsRef = useRef({ step1, step2, step3, step4 })
+  const participantIdRef = useRef<string | null>(null)
 
   useEffect(() => {
     stepsRef.current = { step1, step2, step3, step4 }
   }, [step1, step2, step3, step4])
+
+  useEffect(() => {
+    participantIdRef.current = participantId
+  }, [participantId])
+
+  // step 입력 내용 debounce 자동저장 (챗봇 시작 전)
+  useEffect(() => {
+    if (chatStarted || !participantId || (!step1 && !step2 && !step3 && !step4)) return
+    const timer = setTimeout(() => {
+      fetch('/api/problem-definition', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          participantId,
+          step1, step2, step3, step4,
+          chatHistory: [],
+          isConfirmed: false,
+        }),
+      }).catch(() => {})
+    }, 1000)
+    return () => clearTimeout(timer)
+  }, [step1, step2, step3, step4, participantId, chatStarted])
 
   // auth check + load saved data
   useEffect(() => {
@@ -188,6 +211,23 @@ export default function ProblemDefinitionPage() {
       })
       .catch(() => {})
   }, [router])
+
+  // 스트리밍 완료 시 채팅 기록 자동저장
+  useEffect(() => {
+    if (isStreaming || !chatStarted || !participantIdRef.current || messages.length === 0) return
+    const { step1: s1, step2: s2, step3: s3, step4: s4 } = stepsRef.current
+    fetch('/api/problem-definition', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        participantId: participantIdRef.current,
+        step1: s1, step2: s2, step3: s3, step4: s4,
+        chatHistory: messages,
+        isConfirmed: false,
+      }),
+    }).catch(() => {})
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isStreaming])
 
   // scroll to chat section when it starts
   useEffect(() => {
@@ -428,7 +468,21 @@ export default function ProblemDefinitionPage() {
         {/* AI 코치 버튼 (챗봇 미시작 시) */}
         {!chatStarted && (
           <button
-            onClick={() => { if (allFilled) setChatStarted(true) }}
+            onClick={() => {
+              if (!allFilled || !participantIdRef.current) return
+              const { step1: s1, step2: s2, step3: s3, step4: s4 } = stepsRef.current
+              fetch('/api/problem-definition', {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  participantId: participantIdRef.current,
+                  step1: s1, step2: s2, step3: s3, step4: s4,
+                  chatHistory: [],
+                  isConfirmed: false,
+                }),
+              }).catch(() => {})
+              setChatStarted(true)
+            }}
             disabled={!allFilled}
             className="w-full rounded-2xl bg-[#02855B] text-white text-base font-semibold disabled:opacity-40 active:scale-[0.98] transition-all flex items-center justify-center gap-2"
             style={{ height: '54px' }}

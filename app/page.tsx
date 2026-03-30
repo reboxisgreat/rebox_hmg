@@ -239,7 +239,7 @@ function LoginForm({ onLogin }: { onLogin: (id: string, name: string) => void })
               조직관리<br />교육 플랫폼
             </h1>
             <p className="text-sm text-[#8A8A8A] leading-relaxed">
-              현대자동차그룹 리더 교육 프로그램
+              현대자동차그룹 실장급 리더 교육 프로그램
             </p>
           </div>
 
