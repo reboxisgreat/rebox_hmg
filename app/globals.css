@@ -1,26 +1,58 @@
+@import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css');
+
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  /* Emerald accent — 4가지 용도로만 제한 */
+  --emerald: #02855B;
+  --emerald-dim: #E8F5F0;
+
+  /* Ink scale */
+  --ink-900: #111111;
+  --ink-700: #3A3A3A;
+  --ink-400: #8A8A8A;
+  --ink-200: #D4D4D4;
+  --ink-100: #EBEBEB;
+  --ink-50:  #F5F5F5;
+
+  /* Surfaces */
+  --surface:     #FFFFFF;
+  --surface-alt: #F5F5F5;
+
+  /* Status semantic colors */
+  --status-done:          #16A34A;
+  --status-done-bg:       #DCFCE7;
+  --status-progress:      #2563EB;
+  --status-progress-bg:   #DBEAFE;
+  --status-none-bg:       #F3F4F6;
+  --status-none-text:     #6B7280;
+
+  /* Legacy aliases */
+  --background: #F5F5F5;
+  --foreground: #111111;
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  --color-background: var(--surface-alt);
+  --color-foreground: var(--ink-900);
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--surface-alt);
+  color: var(--ink-900);
+  font-family: 'Pretendard Variable', Pretendard, -apple-system, BlinkMacSystemFont, system-ui, 'Apple SD Gothic Neo', 'Noto Sans KR', sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  font-feature-settings: "kern" 1, "liga" 1;
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateX(-50%) translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
 }
