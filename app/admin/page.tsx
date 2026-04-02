@@ -654,8 +654,11 @@ interface MasterPlanCard {
   participant_id: string
   slogan: string | null
   customer_what: string | null
+  customer_why: string | null
   process_what: string | null
+  process_why: string | null
   people_what: string | null
+  people_why: string | null
   is_confirmed: boolean
   participants: { name: string; department: string | null } | null
 }
@@ -676,25 +679,25 @@ function MasterPlanGallery({ onSelectParticipant }: { onSelectParticipant: (id: 
       .finally(() => setLoading(false))
   }, [])
 
-  const AREA_DOTS = [
-    { key: 'customer_what' as const, label: '고객가치', color: '#DC2626' },
-    { key: 'process_what' as const, label: '프로세스', color: '#16A34A' },
-    { key: 'people_what' as const, label: '사람', color: '#D97706' },
+  const AREAS = [
+    { whatKey: 'customer_what' as const, whyKey: 'customer_why' as const, label: '고객가치', color: '#DC2626', bg: '#FFF1F2', border: '#FECDD3' },
+    { whatKey: 'process_what' as const, whyKey: 'process_why' as const, label: '프로세스', color: '#16A34A', bg: '#F0FDF4', border: '#BBF7D0' },
+    { whatKey: 'people_what' as const, whyKey: 'people_why' as const, label: '사람', color: '#D97706', bg: '#FFFBEB', border: '#FDE68A' },
   ]
 
   if (loading) {
     return (
-      <div className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-4">
-        {Array.from({ length: 8 }).map((_, i) => (
-          <div key={i} className="rounded-2xl border border-[#EBEBEB] bg-white overflow-hidden shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
-            <div className="p-3 space-y-2">
-              <div className="h-4 bg-[#F5F5F5] rounded animate-pulse w-2/3" />
-              <div className="h-3 bg-[#F5F5F5] rounded animate-pulse w-1/2" />
-            </div>
-            <div className="h-14 bg-[#F5F5F5] animate-pulse" />
-            <div className="p-3 space-y-1.5">
-              {[1, 2, 3].map((j) => <div key={j} className="h-3 bg-[#F5F5F5] rounded animate-pulse" />)}
-            </div>
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
+        {Array.from({ length: 6 }).map((_, i) => (
+          <div key={i} className="rounded-2xl border border-[#EBEBEB] bg-white overflow-hidden shadow-sm">
+            <div className="h-16 bg-[#E5E5E5] animate-pulse" />
+            {[1, 2, 3].map((j) => (
+              <div key={j} className="m-3 rounded-xl border border-[#F0F0F0] p-3 space-y-2">
+                <div className="h-3 bg-[#F5F5F5] rounded animate-pulse w-1/4" />
+                <div className="h-3 bg-[#F5F5F5] rounded animate-pulse w-full" />
+                <div className="h-3 bg-[#F5F5F5] rounded animate-pulse w-3/4" />
+              </div>
+            ))}
           </div>
         ))}
       </div>
@@ -714,42 +717,49 @@ function MasterPlanGallery({ onSelectParticipant }: { onSelectParticipant: (id: 
   }
 
   return (
-    <div className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-4">
+    <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
       {cards.map((card) => (
         <button
           key={card.id}
           onClick={() => onSelectParticipant(card.participant_id)}
-          className="rounded-2xl border border-[#EBEBEB] bg-white overflow-hidden shadow-[0_1px_3px_rgba(0,0,0,0.04)] text-left hover:shadow-[0_3px_8px_rgba(0,0,0,0.10)] hover:border-[#CCCCCC] transition-all active:scale-[0.98]"
+          className="rounded-2xl border border-[#EBEBEB] bg-white overflow-hidden shadow-sm text-left hover:shadow-md hover:border-[#CCCCCC] transition-all active:scale-[0.99]"
         >
-          {/* 헤더 */}
-          <div className="px-3 py-2.5 border-b border-[#F5F5F5] flex items-start justify-between gap-1.5">
+          {/* 슬로건 헤더 */}
+          <div className="bg-[#111111] px-4 py-3 flex items-start justify-between gap-2">
             <div className="min-w-0">
-              <p className="text-[13px] font-bold text-[#111111] truncate">{card.participants?.name ?? '-'}</p>
-              <p className="text-[11px] text-[#8A8A8A] truncate">{card.participants?.department ?? ''}</p>
+              <div className="flex items-center gap-2 mb-1">
+                <p className="text-[11px] font-bold text-white/90 truncate">{card.participants?.name ?? '-'}</p>
+                <span className="text-[9px] text-white/40 truncate shrink-0">{card.participants?.department ?? ''}</span>
+              </div>
+              <p className="text-[10px] font-semibold text-white/40 mb-0.5 uppercase tracking-wider">슬로건</p>
+              <p className="text-[13px] font-bold text-white leading-snug">
+                {card.slogan ?? <span className="text-white/30 italic font-normal">미작성</span>}
+              </p>
             </div>
-            <span className={`shrink-0 text-[9px] font-bold px-1.5 py-0.5 rounded-full whitespace-nowrap ${
-              card.is_confirmed ? 'bg-[#ECFDF5] text-[#02855B]' : 'bg-[#F5F5F5] text-[#8A8A8A]'
+            <span className={`shrink-0 text-[9px] font-bold px-1.5 py-0.5 rounded-full whitespace-nowrap mt-0.5 ${
+              card.is_confirmed ? 'bg-[#ECFDF5] text-[#02855B]' : 'bg-white/10 text-white/40'
             }`}>
               {card.is_confirmed ? '확정' : '미확정'}
             </span>
           </div>
-          {/* 슬로건 */}
-          <div className="bg-[#111111] px-3 py-2.5">
-            <p className="text-[10px] font-semibold text-white/50 mb-0.5 uppercase tracking-wider">슬로건</p>
-            <p className="text-[11px] font-bold text-white leading-snug line-clamp-2">
-              {card.slogan ? `"${card.slogan}"` : <span className="text-white/30 italic">미작성</span>}
-            </p>
-          </div>
           {/* 3영역 */}
-          <div className="px-3 py-2.5 space-y-1.5">
-            {AREA_DOTS.map(({ key, label, color }) => (
-              <div key={key} className="flex items-start gap-1.5">
-                <div className="w-2 h-2 rounded-full shrink-0 mt-[3px]" style={{ backgroundColor: color }} />
-                <div className="min-w-0">
-                  <span className="text-[9px] font-semibold text-[#8A8A8A] uppercase tracking-wide">{label} · </span>
-                  <span className="text-[11px] text-[#3A3A3A] leading-snug line-clamp-2">
-                    {card[key] ?? <span className="text-[#CCCCCC] italic">미작성</span>}
-                  </span>
+          <div className="p-3 space-y-2">
+            {AREAS.map(({ whatKey, whyKey, label, color, bg, border }) => (
+              <div key={whatKey} className="rounded-xl border p-3" style={{ backgroundColor: bg, borderColor: border }}>
+                <p className="text-[11px] font-bold mb-2" style={{ color }}>{label}</p>
+                <div className="space-y-1.5">
+                  <div>
+                    <p className="text-[10px] font-semibold text-[#8A8A8A] mb-0.5">What</p>
+                    <p className="text-[12px] text-[#1A1A1A] leading-relaxed">
+                      {card[whatKey] ?? <span className="text-[#CCCCCC] italic">미작성</span>}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-[10px] font-semibold text-[#8A8A8A] mb-0.5">Why</p>
+                    <p className="text-[12px] text-[#3A3A3A] leading-relaxed">
+                      {card[whyKey] ?? <span className="text-[#CCCCCC] italic">미작성</span>}
+                    </p>
+                  </div>
                 </div>
               </div>
             ))}
