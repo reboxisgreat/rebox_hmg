@@ -226,20 +226,25 @@ export default function ChatPage() {
           setSavedCards(confirmed.sort((a, b) => a.card_number - b.card_number))
           setPhase('review')
         } else {
-          const next = ([1, 2, 3] as CardNumber[]).find(
+          // URL ?card=N 파라미터가 있으면 우선 적용, 없으면 첫 미완료 카드
+          const urlCardParam = searchParams.get('card')
+          const urlCard = urlCardParam && ['1','2','3'].includes(urlCardParam)
+            ? Number(urlCardParam) as CardNumber
+            : null
+          const next = urlCard ?? (([1, 2, 3] as CardNumber[]).find(
             n => !confirmed.find(c => c.card_number === n)
-          ) ?? 1
+          ) ?? 1)
           setCurrentCard(next)
           currentCardRef.current = next
           setPhase('chatting')
 
-          // 미완료 카드의 채팅 기록 복원
-          const inProgress = cards.find(c => c.card_number === next && !c.is_confirmed)
-          if (inProgress?.chat_history && inProgress.chat_history.length > 0) {
-            setMessages(inProgress.chat_history)
+          // 해당 카드의 채팅 기록 복원 (확정 카드 포함)
+          const cardData = cards.find(c => c.card_number === next)
+          if (cardData?.chat_history && cardData.chat_history.length > 0) {
+            setMessages(cardData.chat_history)
             chatInitiatedRef.current = true
-            // 이전 SUMMARY 복원
-            const lastAI = [...inProgress.chat_history].reverse().find(m => m.role === 'model')
+            // SUMMARY 복원
+            const lastAI = [...cardData.chat_history].reverse().find(m => m.role === 'model')
             const parsed = lastAI ? parseSummary(lastAI.content) : null
             if (parsed) { setSummary(parsed); setShowSummary(true) }
           } else {
@@ -251,7 +256,7 @@ export default function ChatPage() {
         setPhase('chatting')
         setShouldAutoStart(true)
       })
-  }, [router])
+  }, [router, searchParams])
 
   // AI 자동 시작
   useEffect(() => {
@@ -692,12 +697,22 @@ export default function ChatPage() {
           <Image src="/메인로고.png" alt="메인 로고" width={160} height={80} className="object-contain" />
         </div>
 
-        <div className="flex items-center mb-3">
+        <div className="flex items-center justify-between mb-3">
+          {currentCard > 1 ? (
+            <button
+              onClick={() => router.push(`/chat?card=${currentCard - 1}`)}
+              className="flex items-center gap-1 text-sm text-[#3A3A3A] active:opacity-60 transition-colors"
+            >
+              <ChevronLeft size={16} />
+              이전
+            </button>
+          ) : (
+            <div />
+          )}
           <button
             onClick={() => router.push('/')}
-            className="flex items-center gap-1.5 text-sm text-[#3A3A3A] active:opacity-60 transition-colors"
+            className="flex items-center gap-1 text-sm text-[#3A3A3A] active:opacity-60 transition-colors"
           >
-            <ChevronLeft size={16} />
             홈
           </button>
         </div>
