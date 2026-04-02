@@ -19,6 +19,7 @@ import {
   ArrowRight,
   User,
   Target,
+  Lock,
 } from 'lucide-react'
 
 // ── 타입 ──────────────────────────────────────────────────────────────────────
@@ -362,6 +363,20 @@ function HomePage({
       .catch(() => setLoading(false))
   }, [participantId])
 
+  const isStepUnlocked = (step: number): boolean => {
+    if (!progress) return step === 0
+    switch (step) {
+      case 0: return true
+      case 1: return progress.problemDefinition?.is_confirmed === true
+      case 2: return progress.cards.find((c) => c.card_number === 1)?.is_confirmed === true
+      case 3: return progress.cards.find((c) => c.card_number === 2)?.is_confirmed === true
+      case 4: return progress.cards.find((c) => c.card_number === 3)?.is_confirmed === true
+      case 5: return progress.masterPlan?.is_confirmed === true
+      case 6: return progress.actionPlan?.is_confirmed === true
+      default: return false
+    }
+  }
+
   const getNextStep = () => {
     if (!progress) return '/problem-definition'
     if (!progress.problemDefinition?.is_confirmed) return '/problem-definition'
@@ -548,10 +563,10 @@ function HomePage({
           {/* 단계 카드 공통 상태 아이콘 */}
           {/* 1단계: 진짜문제 정의 */}
           <button
-            onClick={() => router.push('/problem-definition')}
-            className="w-full flex items-center justify-between px-4 py-3.5 rounded-2xl active:opacity-80 transition-opacity text-left" style={{ backgroundColor: '#FCF8F1', boxShadow: '0 2px 12px rgba(0,0,0,0.09)', isolation: 'isolate', position: 'relative', zIndex: 1 }}
+            onClick={() => isStepUnlocked(0) && router.push('/problem-definition')}
+            className={`w-full flex items-center justify-between px-4 py-3.5 rounded-2xl transition-opacity text-left ${isStepUnlocked(0) ? 'active:opacity-80' : 'cursor-not-allowed'}`} style={{ backgroundColor: '#FCF8F1', boxShadow: '0 2px 12px rgba(0,0,0,0.09)', isolation: 'isolate', position: 'relative', zIndex: 1 }}
           >
-            <div className="flex items-center gap-3">
+            <div className={`flex items-center gap-3 ${!isStepUnlocked(0) ? 'opacity-40' : ''}`}>
               <div className="w-10 h-10 bg-[#FFF7ED] rounded-xl flex items-center justify-center shrink-0">
                 <Target size={20} color="#EA580C" />
               </div>
@@ -564,6 +579,10 @@ function HomePage({
               <div className="w-7 h-7 rounded-full bg-[#02855B] flex items-center justify-center shrink-0">
                 <svg width="13" height="10" viewBox="0 0 13 10" fill="none"><path d="M1 5L4.5 8.5L12 1" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
               </div>
+            ) : !isStepUnlocked(0) ? (
+              <div className="w-7 h-7 rounded-full border border-[#DDDDDD] flex items-center justify-center shrink-0 opacity-40">
+                <Lock size={12} color="#CCCCCC" />
+              </div>
             ) : (
               <div className="w-7 h-7 rounded-full border border-[#DDDDDD] flex items-center justify-center shrink-0">
                 <ChevronRight size={14} color="#CCCCCC" />
@@ -573,10 +592,10 @@ function HomePage({
 
           {/* 2단계: 고객가치 관리 */}
           <button
-            onClick={() => router.push('/chat')}
-            className="w-full flex items-center justify-between px-4 py-3.5 rounded-2xl active:opacity-80 transition-opacity text-left" style={{ backgroundColor: '#FFEAE2', boxShadow: '0 2px 12px rgba(0,0,0,0.09)', isolation: 'isolate', position: 'relative', zIndex: 1 }}
+            onClick={() => isStepUnlocked(1) && router.push('/chat')}
+            className={`w-full flex items-center justify-between px-4 py-3.5 rounded-2xl transition-opacity text-left ${isStepUnlocked(1) ? 'active:opacity-80' : 'cursor-not-allowed'}`} style={{ backgroundColor: '#FFEAE2', boxShadow: '0 2px 12px rgba(0,0,0,0.09)', isolation: 'isolate', position: 'relative', zIndex: 1 }}
           >
-            <div className="flex items-center gap-3">
+            <div className={`flex items-center gap-3 ${!isStepUnlocked(1) ? 'opacity-40' : ''}`}>
               <div className="w-10 h-10 bg-[#FFF1F2] rounded-xl flex items-center justify-center shrink-0">
                 <span className="text-xl">{CARD_ICONS[1]}</span>
               </div>
@@ -589,6 +608,10 @@ function HomePage({
               <div className="w-7 h-7 rounded-full bg-[#02855B] flex items-center justify-center shrink-0">
                 <svg width="13" height="10" viewBox="0 0 13 10" fill="none"><path d="M1 5L4.5 8.5L12 1" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
               </div>
+            ) : !isStepUnlocked(1) ? (
+              <div className="w-7 h-7 rounded-full border border-[#DDDDDD] flex items-center justify-center shrink-0 opacity-40">
+                <Lock size={12} color="#CCCCCC" />
+              </div>
             ) : (
               <div className="w-7 h-7 rounded-full border border-[#DDDDDD] flex items-center justify-center shrink-0">
                 <ChevronRight size={14} color="#CCCCCC" />
@@ -598,10 +621,10 @@ function HomePage({
 
           {/* 3단계: 사람 관리 */}
           <button
-            onClick={() => router.push('/chat')}
-            className="w-full flex items-center justify-between px-4 py-3.5 rounded-2xl active:opacity-80 transition-opacity text-left" style={{ backgroundColor: '#FFF9EC', boxShadow: '0 2px 12px rgba(0,0,0,0.09)', isolation: 'isolate', position: 'relative', zIndex: 1 }}
+            onClick={() => isStepUnlocked(2) && router.push('/chat')}
+            className={`w-full flex items-center justify-between px-4 py-3.5 rounded-2xl transition-opacity text-left ${isStepUnlocked(2) ? 'active:opacity-80' : 'cursor-not-allowed'}`} style={{ backgroundColor: '#FFF9EC', boxShadow: '0 2px 12px rgba(0,0,0,0.09)', isolation: 'isolate', position: 'relative', zIndex: 1 }}
           >
-            <div className="flex items-center gap-3">
+            <div className={`flex items-center gap-3 ${!isStepUnlocked(2) ? 'opacity-40' : ''}`}>
               <div className="w-10 h-10 bg-[#FFFBEB] rounded-xl flex items-center justify-center shrink-0">
                 <span className="text-xl">{CARD_ICONS[2]}</span>
               </div>
@@ -614,6 +637,10 @@ function HomePage({
               <div className="w-7 h-7 rounded-full bg-[#02855B] flex items-center justify-center shrink-0">
                 <svg width="13" height="10" viewBox="0 0 13 10" fill="none"><path d="M1 5L4.5 8.5L12 1" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
               </div>
+            ) : !isStepUnlocked(2) ? (
+              <div className="w-7 h-7 rounded-full border border-[#DDDDDD] flex items-center justify-center shrink-0 opacity-40">
+                <Lock size={12} color="#CCCCCC" />
+              </div>
             ) : (
               <div className="w-7 h-7 rounded-full border border-[#DDDDDD] flex items-center justify-center shrink-0">
                 <ChevronRight size={14} color="#CCCCCC" />
@@ -623,10 +650,10 @@ function HomePage({
 
           {/* 4단계: 프로세스 관리 */}
           <button
-            onClick={() => router.push('/chat')}
-            className="w-full flex items-center justify-between px-4 py-3.5 rounded-2xl active:opacity-80 transition-opacity text-left" style={{ backgroundColor: '#F3F7F2', boxShadow: '0 2px 12px rgba(0,0,0,0.09)', isolation: 'isolate', position: 'relative', zIndex: 1 }}
+            onClick={() => isStepUnlocked(3) && router.push('/chat')}
+            className={`w-full flex items-center justify-between px-4 py-3.5 rounded-2xl transition-opacity text-left ${isStepUnlocked(3) ? 'active:opacity-80' : 'cursor-not-allowed'}`} style={{ backgroundColor: '#F3F7F2', boxShadow: '0 2px 12px rgba(0,0,0,0.09)', isolation: 'isolate', position: 'relative', zIndex: 1 }}
           >
-            <div className="flex items-center gap-3">
+            <div className={`flex items-center gap-3 ${!isStepUnlocked(3) ? 'opacity-40' : ''}`}>
               <div className="w-10 h-10 bg-[#F0FDF4] rounded-xl flex items-center justify-center shrink-0">
                 <span className="text-xl">{CARD_ICONS[3]}</span>
               </div>
@@ -638,6 +665,10 @@ function HomePage({
             {(progress?.cards.find((c) => c.card_number === 3)?.is_confirmed ?? false) ? (
               <div className="w-7 h-7 rounded-full bg-[#02855B] flex items-center justify-center shrink-0">
                 <svg width="13" height="10" viewBox="0 0 13 10" fill="none"><path d="M1 5L4.5 8.5L12 1" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+              </div>
+            ) : !isStepUnlocked(3) ? (
+              <div className="w-7 h-7 rounded-full border border-[#DDDDDD] flex items-center justify-center shrink-0 opacity-40">
+                <Lock size={12} color="#CCCCCC" />
               </div>
             ) : (
               <div className="w-7 h-7 rounded-full border border-[#DDDDDD] flex items-center justify-center shrink-0">
@@ -665,10 +696,10 @@ function HomePage({
 
           {/* 5단계: 마스터플랜 */}
           <button
-            onClick={() => router.push('/masterplan')}
-            className="w-full flex items-center justify-between px-4 py-3.5 rounded-2xl active:opacity-80 transition-opacity text-left" style={{ backgroundColor: '#ffffff', boxShadow: '0 2px 12px rgba(0,0,0,0.09)', isolation: 'isolate', position: 'relative', zIndex: 1 }}
+            onClick={() => isStepUnlocked(4) && router.push('/masterplan')}
+            className={`w-full flex items-center justify-between px-4 py-3.5 rounded-2xl transition-opacity text-left ${isStepUnlocked(4) ? 'active:opacity-80' : 'cursor-not-allowed'}`} style={{ backgroundColor: '#ffffff', boxShadow: '0 2px 12px rgba(0,0,0,0.09)', isolation: 'isolate', position: 'relative', zIndex: 1 }}
           >
-            <div className="flex items-center gap-3">
+            <div className={`flex items-center gap-3 ${!isStepUnlocked(4) ? 'opacity-40' : ''}`}>
               <div className="w-10 h-10 bg-[#FFF7ED] rounded-xl flex items-center justify-center shrink-0">
                 <Map size={20} color="#EA580C" />
               </div>
@@ -681,6 +712,10 @@ function HomePage({
               <div className="w-7 h-7 rounded-full bg-[#02855B] flex items-center justify-center shrink-0">
                 <svg width="13" height="10" viewBox="0 0 13 10" fill="none"><path d="M1 5L4.5 8.5L12 1" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
               </div>
+            ) : !isStepUnlocked(4) ? (
+              <div className="w-7 h-7 rounded-full border border-[#DDDDDD] flex items-center justify-center shrink-0 opacity-40">
+                <Lock size={12} color="#CCCCCC" />
+              </div>
             ) : (
               <div className="w-7 h-7 rounded-full border border-[#DDDDDD] flex items-center justify-center shrink-0">
                 <ChevronRight size={14} color="#CCCCCC" />
@@ -690,10 +725,10 @@ function HomePage({
 
           {/* 6단계: 액션플랜 */}
           <button
-            onClick={() => router.push('/actionplan')}
-            className="w-full flex items-center justify-between px-4 py-3.5 rounded-2xl active:opacity-80 transition-opacity text-left" style={{ backgroundColor: '#ffffff', boxShadow: '0 2px 12px rgba(0,0,0,0.09)', isolation: 'isolate', position: 'relative', zIndex: 1 }}
+            onClick={() => isStepUnlocked(5) && router.push('/actionplan')}
+            className={`w-full flex items-center justify-between px-4 py-3.5 rounded-2xl transition-opacity text-left ${isStepUnlocked(5) ? 'active:opacity-80' : 'cursor-not-allowed'}`} style={{ backgroundColor: '#ffffff', boxShadow: '0 2px 12px rgba(0,0,0,0.09)', isolation: 'isolate', position: 'relative', zIndex: 1 }}
           >
-            <div className="flex items-center gap-3">
+            <div className={`flex items-center gap-3 ${!isStepUnlocked(5) ? 'opacity-40' : ''}`}>
               <div className="w-10 h-10 bg-[#F5F3FF] rounded-xl flex items-center justify-center shrink-0">
                 <CalendarCheck size={20} color="#7C3AED" />
               </div>
@@ -706,6 +741,10 @@ function HomePage({
               <div className="w-7 h-7 rounded-full bg-[#02855B] flex items-center justify-center shrink-0">
                 <svg width="13" height="10" viewBox="0 0 13 10" fill="none"><path d="M1 5L4.5 8.5L12 1" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
               </div>
+            ) : !isStepUnlocked(5) ? (
+              <div className="w-7 h-7 rounded-full border border-[#DDDDDD] flex items-center justify-center shrink-0 opacity-40">
+                <Lock size={12} color="#CCCCCC" />
+              </div>
             ) : (
               <div className="w-7 h-7 rounded-full border border-[#DDDDDD] flex items-center justify-center shrink-0">
                 <ChevronRight size={14} color="#CCCCCC" />
@@ -715,10 +754,10 @@ function HomePage({
 
           {/* 7단계: 액션플랜 수행 현황 */}
           <button
-            onClick={() => router.push('/tracking')}
-            className="w-full flex items-center justify-between px-4 py-3.5 rounded-2xl active:opacity-80 transition-opacity text-left" style={{ backgroundColor: '#ffffff', boxShadow: '0 2px 12px rgba(0,0,0,0.09)', isolation: 'isolate', position: 'relative', zIndex: 1 }}
+            onClick={() => isStepUnlocked(6) && router.push('/tracking')}
+            className={`w-full flex items-center justify-between px-4 py-3.5 rounded-2xl transition-opacity text-left ${isStepUnlocked(6) ? 'active:opacity-80' : 'cursor-not-allowed'}`} style={{ backgroundColor: '#ffffff', boxShadow: '0 2px 12px rgba(0,0,0,0.09)', isolation: 'isolate', position: 'relative', zIndex: 1 }}
           >
-            <div className="flex items-center gap-3">
+            <div className={`flex items-center gap-3 ${!isStepUnlocked(6) ? 'opacity-40' : ''}`}>
               <div className="w-10 h-10 bg-[#ECFDF5] rounded-xl flex items-center justify-center shrink-0">
                 <BarChart3 size={20} color="#059669" />
               </div>
@@ -726,7 +765,7 @@ function HomePage({
                 <p className="text-[11px] text-[#AAAAAA] font-medium">7단계</p>
                 <div className="flex items-center gap-2">
                   <p className="text-[15px] font-bold text-[#111]">액션플랜 수행 현황</p>
-                  {progress?.score && progress.score.total_participants > 0 && (
+                  {isStepUnlocked(6) && progress?.score && progress.score.total_participants > 0 && (
                     <div
                       role="button"
                       onClick={(e) => { e.stopPropagation(); router.push('/ranking') }}
@@ -737,7 +776,7 @@ function HomePage({
                     </div>
                   )}
                 </div>
-                {progress && progress.tracking.total > 0 && (
+                {isStepUnlocked(6) && progress && progress.tracking.total > 0 && (
                   <p className="text-[12px] text-[#000000] mt-0.5">
                     {progress.tracking.completed}/{progress.tracking.total}개 완료 · {trackingPct}%
                   </p>
@@ -747,6 +786,10 @@ function HomePage({
             {progress && progress.tracking.total > 0 && trackingPct === 100 ? (
               <div className="w-7 h-7 rounded-full bg-[#02855B] flex items-center justify-center shrink-0">
                 <svg width="13" height="10" viewBox="0 0 13 10" fill="none"><path d="M1 5L4.5 8.5L12 1" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+              </div>
+            ) : !isStepUnlocked(6) ? (
+              <div className="w-7 h-7 rounded-full border border-[#DDDDDD] flex items-center justify-center shrink-0 opacity-40">
+                <Lock size={12} color="#CCCCCC" />
               </div>
             ) : (
               <div className="w-7 h-7 rounded-full border border-[#DDDDDD] flex items-center justify-center shrink-0">

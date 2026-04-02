@@ -305,6 +305,7 @@ const CARD_COLOR   = { 1: '#DC2626', 2: '#D97706', 3: '#16A34A' }
 ## 구현 완료 현황 (2026-04-02 기준)
 - [x] 교육생 로그인 + 홈 대시보드 (진행 현황, 다음 단계 안내)
   - 슬로건 카드: Lottie 그라디언트 애니메이션 배경 (`/public/gradient-bg.json`)
+  - 단계별 순차 잠금: 이전 단계 `is_confirmed` 기반 활성화, 잠긴 단계 opacity-40 + 자물쇠 아이콘 (`isStepUnlocked` 헬퍼)
 - [x] 고객 진짜 문제 정의 페이지 (`/problem-definition`) + AI 코치
   - 단일 연속 챗봇 흐름 (Step1~4 AI 코칭 → `__SUMMARY_START__`/`__SUMMARY_END__` 자동감지)
   - 최종 정리 패널: 실물 카드 레이아웃 (진짜문제정의 카드 스타일, `#A6444C` 테마)
