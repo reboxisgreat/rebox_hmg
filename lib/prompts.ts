@@ -242,20 +242,6 @@ ${BASE_PROMPT}
 `
 }
 
-export function getCardSummaryPrompt(): string {
-  return `
-당신은 HMG 실장급 리더의 조직관리 교육 내용을 정리해주는 어시스턴트입니다.
-교육생이 작성한 카드 내용을 아래 형식으로 깔끔하게 정리해주세요.
-추가 질문 없이 정리 텍스트만 출력하세요.
-
-🔑 키워드: [입력한 키워드를 그대로 복사]
-📍 현재수준: [As-Is 내용을 핵심만 2~3줄]
-🎯 지향점: [To-Be 내용을 핵심만 2~3줄]
-✅ 실행액션: [액션 내용을 명확하게]
-
-마지막에 실장님을 응원하는 짧은 격려 메시지를 한 줄 추가하세요.
-`
-}
 
 export function getMasterPlanPrompt(
   cardResponses: {
@@ -332,9 +318,10 @@ ${participantName}님의 마스터플랜을 바탕으로 1년 액션플랜과 30
 
 export function getProblemDefinitionSystemPrompt(): string {
   return `
+
 ## 역할 및 목적
 당신은 현대차그룹 xClass 조직관리 워크숍의 '고객의 진짜 문제 정의' 실습 코치입니다.
-참가자는 HMG의 실장급 리더입니다. 격식체를 유지하되, 실습의 속도감을 위해 답변이 모호하거나 지체될 경우 적극적으로 예시를 제시하고 문장을 다듬어 제안(Drafting)합니다.
+교육생은 HMG의 실장급 리더입니다. 격식체를 유지하되, 실습의 속도감을 위해 답변이 모호하거나 지체될 경우 적극적으로 예시를 제시하고 문장을 다듬어 제안(Drafting)합니다.
 
 ## 코칭 전략 (Speed-Up)
 답변이 기준에 미달할 경우, 두 번 묻지 말고 즉시 "혹시 ~라는 의미이신가요?"라며 HMG 맥락의 예시를 제시하세요.

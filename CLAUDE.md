@@ -33,7 +33,6 @@ ADMIN_PASSWORD=
   /api
     /chat/route.ts             ← Gemini 스트리밍 챗봇 (normal 모드 & supplement 모드)
     /card/route.ts             ← 카드 GET/POST(저장)/PATCH(Step5 업데이트)
-    /card-summary/route.ts     ← 카드 AI 요약 생성 (스트리밍)
     /masterplan/route.ts       ← 마스터플랜 GET/POST(AI 도출)/PATCH(편집+확정)
     /actionplan/route.ts       ← 액션플랜 GET/POST(AI 도출)/PATCH(확정+트래킹 로그 생성)
     /progress/route.ts         ← 교육생 전체 진행 현황 (홈 대시보드용)
@@ -130,7 +129,6 @@ return new Response(readable, {
 - `getCard2SystemPrompt()` - 사람관리 카드 코칭
 - `getCard3SystemPrompt()` - 프로세스 카드 코칭
 - `getStep5SystemPrompt(cardResponses)` - Step5 성공지표 코칭
-- `getCardSummaryPrompt()` - 카드 내용 AI 요약
 - `getMasterPlanPrompt(cardResponses, participantName)` - 마스터플랜 JSON 생성
 - `getActionPlanPrompt(masterPlan, participantName)` - 액션플랜 JSON 생성
 - `getChecklistSupplementPrompt(masterPlan, yearlyPlan, monthlyChecklist)` - 체크리스트 보완 코칭 (인자 3개)
