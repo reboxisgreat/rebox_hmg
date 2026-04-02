@@ -137,7 +137,8 @@ export default function ChatPage() {
 
   // 현재 카드 상태 (URL ?card=N 으로 초기 카드 지정 가능)
   const initialCard = (() => {
-    const n = Number(searchParams.get('card'))
+    if (typeof window === 'undefined') return 1 as CardNumber
+    const n = Number(new URLSearchParams(window.location.search).get('card'))
     return (n === 1 || n === 2 || n === 3) ? n as CardNumber : 1
   })()
   const [currentCard, setCurrentCard] = useState<CardNumber>(initialCard)
@@ -227,9 +228,10 @@ export default function ChatPage() {
           setPhase('review')
         } else {
           // URL ?card=N 파라미터가 있으면 우선 적용, 없으면 첫 미완료 카드
-          const urlCardParam = searchParams.get('card')
-          const urlCard = urlCardParam && ['1','2','3'].includes(urlCardParam)
-            ? Number(urlCardParam) as CardNumber
+          // window.location.search 직접 읽기 (useSearchParams stale 문제 방지)
+          const rawParam = new URLSearchParams(window.location.search).get('card')
+          const urlCard = rawParam && ['1','2','3'].includes(rawParam)
+            ? Number(rawParam) as CardNumber
             : null
           const next = urlCard ?? (([1, 2, 3] as CardNumber[]).find(
             n => !confirmed.find(c => c.card_number === n)
