@@ -946,7 +946,7 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
         <div className="max-w-7xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-6">
             <div>
-              <img src="/메인로고.png" alt="리더스러닝랩 xClass" className="h-7 object-contain mb-0.5" />
+              <img src="/main-logo.png" alt="리더스러닝랩 xClass" className="h-7 object-contain mb-0.5" />
               <h1 className="text-lg font-bold text-[#111111]">관리자 대시보드</h1>
             </div>
             <div className="flex gap-1 bg-[#F5F5F5] rounded-xl p-1">

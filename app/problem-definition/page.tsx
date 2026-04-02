@@ -339,7 +339,7 @@ export default function ProblemDefinitionPage() {
       <div className="bg-[#f5f5f5] px-5 pt-3 pb-5 shrink-0">
         {/* 로고 — 최상단 */}
         <div className="flex justify-end mb-2">
-          <Image src="/메인로고.png" alt="메인 로고" width={160} height={80} className="object-contain" />
+          <Image src="/main-logo.png" alt="메인 로고" width={160} height={80} className="object-contain" />
         </div>
         <div className="flex items-center justify-between mb-4">
           <button
@@ -440,7 +440,7 @@ export default function ProblemDefinitionPage() {
                 </div>
               </div>
               <div className="flex flex-col items-end gap-1.5 shrink-0">
-                <Image src="/메인로고.png" alt="메인 로고" width={160} height={80} className="object-contain" />
+                <Image src="/main-logo.png" alt="메인 로고" width={160} height={80} className="object-contain" />
                 <span className="text-[10px] text-[#A6444C] font-semibold">
                   {summaryCollapsed ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
                 </span>

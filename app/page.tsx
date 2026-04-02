@@ -267,7 +267,7 @@ function LoginForm({ onLogin }: { onLogin: (id: string, name: string) => void })
         <div className="w-full max-w-md">
           {/* 로고 영역 */}
           <div className="mb-10 text-center">
-            <img src="/메인로고.png" alt="리더스러닝랩 xClass" className="h-16 mx-auto object-contain mb-4" />
+            <img src="/main-logo.png" alt="리더스러닝랩 xClass" className="h-16 mx-auto object-contain mb-4" />
             <h1 className="text-[2rem] font-bold text-[#111] leading-tight tracking-tight mb-2">
               리더스러닝랩<br />xClass 조직관리 과정
             </h1>
@@ -462,7 +462,7 @@ function HomePage({
         <div className="relative z-10">
           <div className="flex items-start justify-between mb-4">
             <div className="flex flex-col gap-1.5">
-              <img src="/메인로고.png" alt="리더스러닝랩 xClass" className="h-9 object-contain" />
+              <img src="/main-logo.png" alt="리더스러닝랩 xClass" className="h-9 object-contain" />
               <span className="text-[12px] font-bold text-[#000000] tracking-[0.12em] pl-0.5">리더스러닝랩 xClass 조직관리 과정</span>
             </div>
           </div>

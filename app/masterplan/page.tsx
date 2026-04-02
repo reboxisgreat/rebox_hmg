@@ -392,7 +392,7 @@ export default function MasterPlanPage() {
       {/* 헤더 */}
       <header className="bg-white border-b border-[#EBEBEB] px-4 py-3 shrink-0">
         <div className="flex justify-end mb-1">
-          <Image src="/메인로고.png" alt="메인 로고" width={160} height={80} className="object-contain" />
+          <Image src="/main-logo.png" alt="메인 로고" width={160} height={80} className="object-contain" />
         </div>
         <div className="flex items-center justify-between -mx-1 mb-1">
           <button

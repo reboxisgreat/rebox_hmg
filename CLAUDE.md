@@ -309,7 +309,7 @@ const CARD_COLOR   = { 1: '#DC2626', 2: '#D97706', 3: '#16A34A' }
   - 최종 정리 패널: 실물 카드 레이아웃 (진짜문제정의 카드 스타일, `#A6444C` 테마)
   - 모든 필드 인라인 직접 수정 가능 + 1초 디바운스 자동저장
   - 패널 접기/펼치기 토글 (채팅 기록 열람 가능)
-  - 메인로고.png (`/public/메인로고.png`) 헤더 최상단 표시
+  - 메인로고.png (`/public/main-logo.png`) 헤더 최상단 표시
   - AI 스트리밍 완료마다 채팅 기록 자동저장 (PUT /api/problem-definition)
 - [x] 카드 1~3 Step1~4+5 챗봇 (`/chat`) — 단일 연속 AI 흐름
   - `__SUMMARY_START__`/`__SUMMARY_END__` 블록 자동 파싱 → 실물 카드 레이아웃 패널
@@ -347,7 +347,7 @@ const CARD_COLOR   = { 1: '#DC2626', 2: '#D97706', 3: '#16A34A' }
 
 ### problem-definition/page.tsx — 진짜문제정의
 - 테마: `#FFF9F0` bg, `#A6444C` border·accent
-- 메인로고 (`/public/메인로고.png`) 우상단
+- 메인로고 (`/public/main-logo.png`) 우상단
 - 세로 스택 흰 카드 4개: 나의 고객(step1) / 진짜문제(step2) / 한 문장 정의(step3, italic) / 키워드(step4, #pill)
 - 모든 필드: 항상 편집 가능 textarea (투명 → 포커스 시 흰 박스), 1초 디바운스 자동저장
 - 접기/펼치기 토글 (`summaryCollapsed` state)

@@ -513,7 +513,7 @@ function ChatPageContent() {
         {/* 헤더 */}
         <div className="bg-[#f5f5f5] px-5 pt-3 pb-5 shrink-0">
           <div className="flex justify-end mb-2">
-            <Image src="/메인로고.png" alt="메인 로고" width={160} height={80} className="object-contain" />
+            <Image src="/main-logo.png" alt="메인 로고" width={160} height={80} className="object-contain" />
           </div>
           <div className="flex items-center justify-between mb-3">
             <div />
@@ -606,7 +606,7 @@ function ChatPageContent() {
             >
               {/* 로고 — 우상단 절대 배치 */}
               <div className="absolute top-2 right-3">
-                <Image src="/메인로고.png" alt="메인 로고" width={120} height={60} className="object-contain" />
+                <Image src="/main-logo.png" alt="메인 로고" width={120} height={60} className="object-contain" />
               </div>
               {/* 카드 헤더 */}
               <div className="px-4 pt-3 pb-2 pr-32">
@@ -709,7 +709,7 @@ function ChatPageContent() {
       <div className="bg-[#f5f5f5] px-5 pt-3 pb-5 shrink-0">
         {/* 로고 — 최상단 */}
         <div className="flex justify-end mb-2">
-          <Image src="/메인로고.png" alt="메인 로고" width={160} height={80} className="object-contain" />
+          <Image src="/main-logo.png" alt="메인 로고" width={160} height={80} className="object-contain" />
         </div>
 
         <div className="flex items-center justify-between mb-3">
@@ -843,7 +843,7 @@ function ChatPageContent() {
                 </p>
               </div>
               <div className="flex flex-col items-end gap-1.5 shrink-0">
-                <Image src="/메인로고.png" alt="메인 로고" width={140} height={70} className="object-contain" />
+                <Image src="/main-logo.png" alt="메인 로고" width={140} height={70} className="object-contain" />
                 <span style={{ color: CARD_COLOR[currentCard] }}>
                   {summaryCollapsed ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
                 </span>
