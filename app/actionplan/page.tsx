@@ -383,7 +383,7 @@ export default function ActionPlanPage() {
         pixelRatio: 2,
       })
 
-      const img = new Image()
+      const img = new window.Image()
       img.src = dataUrl
       await new Promise<void>((resolve) => { img.onload = () => resolve() })
 
