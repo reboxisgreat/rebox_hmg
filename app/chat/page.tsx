@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef, useCallback } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { Sparkles, ChevronLeft, ArrowRight, X, ChevronDown, ChevronUp } from 'lucide-react'
 import Image from 'next/image'
 import type { ChatMessage } from '@/lib/types'
@@ -131,11 +131,16 @@ const CARD_LABEL_NAME: Record<CardNumber, string> = { 1: '고객가치 관리', 
 
 export default function ChatPage() {
   const router = useRouter()
+  const searchParams = useSearchParams()
   const [participantId, setParticipantId] = useState<string | null>(null)
   const [phase, setPhase] = useState<'loading' | 'chatting' | 'review'>('loading')
 
-  // 현재 카드 상태
-  const [currentCard, setCurrentCard] = useState<CardNumber>(1)
+  // 현재 카드 상태 (URL ?card=N 으로 초기 카드 지정 가능)
+  const initialCard = (() => {
+    const n = Number(searchParams.get('card'))
+    return (n === 1 || n === 2 || n === 3) ? n as CardNumber : 1
+  })()
+  const [currentCard, setCurrentCard] = useState<CardNumber>(initialCard)
   const [messages, setMessages] = useState<ChatMessage[]>([])
   const [input, setInput] = useState('')
   const [isStreaming, setIsStreaming] = useState(false)
@@ -165,7 +170,7 @@ export default function ChatPage() {
   const chatInitiatedRef = useRef(false)
   const participantIdRef = useRef<string | null>(null)
   const messagesRef = useRef<ChatMessage[]>([])
-  const currentCardRef = useRef<CardNumber>(1)
+  const currentCardRef = useRef<CardNumber>(initialCard)
   const summaryAutoSaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   useEffect(() => { messagesRef.current = messages }, [messages])

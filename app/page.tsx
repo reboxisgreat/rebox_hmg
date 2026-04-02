@@ -592,7 +592,7 @@ function HomePage({
 
           {/* 2단계: 고객가치 관리 */}
           <button
-            onClick={() => isStepUnlocked(1) && router.push('/chat')}
+            onClick={() => isStepUnlocked(1) && router.push('/chat?card=1')}
             className={`w-full flex items-center justify-between px-4 py-3.5 rounded-2xl transition-opacity text-left ${isStepUnlocked(1) ? 'active:opacity-80' : 'cursor-not-allowed'}`} style={{ backgroundColor: '#FFEAE2', boxShadow: '0 2px 12px rgba(0,0,0,0.09)', isolation: 'isolate', position: 'relative', zIndex: 1 }}
           >
             <div className={`flex items-center gap-3 ${!isStepUnlocked(1) ? 'opacity-40' : ''}`}>
@@ -621,7 +621,7 @@ function HomePage({
 
           {/* 3단계: 사람 관리 */}
           <button
-            onClick={() => isStepUnlocked(2) && router.push('/chat')}
+            onClick={() => isStepUnlocked(2) && router.push('/chat?card=2')}
             className={`w-full flex items-center justify-between px-4 py-3.5 rounded-2xl transition-opacity text-left ${isStepUnlocked(2) ? 'active:opacity-80' : 'cursor-not-allowed'}`} style={{ backgroundColor: '#FFF9EC', boxShadow: '0 2px 12px rgba(0,0,0,0.09)', isolation: 'isolate', position: 'relative', zIndex: 1 }}
           >
             <div className={`flex items-center gap-3 ${!isStepUnlocked(2) ? 'opacity-40' : ''}`}>
@@ -650,7 +650,7 @@ function HomePage({
 
           {/* 4단계: 프로세스 관리 */}
           <button
-            onClick={() => isStepUnlocked(3) && router.push('/chat')}
+            onClick={() => isStepUnlocked(3) && router.push('/chat?card=3')}
             className={`w-full flex items-center justify-between px-4 py-3.5 rounded-2xl transition-opacity text-left ${isStepUnlocked(3) ? 'active:opacity-80' : 'cursor-not-allowed'}`} style={{ backgroundColor: '#F3F7F2', boxShadow: '0 2px 12px rgba(0,0,0,0.09)', isolation: 'isolate', position: 'relative', zIndex: 1 }}
           >
             <div className={`flex items-center gap-3 ${!isStepUnlocked(3) ? 'opacity-40' : ''}`}>
