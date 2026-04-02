@@ -233,6 +233,10 @@ function ChatPageContent() {
         const confirmed = cards.filter(c => c.is_confirmed)
         if (confirmed.length === 3) {
           setSavedCards(confirmed.sort((a, b) => a.card_number - b.card_number))
+          // URL ?card=N 이 있으면 해당 탭으로 바로 이동
+          const rawParam = new URLSearchParams(window.location.search).get('card')
+          const urlCard = rawParam && ['1','2','3'].includes(rawParam) ? Number(rawParam) as CardNumber : null
+          if (urlCard) setReviewCard(urlCard)
           setPhase('review')
         } else {
           // URL ?card=N 파라미터가 있으면 우선 적용, 없으면 첫 미완료 카드
