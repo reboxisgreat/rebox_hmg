@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useRef, useCallback } from 'react'
+import { useState, useEffect, useRef, useCallback, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { Sparkles, ChevronLeft, ArrowRight, X, ChevronDown, ChevronUp, Home } from 'lucide-react'
 import Image from 'next/image'
@@ -130,6 +130,14 @@ const CARD_LABEL_NAME: Record<CardNumber, string> = { 1: '고객가치 관리', 
 // ── 메인 페이지 ──────────────────────────────────────────────────────────────
 
 export default function ChatPage() {
+  return (
+    <Suspense>
+      <ChatPageContent />
+    </Suspense>
+  )
+}
+
+function ChatPageContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const [participantId, setParticipantId] = useState<string | null>(null)
@@ -504,12 +512,13 @@ export default function ChatPage() {
             <Image src="/메인로고.png" alt="메인 로고" width={160} height={80} className="object-contain" />
           </div>
           <div className="flex items-center justify-between mb-3">
+            <div />
             <button
               onClick={() => router.push('/')}
-              className="flex items-center gap-1.5 text-sm text-[#3A3A3A] active:opacity-60 transition-colors"
+              className="flex items-center gap-1.5 text-[#3A3A3A] active:opacity-60 transition-colors"
             >
-              <ChevronLeft size={16} />
-              홈
+              <Home size={15} />
+              <span className="text-[12px] font-medium">홈으로 이동</span>
             </button>
           </div>
           <h1 className="text-[1.1rem] font-bold text-[#111] leading-tight mb-1">카드 실습 완료</h1>
