@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { Sparkles, ChevronLeft, ArrowRight, X, ChevronDown, ChevronUp } from 'lucide-react'
+import { Sparkles, ChevronLeft, ArrowRight, X, ChevronDown, ChevronUp, Home } from 'lucide-react'
 import Image from 'next/image'
 import type { ChatMessage } from '@/lib/types'
 import { CARD_TITLES, STEP_TITLES } from '@/lib/types'
@@ -703,19 +703,20 @@ export default function ChatPage() {
           {currentCard > 1 ? (
             <button
               onClick={() => router.push(`/chat?card=${currentCard - 1}`)}
-              className="flex items-center gap-1 text-sm text-[#3A3A3A] active:opacity-60 transition-colors"
+              className="flex items-center gap-1.5 text-[#3A3A3A] active:opacity-60 transition-colors"
             >
-              <ChevronLeft size={16} />
-              이전
+              <ChevronLeft size={15} />
+              <span className="text-[12px] font-medium">이전으로 가기</span>
             </button>
           ) : (
             <div />
           )}
           <button
             onClick={() => router.push('/')}
-            className="flex items-center gap-1 text-sm text-[#3A3A3A] active:opacity-60 transition-colors"
+            className="flex items-center gap-1.5 text-[#3A3A3A] active:opacity-60 transition-colors"
           >
-            홈
+            <Home size={15} />
+            <span className="text-[12px] font-medium">홈으로 이동</span>
           </button>
         </div>
 
