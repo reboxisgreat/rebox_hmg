@@ -591,27 +591,44 @@ export default function ActionPlanPage() {
       </header>
 
       {/* 본문 */}
-      <div className="flex-1 overflow-y-auto px-4 py-4 space-y-4 bg-[#F5F5F5]">
+      <div className="flex-1 overflow-y-auto px-4 py-4 space-y-5 bg-[#F5F5F5]">
         <div id="pdf-content">
         {/* 1년 액션플랜 섹션 */}
+        {(() => {
+          const QUARTER_CONFIG = [
+            { headerBg: '#FFF7ED', border: '#FAE4CC', accent: '#EA580C', label: '#EA580C' },
+            { headerBg: '#F0FDF4', border: '#BBF7D0', accent: '#16A34A', label: '#16A34A' },
+            { headerBg: '#FEFCE8', border: '#FDE68A', accent: '#D97706', label: '#D97706' },
+            { headerBg: '#FEF2F2', border: '#FECACA', accent: '#DC2626', label: '#DC2626' },
+          ]
+          return (
         <div>
-          <div className="flex items-center gap-3 mb-4 bg-[#111111] rounded-2xl px-4 py-3">
-            <span className="text-lg">📅</span>
+          <div className="flex items-center gap-3 mb-4">
+            <div className="w-9 h-9 bg-[#111111] rounded-xl flex items-center justify-center shrink-0">
+              <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>
+              </svg>
+            </div>
             <div>
-              <h2 className="text-base font-bold text-white tracking-tight">1년 액션플랜</h2>
-              <p className="text-xs text-[#AAAAAA] mt-0.5">Q1 ~ Q4 분기별 행동 과제</p>
+              <p className="text-[11px] font-bold tracking-[0.12em] uppercase text-[#111111]">1년 액션플랜</p>
+              <p className="text-xs text-[#8A8A8A] mt-0.5">Q1 ~ Q4 분기별 행동 과제</p>
             </div>
           </div>
           <div className="space-y-3">
             {yearlyPlan.map((quarter, qi) => (
-              <div key={qi} className="bg-white border border-[#EBEBEB] rounded-2xl overflow-hidden shadow-[0_1px_3px_rgba(0,0,0,0.06)]">
-                <div className="bg-[#F5F5F5] border-b border-[#EBEBEB] px-4 py-3">
-                  <p className="text-xs font-bold text-[#8A8A8A]">{quarter.quarter}</p>
+              <div key={qi} className="rounded-2xl overflow-hidden shadow-[0_1px_3px_rgba(0,0,0,0.06)] border bg-white"
+                style={{ borderColor: QUARTER_CONFIG[qi % 4].border }}>
+                <div className="border-b px-4 py-3"
+                  style={{ backgroundColor: QUARTER_CONFIG[qi % 4].headerBg, borderColor: QUARTER_CONFIG[qi % 4].border }}>
+                  <span className="inline-block text-[10px] font-bold tracking-[0.12em] uppercase px-2 py-0.5 rounded-full bg-white border mb-1.5"
+                    style={{ color: QUARTER_CONFIG[qi % 4].label, borderColor: QUARTER_CONFIG[qi % 4].border }}>
+                    {quarter.quarter}
+                  </span>
                   <textarea
                     value={quarter.focus}
                     onChange={(e) => handleFocusChange(qi, e.target.value)}
                     rows={2}
-                    className="w-full text-base font-bold text-[#111111] bg-transparent focus:outline-none placeholder-[#D4D4D4] mt-0.5 resize-none leading-snug"
+                    className="w-full text-base font-bold text-[#111111] bg-transparent focus:outline-none placeholder-[#D4D4D4] resize-none leading-snug block"
                     placeholder="핵심 집중 영역"
                   />
                 </div>
@@ -623,7 +640,8 @@ export default function ActionPlanPage() {
                         value={action}
                         onChange={(e) => handleActionChange(qi, ai, e.target.value)}
                         rows={2}
-                        className="flex-1 text-sm text-[#111111] bg-[#F5F5F5] rounded-xl px-3 py-2 resize-none focus:outline-none focus:ring-1 focus:ring-[#111111] leading-snug"
+                        className="flex-1 text-sm text-[#111111] rounded-xl px-3 py-2 resize-none focus:outline-none leading-snug transition-colors"
+                        style={{ backgroundColor: QUARTER_CONFIG[qi % 4].headerBg }}
                       />
                       <button
                         onClick={() => handleActionDelete(qi, ai)}
@@ -636,7 +654,8 @@ export default function ActionPlanPage() {
                   ))}
                   <button
                     onClick={() => handleActionAdd(qi)}
-                    className="w-full py-2.5 text-xs text-[#8A8A8A] border border-dashed border-[#D4D4D4] rounded-xl active:bg-[#F5F5F5] transition-colors"
+                    className="w-full py-2.5 text-xs font-medium rounded-xl border border-dashed transition-colors active:opacity-70"
+                    style={{ color: QUARTER_CONFIG[qi % 4].accent, borderColor: QUARTER_CONFIG[qi % 4].border }}
                   >
                     + 항목 추가
                   </button>
@@ -645,76 +664,97 @@ export default function ActionPlanPage() {
             ))}
           </div>
         </div>
+          )
+        })()}
 
         {/* 30일 체크리스트 버튼 또는 섹션 */}
         {!showChecklist ? (
           <button
             onClick={() => setShowChecklist(true)}
-            className="w-full h-14 rounded-xl bg-[#111111] active:bg-[#3A3A3A] text-white font-semibold text-sm transition-colors"
+            className="w-full rounded-2xl border border-[#EBEBEB] bg-white active:scale-[0.98] transition-all shadow-[0_1px_3px_rgba(0,0,0,0.06)] px-5 py-4 flex items-center justify-between"
           >
-            30일 체크리스트 도출하기 →
-          </button>
-        ) : (
-          <div ref={checklistRef} className="mt-8 -mx-4 px-4 py-5 bg-[#EEF4FF]">
-            <div className="flex items-center gap-3 mb-4 bg-[#1D6FE8] rounded-2xl px-4 py-3">
-              <span className="text-lg">✅</span>
-              <div>
-                <h2 className="text-base font-bold text-white tracking-tight">30일 체크리스트</h2>
-                <p className="text-xs text-[#A8C8FF] mt-0.5">4주간 실행 체크리스트</p>
+            <div className="flex items-center gap-3">
+              <div className="w-9 h-9 bg-[#ECFDF5] rounded-xl flex items-center justify-center shrink-0">
+                <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#02855B" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>
+                </svg>
+              </div>
+              <div className="text-left">
+                <p className="text-[11px] text-[#8A8A8A] font-medium">다음 단계</p>
+                <p className="text-[15px] font-bold text-[#111111]">30일 체크리스트 도출하기</p>
               </div>
             </div>
-            <div className="space-y-3">
-              {monthlyChecklist.map((week, wi) => (
-                <div key={wi} className="bg-white border border-[#C8DEFF] rounded-2xl overflow-hidden shadow-[0_1px_3px_rgba(29,111,232,0.08)]">
-                  <div className="bg-[#EEF4FF] border-b border-[#C8DEFF] px-4 py-3">
-                    <p className="text-xs font-bold tracking-[0.1em] text-[#1D6FE8]">{week.week}주차</p>
-                    <p className="text-base font-bold text-[#111111] mt-0.5 leading-snug">{week.theme}</p>
-                  </div>
-                  <div className="px-4 py-3 space-y-2">
-                    {week.items.map((item, ii) => (
-                      <div key={ii} className="flex gap-2 items-center">
-                        {item.isFixed ? (
-                          <div
-                            className="flex-1 text-sm text-[#555] bg-[#F5F7FA] rounded-xl px-3 py-2 border border-[#C8DEFF] leading-snug"
-                            style={{ minHeight: '44px', display: 'flex', alignItems: 'center' }}
-                          >
-                            {item.content}
-                          </div>
-                        ) : (
-                          <input
-                            type="text"
-                            value={item.content}
-                            onChange={(e) => handleChecklistChange(wi, ii, e.target.value)}
-                            className="flex-1 text-sm text-[#111111] bg-[#EEF4FF] rounded-xl px-3 py-2 border border-[#C8DEFF] focus:outline-none focus:border-[#1D6FE8] focus:bg-white transition-colors"
-                            placeholder="항목을 입력하세요"
-                            style={{ minHeight: '44px' }}
-                          />
-                        )}
-                        {!item.isFixed && (
-                          <button
-                            onClick={() => handleChecklistDelete(wi, ii)}
-                            className="w-8 h-8 text-[#D4D4D4] active:text-red-400 flex items-center justify-center rounded-lg text-xl leading-none shrink-0"
-                            aria-label="삭제"
-                          >
-                            ×
-                          </button>
-                        )}
-                      </div>
-                    ))}
-                    <button
-                      onClick={() => handleChecklistAdd(wi)}
-                      className="w-full py-2.5 text-xs text-[#1D6FE8] border border-dashed border-[#A8C8FF] rounded-xl active:bg-[#D8EAFF] transition-colors"
-                    >
-                      + 항목 추가
-                    </button>
-                  </div>
-                </div>
-              ))}
+            <div className="w-7 h-7 rounded-full border border-[#DDDDDD] flex items-center justify-center shrink-0">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#CCCCCC" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="9 18 15 12 9 6"/>
+              </svg>
             </div>
+          </button>
+        ) : (
+          <div ref={checklistRef} className="mt-2 space-y-3">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-9 h-9 bg-[#02855B] rounded-xl flex items-center justify-center shrink-0">
+                <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>
+                </svg>
+              </div>
+              <div>
+                <p className="text-[11px] font-bold tracking-[0.12em] uppercase text-[#111111]">30일 체크리스트</p>
+                <p className="text-xs text-[#8A8A8A] mt-0.5">4주간 실행 체크리스트</p>
+              </div>
+            </div>
+            {monthlyChecklist.map((week, wi) => (
+              <div key={wi} className="bg-white border border-[#D1FAE5] rounded-2xl overflow-hidden shadow-[0_1px_3px_rgba(2,133,91,0.08)]">
+                <div className="bg-[#F0FDF4] border-b border-[#D1FAE5] px-4 py-3">
+                  <span className="inline-block text-[10px] font-bold tracking-[0.12em] uppercase px-2 py-0.5 rounded-full bg-white border border-[#D1FAE5] text-[#16A34A] mb-1.5">
+                    {week.week}주차
+                  </span>
+                  <p className="text-base font-bold text-[#111111] leading-snug">{week.theme}</p>
+                </div>
+                <div className="px-4 py-3 space-y-2">
+                  {week.items.map((item, ii) => (
+                    <div key={ii} className="flex gap-2 items-center">
+                      {item.isFixed ? (
+                        <div
+                          className="flex-1 text-sm text-[#555] bg-[#F0FDF4] rounded-xl px-3 py-2 border border-[#D1FAE5] leading-snug"
+                          style={{ minHeight: '44px', display: 'flex', alignItems: 'center' }}
+                        >
+                          {item.content}
+                        </div>
+                      ) : (
+                        <input
+                          type="text"
+                          value={item.content}
+                          onChange={(e) => handleChecklistChange(wi, ii, e.target.value)}
+                          className="flex-1 text-sm text-[#111111] bg-[#F0FDF4] rounded-xl px-3 py-2 border border-[#D1FAE5] focus:outline-none focus:border-[#02855B] focus:bg-white transition-colors"
+                          placeholder="항목을 입력하세요"
+                          style={{ minHeight: '44px' }}
+                        />
+                      )}
+                      {!item.isFixed && (
+                        <button
+                          onClick={() => handleChecklistDelete(wi, ii)}
+                          className="w-8 h-8 text-[#D4D4D4] active:text-red-400 flex items-center justify-center rounded-lg text-xl leading-none shrink-0"
+                          aria-label="삭제"
+                        >
+                          ×
+                        </button>
+                      )}
+                    </div>
+                  ))}
+                  <button
+                    onClick={() => handleChecklistAdd(wi)}
+                    className="w-full py-2.5 text-xs font-medium text-[#16A34A] border border-dashed border-[#D1FAE5] rounded-xl active:bg-[#F0FDF4] transition-colors"
+                  >
+                    + 항목 추가
+                  </button>
+                </div>
+              </div>
+            ))}
 
             {/* AI 보완 챗봇 */}
             {masterPlan && (
-              <div className="mt-4">
+              <div className="mt-3">
                 <SupplementChat masterPlan={masterPlan} yearlyPlan={yearlyPlan} monthlyChecklist={monthlyChecklist} />
               </div>
             )}
@@ -731,13 +771,13 @@ export default function ActionPlanPage() {
           <div className="space-y-2.5">
             <button
               onClick={() => router.push('/tracking')}
-              className="w-full h-12 rounded-xl bg-[#1D6FE8] active:bg-[#1558C0] text-white font-semibold text-sm transition-colors"
+              className="w-full h-12 rounded-2xl bg-[#111111] active:scale-[0.98] active:bg-[#2A2A2A] text-white font-semibold text-sm transition-all shadow-[0_2px_12px_rgba(0,0,0,0.09)]"
             >
               트래킹 →
             </button>
             <button
               onClick={handleDownloadPDF}
-              className="w-full h-12 rounded-xl border border-[#EBEBEB] bg-white active:bg-[#F5F5F5] text-[#3A3A3A] font-semibold text-sm transition-colors"
+              className="w-full h-12 rounded-2xl border border-[#EBEBEB] bg-white active:bg-[#F5F5F5] active:scale-[0.98] text-[#3A3A3A] font-semibold text-sm transition-all"
             >
               PDF로 저장하기
             </button>
@@ -746,7 +786,7 @@ export default function ActionPlanPage() {
           <button
             onClick={handleConfirm}
             disabled={phase === 'saving'}
-            className="w-full h-12 rounded-xl bg-[#111111] active:bg-[#3A3A3A] text-white font-semibold text-sm disabled:opacity-50 transition-colors"
+            className="w-full h-12 rounded-2xl bg-[#111111] active:scale-[0.98] active:bg-[#2A2A2A] text-white font-semibold text-sm disabled:opacity-50 transition-all shadow-[0_2px_12px_rgba(0,0,0,0.09)]"
           >
             최종 확정하기
           </button>

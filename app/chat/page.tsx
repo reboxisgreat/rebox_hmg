@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
-import { Sparkles, ChevronLeft, ArrowRight, X } from 'lucide-react'
+import { Sparkles, ChevronLeft, ArrowRight, X, ChevronDown, ChevronUp } from 'lucide-react'
 import Image from 'next/image'
 import type { ChatMessage } from '@/lib/types'
 import { CARD_TITLES, STEP_TITLES } from '@/lib/types'
@@ -74,20 +74,22 @@ function getDisplayContent(content: string): string {
 }
 
 function parseKeywords(raw: string): string[] {
-  // #키워드 형태가 있으면 # 기준으로 분리 (각 #태그가 하나의 키워드)
-  if (raw.includes('#')) {
-    const parts = raw.split('#').map(s => s.trim()).filter(Boolean)
-    return parts.length > 0 ? parts : ['']
+  // # 제거 후 쉼표·줄바꿈 기준 분리
+  const cleaned = raw.replace(/#/g, '').trim()
+  let parts = cleaned.split(/[,，、\n]+/).map(s => s.trim()).filter(Boolean)
+  // 쉼표 없으면 공백 기준 분리 (예: "F1 주어=고객 문제정의")
+  if (parts.length <= 1 && cleaned.includes(' ')) {
+    parts = cleaned.split(/\s+/).map(s => s.trim()).filter(Boolean)
   }
-  // # 없으면 쉼표/줄바꿈 기준 분리
-  const parts = raw.split(/[,，、\n]+/).map(s => s.trim()).filter(Boolean)
   return parts.length > 0 ? parts : ['']
 }
 
-function parseItems(raw: string): string[] {
+function parseItems(raw: string, splitComma = false): string[] {
   let lines = raw.split(/\n/).map(s => s.trim()).filter(Boolean)
   // 줄바꿈 없는 단일 텍스트는 ". " (마침표+공백) 기준으로만 분리 — 약어(RACI, etc.) 보호
   if (lines.length <= 1) lines = raw.split(/\.\s+/).map(s => s.trim()).filter(Boolean)
+  // Action 전용: 쉼표 기준으로 추가 분리
+  if (splitComma && lines.length <= 1) lines = raw.split(/,\s*/).map(s => s.trim()).filter(Boolean)
   const cleaned = lines
     .map(s => s.replace(/^[\d]+[.)]\s*|^[①②③④⑤⑥⑦⑧⑨⑩•\-·]\s*/, '').trim())
     .filter(Boolean)
@@ -141,6 +143,7 @@ export default function ChatPage() {
   const [currentStep, setCurrentStep] = useState(1)
   const [summary, setSummary] = useState<CardSummary | null>(null)
   const [showSummary, setShowSummary] = useState(false)
+  const [summaryCollapsed, setSummaryCollapsed] = useState(false)
   const [saving, setSaving] = useState(false)
   const [shouldAutoStart, setShouldAutoStart] = useState(false)
 
@@ -163,6 +166,7 @@ export default function ChatPage() {
   const participantIdRef = useRef<string | null>(null)
   const messagesRef = useRef<ChatMessage[]>([])
   const currentCardRef = useRef<CardNumber>(1)
+  const summaryAutoSaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   useEffect(() => { messagesRef.current = messages }, [messages])
   useEffect(() => { participantIdRef.current = participantId }, [participantId])
@@ -331,6 +335,7 @@ export default function ChatPage() {
       setMessages([])
       setSummary(null)
       setShowSummary(false)
+      setSummaryCollapsed(false)
       setCurrentStep(1)
       setChatError('')
       setInput('')
@@ -367,6 +372,7 @@ export default function ChatPage() {
         setMessages([])
         setSummary(null)
         setShowSummary(false)
+        setSummaryCollapsed(false)
         setCurrentStep(1)
         setChatError('')
         setInput('')
@@ -396,6 +402,33 @@ export default function ChatPage() {
     setEditError('')
     setEditingCard(cardNum)
   }, [savedCards])
+
+  const updateSummaryField = useCallback((field: keyof CardSummary, value: string) => {
+    setSummary(prev => {
+      if (!prev) return prev
+      const next = { ...prev, [field]: value }
+      if (summaryAutoSaveTimer.current) clearTimeout(summaryAutoSaveTimer.current)
+      summaryAutoSaveTimer.current = setTimeout(() => {
+        if (!participantIdRef.current) return
+        fetch('/api/card', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            participantId: participantIdRef.current,
+            cardNumber: currentCardRef.current,
+            fields: {
+              step1_keywords: next.step1,
+              step2_asis: next.step2,
+              step3_tobe: next.step3,
+              step4_action: next.step4,
+              step5_indicator: next.step5,
+            },
+          }),
+        }).catch(() => {})
+      }, 1000)
+      return next
+    })
+  }, [])
 
   const handleSaveEdit = useCallback(async () => {
     if (!participantId || editingCard === null) return
@@ -569,11 +602,14 @@ export default function ChatPage() {
 
               {/* 키워드 */}
               <div className="px-4 pb-3 flex gap-2">
-                {parseKeywords(card?.step1_keywords ?? '').map((kw, i) => (
-                  <div key={i} className="flex-1 rounded-xl px-2 py-2.5 text-center border bg-white" style={{ borderColor: CARD_BORDER[reviewCard] }}>
-                    <p className="text-xs font-bold leading-tight" style={{ color: CARD_COLOR[reviewCard] }}>#{kw}</p>
-                  </div>
-                ))}
+                {(() => {
+                  const kws = parseKeywords(card?.step1_keywords ?? '')
+                  return [0, 1, 2].map(i => (
+                    <div key={i} className="flex-1 rounded-xl px-2 py-2.5 text-center border bg-white" style={{ borderColor: CARD_BORDER[reviewCard] }}>
+                      <p className="text-xs font-bold leading-tight" style={{ color: CARD_COLOR[reviewCard] }}>#{(kws[i] ?? '').trim()}</p>
+                    </div>
+                  ))
+                })()}
               </div>
 
               {/* 2×2 그리드 */}
@@ -598,7 +634,7 @@ export default function ChatPage() {
                     To-be로 가기 위해 내일부터 적용할 구체적 액션
                   </p>
                   <div className="space-y-1">
-                    {parseItems(card?.step4_action ?? '').map((item, i) => (
+                    {parseItems(card?.step4_action ?? '', true).map((item, i) => (
                       <p key={i} className="text-xs text-[#444] leading-relaxed flex gap-1">
                         <span className="text-[#888] shrink-0">□</span>{item}
                       </p>
@@ -651,7 +687,7 @@ export default function ChatPage() {
           <Image src="/메인로고.png" alt="메인 로고" width={160} height={80} className="object-contain" />
         </div>
 
-        <div className="flex items-center justify-between mb-3">
+        <div className="flex items-center mb-3">
           <button
             onClick={() => router.push('/')}
             className="flex items-center gap-1.5 text-sm text-[#3A3A3A] active:opacity-60 transition-colors"
@@ -659,21 +695,6 @@ export default function ChatPage() {
             <ChevronLeft size={16} />
             홈
           </button>
-          {/* 카드 진행 바 */}
-          <div className="flex gap-1.5 flex-1 mx-4">
-            {([1, 2, 3] as CardNumber[]).map(n => (
-              <div
-                key={n}
-                className="flex-1 h-1 rounded-full transition-colors duration-300"
-                style={{
-                  background: n < currentCard ? '#02855B' : n === currentCard ? 'rgba(2,133,91,0.5)' : 'rgba(0,0,0,0.1)',
-                }}
-              />
-            ))}
-          </div>
-          <span className="text-xs font-bold shrink-0" style={{ color: '#02855B' }}>
-            Step {currentStep}/5
-          </span>
         </div>
 
         <div className="flex items-end justify-between mb-2">
@@ -690,6 +711,7 @@ export default function ChatPage() {
             style={{ width: `${progressPct}%`, background: '#02855B' }}
           />
         </div>
+
         <div className="flex justify-end">
           <button
             onClick={() => setShowResetModal(true)}
@@ -766,140 +788,145 @@ export default function ChatPage() {
             className="rounded-3xl shadow-[0_4px_24px_rgba(0,0,0,0.13)] overflow-hidden border"
             style={{ background: CARD_BG[currentCard], borderColor: CARD_BORDER[currentCard] }}
           >
-            {/* ── 헤더 ── */}
-            <div
-              className="px-5 pt-5 pb-4 flex items-start justify-between border-b"
+            {/* ── 헤더 — 탭하면 접기/펼치기 ── */}
+            <button
+              onClick={() => setSummaryCollapsed(c => !c)}
+              className="w-full px-5 pt-5 pb-4 flex items-start justify-between border-b text-left active:opacity-70 transition-opacity"
               style={{ borderColor: CARD_BORDER[currentCard] }}
             >
               <div className="flex-1 min-w-0 pr-3">
-                <p className="text-xl font-black leading-tight" style={{ color: CARD_COLOR[currentCard] }}>
+                <p className="text-xl font-black leading-tight break-keep" style={{ color: CARD_COLOR[currentCard] }}>
                   {CARD_SHORT_NAME[currentCard]}
                 </p>
-                <p className="text-[11px] text-[#666] mt-1.5 leading-snug">
+                <p className="text-[11px] text-[#666] mt-1.5 leading-snug break-keep">
                   세션에서 가장 나의 머리와 마음을 때린{' '}
                   <span className="font-semibold" style={{ color: CARD_COLOR[currentCard] }}>
                     {CARD_SHORT_NAME[currentCard]}
                   </span>{' '}
-                  #키워드 {parseKeywords(summary.step1 ?? '').length}가지
+                  <span className="whitespace-nowrap">#키워드 {parseKeywords(summary.step1 ?? '').length}가지</span>
                 </p>
               </div>
-              <div
-                className="flex items-center gap-1 px-3 py-1.5 rounded-full shrink-0"
-                style={{ background: CARD_COLOR[currentCard] }}
-              >
-                <Sparkles size={10} color="white" />
-                <span className="text-[10px] font-bold text-white tracking-[0.08em] uppercase">HMG xClass</span>
+              <div className="flex flex-col items-end gap-1.5 shrink-0">
+                <Image src="/메인로고.png" alt="메인 로고" width={140} height={70} className="object-contain" />
+                <span style={{ color: CARD_COLOR[currentCard] }}>
+                  {summaryCollapsed ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+                </span>
               </div>
-            </div>
+            </button>
 
-            {/* ── 키워드 ── */}
-            <div
-              className="px-5 py-4 flex gap-2.5 border-b"
-              style={{ borderColor: CARD_BORDER[currentCard] }}
-            >
-              {parseKeywords(summary.step1 ?? '').map((kw, i) => (
+            {!summaryCollapsed && <>
+              {/* ── 키워드 — pill 3개 고정 ── */}
+              <div
+                className="px-5 pt-4 pb-4 flex gap-2.5 border-b"
+                style={{ borderColor: CARD_BORDER[currentCard] }}
+              >
+                {(() => {
+                  const keywords = parseKeywords(summary.step1 ?? '')
+                  return [0, 1, 2].map(i => (
+                    <div
+                      key={i}
+                      className="flex-1 rounded-2xl px-2 py-3 flex items-center justify-center min-h-[48px] bg-white border"
+                      style={{ borderColor: CARD_BORDER[currentCard] }}
+                    >
+                      <p className="text-[13px] font-bold text-center leading-tight break-keep" style={{ color: CARD_COLOR[currentCard] }}>
+                        #{(keywords[i] ?? '').trim()}
+                      </p>
+                    </div>
+                  ))
+                })()}
+              </div>
+
+              {/* ── 2×2 그리드 ── */}
+              <div className="grid grid-cols-2">
+                {/* 좌상: As-is */}
                 <div
-                  key={i}
-                  className="flex-1 rounded-2xl px-2 py-3 text-center flex items-center justify-center min-h-[48px] bg-white border"
-                  style={{ borderColor: CARD_BORDER[currentCard] }}
+                  className="p-4"
+                  style={{
+                    borderRight: `1px solid ${CARD_BORDER[currentCard]}`,
+                    borderBottom: `1px solid ${CARD_BORDER[currentCard]}`,
+                  }}
                 >
-                  <span className="text-[13px] font-bold leading-tight break-keep" style={{ color: CARD_COLOR[currentCard] }}>
-                    {kw ? `#${kw}` : ''}
-                  </span>
+                  <p className="text-[10px] font-bold uppercase tracking-wider mb-1.5" style={{ color: CARD_COLOR[currentCard] }}>As-is</p>
+                  <p className="text-[11px] font-semibold text-[#333] mb-2 leading-snug min-h-[2.5rem]">
+                    지금 나의 {CARD_SHORT_NAME[currentCard]} 현재수준
+                  </p>
+                  <textarea
+                    value={summary.step2 ?? ''}
+                    onChange={e => updateSummaryField('step2', e.target.value)}
+                    rows={4}
+                    className="w-full bg-white/60 border rounded-lg px-2 py-1.5 resize-none focus:outline-none focus:bg-white transition-all text-[13px] text-[#444] leading-relaxed"
+                    style={{ borderColor: CARD_BORDER[currentCard] }}
+                  />
                 </div>
-              ))}
-            </div>
+                {/* 우상: To-be */}
+                <div
+                  className="p-4"
+                  style={{ borderBottom: `1px solid ${CARD_BORDER[currentCard]}` }}
+                >
+                  <p className="text-[10px] font-bold uppercase tracking-wider mb-1.5" style={{ color: CARD_COLOR[currentCard] }}>To-be</p>
+                  <p className="text-[11px] font-semibold text-[#333] mb-2 leading-snug min-h-[2.5rem]">
+                    2028년 12월 31일<br />{CARD_SHORT_NAME[currentCard]} 지향점 모습
+                  </p>
+                  <textarea
+                    value={summary.step3 ?? ''}
+                    onChange={e => updateSummaryField('step3', e.target.value)}
+                    rows={4}
+                    className="w-full bg-white/60 border rounded-lg px-2 py-1.5 resize-none focus:outline-none focus:bg-white transition-all text-[13px] text-[#444] leading-relaxed"
+                    style={{ borderColor: CARD_BORDER[currentCard] }}
+                  />
+                </div>
+                {/* 좌하: 액션 */}
+                <div
+                  className="p-4"
+                  style={{ borderRight: `1px solid ${CARD_BORDER[currentCard]}` }}
+                >
+                  <p className="text-[10px] font-bold uppercase tracking-wider mb-1.5" style={{ color: CARD_COLOR[currentCard] }}>Action</p>
+                  <p className="text-[11px] font-semibold text-[#333] mb-2 leading-snug min-h-[2.5rem]">
+                    To-be로 가기 위해<br />내일부터 적용할 구체적 액션
+                  </p>
+                  <textarea
+                    value={summary.step4 ?? ''}
+                    onChange={e => updateSummaryField('step4', e.target.value)}
+                    rows={4}
+                    className="w-full bg-white/60 border rounded-lg px-2 py-1.5 resize-none focus:outline-none focus:bg-white transition-all text-[13px] text-[#444] leading-relaxed"
+                    style={{ borderColor: CARD_BORDER[currentCard] }}
+                  />
+                </div>
+                {/* 우하: 성공지표 */}
+                <div className="p-4">
+                  <p className="text-[10px] font-bold uppercase tracking-wider mb-1.5" style={{ color: CARD_COLOR[currentCard] }}>Indicator</p>
+                  <p className="text-[11px] font-semibold text-[#333] mb-2 leading-snug min-h-[2.5rem]">
+                    To-be로 도달했음을<br />증명하는 성공 지표
+                  </p>
+                  <textarea
+                    value={summary.step5 ?? ''}
+                    onChange={e => updateSummaryField('step5', e.target.value)}
+                    rows={4}
+                    className="w-full bg-white/60 border rounded-lg px-2 py-1.5 resize-none focus:outline-none focus:bg-white transition-all text-[13px] text-[#444] leading-relaxed"
+                    style={{ borderColor: CARD_BORDER[currentCard] }}
+                  />
+                </div>
+              </div>
 
-            {/* ── 2×2 그리드 ── */}
-            <div className="grid grid-cols-2">
-              {/* 좌상: As-is */}
-              <div
-                className="p-4"
-                style={{
-                  borderRight: `1px solid ${CARD_BORDER[currentCard]}`,
-                  borderBottom: `1px solid ${CARD_BORDER[currentCard]}`,
-                }}
-              >
-                <p className="text-[10px] font-bold uppercase tracking-wider mb-1.5" style={{ color: CARD_COLOR[currentCard] }}>As-is</p>
-                <p className="text-[11px] font-semibold text-[#333] mb-2.5 leading-snug">
-                  지금 나의 {CARD_SHORT_NAME[currentCard]} 현재수준
-                </p>
-                <p className="text-[13px] text-[#444] leading-relaxed">{summary.step2}</p>
+              {/* ── 버튼 ── */}
+              <div className="px-4 pb-5 pt-2 space-y-2">
+                <button
+                  onClick={() => setShowConfirmModal(true)}
+                  className="w-full rounded-2xl text-white text-base font-semibold active:scale-[0.98] transition-all flex items-center justify-center gap-2"
+                  style={{ height: '52px', background: '#111111' }}
+                >
+                  {currentCard < 3 ? `확정하고 카드 ${currentCard + 1}로` : '확정 → 마스터플랜으로'}
+                  <ArrowRight size={18} />
+                </button>
+                <button
+                  onClick={() => setShowSummary(false)}
+                  className="w-full rounded-2xl text-[#8A8A8A] text-sm font-medium"
+                  style={{ height: '44px' }}
+                >
+                  계속 코칭 받기
+                </button>
               </div>
-              {/* 우상: To-be */}
-              <div
-                className="p-4"
-                style={{ borderBottom: `1px solid ${CARD_BORDER[currentCard]}` }}
-              >
-                <p className="text-[10px] font-bold uppercase tracking-wider mb-1.5" style={{ color: CARD_COLOR[currentCard] }}>To-be</p>
-                <p className="text-[11px] font-semibold text-[#333] mb-2.5 leading-snug">
-                  2028년 12월 31일<br />{CARD_SHORT_NAME[currentCard]} 지향점 모습
-                </p>
-                <p className="text-[13px] text-[#444] leading-relaxed">{summary.step3}</p>
-              </div>
-              {/* 좌하: 액션 */}
-              <div
-                className="px-4 pt-4 pb-6"
-                style={{ borderRight: `1px solid ${CARD_BORDER[currentCard]}` }}
-              >
-                <p className="text-[10px] font-bold uppercase tracking-wider mb-1.5" style={{ color: CARD_COLOR[currentCard] }}>Action</p>
-                <p className="text-[11px] font-semibold text-[#333] mb-2.5 leading-snug">
-                  To-be로 가기 위해<br />내일부터 적용할 구체적 액션
-                </p>
-                <ul className="space-y-2">
-                  {parseItems(summary.step4 ?? '').map((item, i) => (
-                    <li key={i} className="flex items-start gap-2">
-                      <span className="text-[11px] text-[#AAA] shrink-0 mt-0.5">□</span>
-                      <span className="text-[13px] text-[#444] leading-relaxed">{item}</span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-              {/* 우하: 성공지표 */}
-              <div className="px-4 pt-4 pb-6">
-                <p className="text-[10px] font-bold uppercase tracking-wider mb-1.5" style={{ color: CARD_COLOR[currentCard] }}>Indicator</p>
-                <p className="text-[11px] font-semibold text-[#333] mb-2.5 leading-snug">
-                  To-be로 도달했음을<br />증명하는 성공 지표
-                </p>
-                <ul className="space-y-2">
-                  {parseItems(summary.step5 ?? '').map((item, i) => (
-                    <li key={i} className="flex items-start gap-2">
-                      <span className="text-[11px] text-[#AAA] shrink-0 mt-0.5">□</span>
-                      <span className="text-[13px] text-[#444] leading-relaxed">{item}</span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            </div>
-
-            {/* ── 푸터 ── */}
-            <div
-              className="px-5 py-2.5 flex items-center justify-end border-t"
-              style={{ borderColor: CARD_BORDER[currentCard] }}
-            >
-              <span className="text-[10px] font-bold tracking-widest uppercase opacity-30" style={{ color: CARD_COLOR[currentCard] }}>
-                re:BOX
-              </span>
-            </div>
-
-            {/* ── 버튼 ── */}
-            <div className="px-4 pb-5 pt-2 space-y-2">
-              <button
-                onClick={() => setShowConfirmModal(true)}
-                className="w-full rounded-2xl text-white text-base font-semibold active:scale-[0.98] transition-all flex items-center justify-center gap-2"
-                style={{ height: '52px', background: '#111111' }}
-              >
-                {currentCard < 3 ? `확정하고 카드 ${currentCard + 1}로` : '확정 → 마스터플랜으로'}
-                <ArrowRight size={18} />
-              </button>
-              <button
-                onClick={() => setShowSummary(false)}
-                className="w-full rounded-2xl text-[#8A8A8A] text-sm font-medium"
-                style={{ height: '44px' }}
-              >
-                계속 코칭 받기
-              </button>
-            </div>
+            </>}
           </div>
         </div>
       )}

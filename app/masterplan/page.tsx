@@ -3,9 +3,11 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import Image from 'next/image'
+import Lottie from 'lottie-react'
 import ChatWindow from '@/components/chat/ChatWindow'
 import { CARD_TITLES } from '@/lib/types'
 import type { ChatMessage } from '@/lib/types'
+import gradientBg from '../../public/gradient-bg.json'
 
 type CardNumber = 1 | 2 | 3
 type Phase = 'loading' | 'error' | 'step5' | 'plan-ready' | 'generating' | 'editing' | 'saving'
@@ -58,6 +60,19 @@ export default function MasterPlanPage() {
   const [generateError, setGenerateError] = useState('')
   const [isPostCompletion, setIsPostCompletion] = useState(false)
   const autosaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const textareaRefs = useRef<Map<string, HTMLTextAreaElement>>(new Map())
+  const setTextareaRef = useCallback((key: string) => (el: HTMLTextAreaElement | null) => {
+    if (el) textareaRefs.current.set(key, el)
+    else textareaRefs.current.delete(key)
+  }, [])
+
+  // masterPlan 변경 시 모든 textarea 높이 동기화
+  useEffect(() => {
+    textareaRefs.current.forEach(el => {
+      el.style.height = 'auto'
+      el.style.height = el.scrollHeight + 'px'
+    })
+  }, [masterPlan])
 
   // ── 초기 데이터 로드 ──────────────────────────────────────────────
   useEffect(() => {
@@ -408,15 +423,27 @@ export default function MasterPlanPage() {
       {/* 본문 */}
       <div className="flex-1 overflow-y-auto px-4 py-4 space-y-3 bg-[#F5F5F5]">
         {/* 슬로건 — dark featured card */}
-        <div className="bg-[#111111] rounded-2xl p-4">
-          <p className="text-[10px] font-bold tracking-[0.12em] uppercase text-white/50 mb-2">슬로건</p>
-          <textarea
-            value={masterPlan.slogan}
-            onChange={(e) => handleFieldChange('slogan', e.target.value)}
-            rows={2}
-            placeholder="슬로건을 입력하세요"
-            className="w-full text-base font-bold text-white bg-transparent resize-none focus:outline-none leading-snug placeholder-white/25"
-          />
+        <div className="relative rounded-2xl overflow-hidden text-center bg-[#111111]">
+          {/* Lottie 배경 — 절대 배치, 높이는 콘텐츠가 결정 */}
+          <div className="absolute inset-0 pointer-events-none [&_svg]:w-full [&_svg]:h-full" style={{ filter: 'brightness(0.55)' }}>
+            <Lottie
+              animationData={gradientBg}
+              loop
+              style={{ width: '100%', height: '100%' }}
+              rendererSettings={{ preserveAspectRatio: 'xMidYMid slice' }}
+            />
+          </div>
+          {/* 콘텐츠 */}
+          <div className="relative z-10 p-4">
+            <p className="text-[12px] font-bold tracking-[0.12em] uppercase text-white/70 mb-2">📣 나의 2026년 슬로건</p>
+            <textarea
+              ref={setTextareaRef('slogan')}
+              value={masterPlan.slogan}
+              onChange={(e) => handleFieldChange('slogan', e.target.value)}
+              placeholder="슬로건을 입력하세요"
+              className="w-full text-[20px] font-bold text-white text-center bg-transparent resize-none focus:outline-none overflow-hidden leading-tight placeholder-white/40 py-0 h-auto"
+            />
+          </div>
         </div>
 
         {/* 영역별 카드 */}
@@ -429,21 +456,21 @@ export default function MasterPlanPage() {
               <div className="px-4 py-3">
                 <p className="text-xs font-semibold text-[#8A8A8A] mb-1.5">What — 핵심 액션 · 성공지표</p>
                 <textarea
+                  ref={setTextareaRef(whatKey)}
                   value={masterPlan[whatKey]}
                   onChange={(e) => handleFieldChange(whatKey, e.target.value)}
-                  rows={3}
                   placeholder="핵심 액션과 성공지표를 입력하세요"
-                  className="w-full text-sm text-[#111111] bg-transparent resize-none focus:outline-none leading-relaxed placeholder-[#D4D4D4]"
+                  className="w-full text-sm text-[#111111] bg-transparent resize-none focus:outline-none leading-relaxed placeholder-[#D4D4D4] py-0 h-auto"
                 />
               </div>
               <div className="px-4 py-3">
                 <p className="text-xs font-semibold text-[#8A8A8A] mb-1.5">Why — 이유 및 근거</p>
                 <textarea
+                  ref={setTextareaRef(whyKey)}
                   value={masterPlan[whyKey]}
                   onChange={(e) => handleFieldChange(whyKey, e.target.value)}
-                  rows={3}
                   placeholder="이유와 근거를 입력하세요"
-                  className="w-full text-sm text-[#111111] bg-transparent resize-none focus:outline-none leading-relaxed placeholder-[#D4D4D4]"
+                  className="w-full text-sm text-[#111111] bg-transparent resize-none focus:outline-none leading-relaxed placeholder-[#D4D4D4] py-0 h-auto"
                 />
               </div>
             </div>

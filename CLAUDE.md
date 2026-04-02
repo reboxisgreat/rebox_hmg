@@ -44,6 +44,7 @@ ADMIN_PASSWORD=
       /auth/route.ts           ← 관리자 비밀번호 검증
       /progress/route.ts       ← 관리자용 전체 진행 현황
       /participant/route.ts    ← 개인별 상세 데이터
+      /masterplans/route.ts    ← 전체 마스터플랜 갤러리 데이터 (participants join)
 /lib
   /gemini.ts                   ← Gemini API 스트리밍 유틸 (generateStreamingResponse, generateSingleResponse, fetchStream)
   /supabase.ts                 ← Supabase 클라이언트 팩토리
@@ -297,11 +298,13 @@ const CARD_COLOR   = { 1: '#DC2626', 2: '#D97706', 3: '#16A34A' }
   - 전체 참가자 진행 현황 실시간 (30초 자동 갱신)
   - 카드 완료 현황 (시각적 블록), 마스터플랜/액션플랜 상태, 트래킹 진행률
   - 개인별 상세 보기 (탭: 카드 | 마스터플랜 | 액션플랜)
+  - 마스터플랜 갤러리 탭 — 전체 교육생 슬로건·3영역 카드 그리드 (패들릿 뷰), 클릭 시 상세 모달
   - CSV 내보내기 (UTF-8 BOM, Excel 호환)
 - Supabase `admin_progress_view` 뷰 활용
 
-## 구현 완료 현황 (2026-04-01 기준)
+## 구현 완료 현황 (2026-04-02 기준)
 - [x] 교육생 로그인 + 홈 대시보드 (진행 현황, 다음 단계 안내)
+  - 슬로건 카드: Lottie 그라디언트 애니메이션 배경 (`/public/gradient-bg.json`)
 - [x] 고객 진짜 문제 정의 페이지 (`/problem-definition`) + AI 코치
   - 단일 연속 챗봇 흐름 (Step1~4 AI 코칭 → `__SUMMARY_START__`/`__SUMMARY_END__` 자동감지)
   - 최종 정리 패널: 실물 카드 레이아웃 (진짜문제정의 카드 스타일, `#A6444C` 테마)
@@ -312,17 +315,23 @@ const CARD_COLOR   = { 1: '#DC2626', 2: '#D97706', 3: '#16A34A' }
 - [x] 카드 1~3 Step1~4+5 챗봇 (`/chat`) — 단일 연속 AI 흐름
   - `__SUMMARY_START__`/`__SUMMARY_END__` 블록 자동 파싱 → 실물 카드 레이아웃 패널
   - 카드별 2×2 그리드 (As-is / To-be / Action □체크리스트 / Indicator □체크리스트)
+  - 키워드 pill: `[0,1,2]` 고정 3개 read-only 렌더링 (편집 불가)
   - 카드 확정 후 다음 카드 자동 전환 (1→2→3→/masterplan)
   - 미완료 카드도 chat_history PATCH 저장 (대화 보존)
-  - 다크 헤더: 카드 진행 바 + Step 진행 바 이중 표시
+  - 다크 헤더: Step 진행 바만 표시 (카드 dot-bar 제거)
 - [x] Step5 코칭 (마스터플랜 페이지에서)
 - [x] 마스터플랜 AI 도출 + 편집 + 자동저장 + 확정
+  - textarea auto-resize (`useRef` Map + scrollHeight 동기화)
+  - 슬로건 박스: Lottie 그라디언트 애니메이션 배경 (`rendererSettings: preserveAspectRatio xMidYMid slice`)
 - [x] 연간 플랜(Q1~Q4) + 30일 체크리스트 AI 도출
+  - 액션플랜 UI 전면 개선: Q1~Q4 분기별 색상 코딩, 홈 디자인 언어 통일
+  - 체크리스트 영역: 전체 블리드 제거, 파란색 → 녹색 테마 통일
 - [x] AI 보완 챗봇 (supplement 모드) — masterPlan + yearlyPlan + monthlyChecklist 전달
 - [x] 액션플랜 확정 시 tracking_logs 자동 생성
 - [x] 체크리스트 수행 현황 트래킹 (상태 변경, 메모)
 - [x] 점수 시스템 + 리더보드 바텀시트
 - [x] 관리자 대시보드 + 개인별 상세 + CSV 내보내기
+  - 마스터플랜 갤러리 탭 (패들릿 뷰): 전체 교육생 슬로건·3영역 카드 그리드
 - [x] PDF 저장 (html-to-image + jsPDF)
 - [x] 전체 용어 실장급 기준 통일 (구성원/조직/실장님)
 - [x] 완료 토스트 애니메이션 강화 (`toastPop` keyframe, 크게 튀어오르는 효과)
@@ -333,7 +342,7 @@ const CARD_COLOR   = { 1: '#DC2626', 2: '#D97706', 3: '#16A34A' }
 ### chat/page.tsx — 카드 1/2/3
 - 카드 배경: `CARD_BG[cardNumber]`, 테두리: `CARD_BORDER[cardNumber]`
 - HEADER: 카드명(`CARD_SHORT_NAME`) + 서브텍스트 + "HMG xClass" pill
-- 키워드 3개 pill: `parseKeywords(step1)` → flex-1 균등 박스
+- 키워드 3개 pill: `[0,1,2].map(i => ...)` 고정 렌더링 → 항상 3개, read-only `<p>` (편집 불가)
 - 2×2 grid: As-is(step2) / To-be(step3) / Action(step4, `parseItems` □체크리스트) / Indicator(step5, □체크리스트)
 - FOOTER: re:BOX 브랜딩
 

@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import dynamic from 'next/dynamic'
 import { CARD_TITLES } from '@/lib/types'
 import confettiData from '@/public/confetti.json'
+import gradientBg from '@/public/gradient-bg.json'
 
 const Lottie = dynamic(() => import('lottie-react'), { ssr: false })
 import {
@@ -447,14 +448,8 @@ function HomePage({
           <div className="flex items-start justify-between mb-4">
             <div className="flex flex-col gap-1.5">
               <img src="/메인로고.png" alt="리더스러닝랩 xClass" className="h-9 object-contain" />
-              <span className="text-[10px] font-bold text-[#000000] tracking-[0.12em] pl-0.5">리더스러닝랩 xClass 조직관리 과정</span>
+              <span className="text-[12px] font-bold text-[#000000] tracking-[0.12em] pl-0.5">리더스러닝랩 xClass 조직관리 과정</span>
             </div>
-            <button
-              onClick={onLogout}
-              className="p-2 rounded-xl active:bg-[#F7F7F8] transition-colors"
-            >
-              <LogOut size={18} color="#000000" />
-            </button>
           </div>
           <div className="flex items-start justify-between gap-3">
             <h1 className="text-[1.6rem] font-bold text-[#111] leading-tight tracking-tight">
@@ -554,7 +549,7 @@ function HomePage({
           {/* 1단계: 진짜문제 정의 */}
           <button
             onClick={() => router.push('/problem-definition')}
-            className="w-full flex items-center justify-between px-4 py-3.5 rounded-2xl active:opacity-80 transition-opacity text-left" style={{ backgroundColor: '#ffffff', boxShadow: '0 2px 12px rgba(0,0,0,0.09)', isolation: 'isolate', position: 'relative', zIndex: 1 }}
+            className="w-full flex items-center justify-between px-4 py-3.5 rounded-2xl active:opacity-80 transition-opacity text-left" style={{ backgroundColor: '#FCF8F1', boxShadow: '0 2px 12px rgba(0,0,0,0.09)', isolation: 'isolate', position: 'relative', zIndex: 1 }}
           >
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 bg-[#FFF7ED] rounded-xl flex items-center justify-center shrink-0">
@@ -579,7 +574,7 @@ function HomePage({
           {/* 2단계: 고객가치 관리 */}
           <button
             onClick={() => router.push('/chat')}
-            className="w-full flex items-center justify-between px-4 py-3.5 rounded-2xl active:opacity-80 transition-opacity text-left" style={{ backgroundColor: '#ffffff', boxShadow: '0 2px 12px rgba(0,0,0,0.09)', isolation: 'isolate', position: 'relative', zIndex: 1 }}
+            className="w-full flex items-center justify-between px-4 py-3.5 rounded-2xl active:opacity-80 transition-opacity text-left" style={{ backgroundColor: '#FFEAE2', boxShadow: '0 2px 12px rgba(0,0,0,0.09)', isolation: 'isolate', position: 'relative', zIndex: 1 }}
           >
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 bg-[#FFF1F2] rounded-xl flex items-center justify-center shrink-0">
@@ -604,7 +599,7 @@ function HomePage({
           {/* 3단계: 사람 관리 */}
           <button
             onClick={() => router.push('/chat')}
-            className="w-full flex items-center justify-between px-4 py-3.5 rounded-2xl active:opacity-80 transition-opacity text-left" style={{ backgroundColor: '#ffffff', boxShadow: '0 2px 12px rgba(0,0,0,0.09)', isolation: 'isolate', position: 'relative', zIndex: 1 }}
+            className="w-full flex items-center justify-between px-4 py-3.5 rounded-2xl active:opacity-80 transition-opacity text-left" style={{ backgroundColor: '#FFF9EC', boxShadow: '0 2px 12px rgba(0,0,0,0.09)', isolation: 'isolate', position: 'relative', zIndex: 1 }}
           >
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 bg-[#FFFBEB] rounded-xl flex items-center justify-center shrink-0">
@@ -629,7 +624,7 @@ function HomePage({
           {/* 4단계: 프로세스 관리 */}
           <button
             onClick={() => router.push('/chat')}
-            className="w-full flex items-center justify-between px-4 py-3.5 rounded-2xl active:opacity-80 transition-opacity text-left" style={{ backgroundColor: '#ffffff', boxShadow: '0 2px 12px rgba(0,0,0,0.09)', isolation: 'isolate', position: 'relative', zIndex: 1 }}
+            className="w-full flex items-center justify-between px-4 py-3.5 rounded-2xl active:opacity-80 transition-opacity text-left" style={{ backgroundColor: '#F3F7F2', boxShadow: '0 2px 12px rgba(0,0,0,0.09)', isolation: 'isolate', position: 'relative', zIndex: 1 }}
           >
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 bg-[#F0FDF4] rounded-xl flex items-center justify-center shrink-0">
@@ -655,11 +650,16 @@ function HomePage({
           {progress?.masterPlan?.is_confirmed && progress.masterPlan.slogan && (
             <button
               onClick={() => router.push('/masterplan')}
-              className="w-full rounded-3xl px-5 py-4 text-left active:scale-[0.98] transition-all"
-              style={{ background: 'linear-gradient(135deg, #1F2937 0%, #374151 100%)', boxShadow: '0 4px 12px rgba(0,0,0,0.2)', isolation: 'isolate', position: 'relative', zIndex: 1 }}
+              className="relative w-full rounded-3xl overflow-hidden text-center active:scale-[0.98] transition-all bg-[#111111]"
+              style={{ boxShadow: '0 4px 12px rgba(0,0,0,0.2)' }}
             >
-              <p className="text-[11px] font-bold text-white/40 uppercase tracking-widest mb-1">나의 2026년 슬로건</p>
-              <p className="text-base font-bold text-white leading-snug">"{progress.masterPlan.slogan}"</p>
+              <div className="absolute inset-0 pointer-events-none [&_svg]:w-full [&_svg]:h-full" style={{ filter: 'brightness(0.55)' }}>
+                <Lottie animationData={gradientBg} loop style={{ width: '100%', height: '100%' }} rendererSettings={{ preserveAspectRatio: 'xMidYMid slice' }} />
+              </div>
+              <div className="relative z-10 px-5 py-4">
+                <p className="text-[11px] font-bold uppercase tracking-widest mb-1 text-white/70">📣 나의 2026년 슬로건</p>
+                <p className="text-[20px] font-bold leading-snug text-white">"{progress.masterPlan.slogan}"</p>
+              </div>
             </button>
           )}
 
@@ -738,7 +738,7 @@ function HomePage({
                   )}
                 </div>
                 {progress && progress.tracking.total > 0 && (
-                  <p className="text-[11px] text-[#AAAAAA] mt-0.5">
+                  <p className="text-[12px] text-[#000000] mt-0.5">
                     {progress.tracking.completed}/{progress.tracking.total}개 완료 · {trackingPct}%
                   </p>
                 )}
