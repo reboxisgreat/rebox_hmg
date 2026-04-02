@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import type { TrackingLog, MyScore } from '@/lib/types'
+import confetti from 'canvas-confetti'
 
 type Status = '미착수' | '진행중' | '완료'
 
@@ -58,8 +59,12 @@ function groupByWeek(logs: TrackingLog[], weekThemes: Record<number, string>): W
 
 function Toast({ message }: { message: string }) {
   return (
-    <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 px-5 py-3 rounded-2xl shadow-lg text-sm font-semibold whitespace-nowrap bg-[#111111] text-white animate-[slideUp_0.25s_ease-out]">
-      {message}
+    <div className="fixed bottom-8 left-1/2 z-50 animate-[toastPop_0.45s_cubic-bezier(0.34,1.56,0.64,1)_both]"
+      style={{ transform: 'translateX(-50%)' }}
+    >
+      <div className="px-7 py-4 rounded-3xl shadow-[0_8px_32px_rgba(0,0,0,0.28)] text-base font-bold whitespace-nowrap bg-[#111111] text-white">
+        {message}
+      </div>
     </div>
   )
 }
@@ -208,7 +213,15 @@ export default function TrackingPage() {
     })
 
     if (status === '진행중') showToast(pick(IN_PROGRESS_MESSAGES))
-    else if (status === '완료') showToast(pick(DONE_MESSAGES))
+    else if (status === '완료') {
+      showToast(pick(DONE_MESSAGES))
+      confetti({
+        particleCount: 120,
+        spread: 70,
+        origin: { y: 0.6 },
+        colors: ['#16A34A', '#02855B', '#86EFAC', '#FDE68A', '#DBEAFE'],
+      })
+    }
 
     fetch('/api/tracking', {
       method: 'PATCH',

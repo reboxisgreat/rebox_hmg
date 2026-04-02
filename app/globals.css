@@ -56,3 +56,50 @@ body {
     transform: translateX(-50%) translateY(0);
   }
 }
+
+@keyframes toastPop {
+  0%   { opacity: 0; transform: translateX(-50%) translateY(40px) scale(0.7); }
+  55%  { opacity: 1; transform: translateX(-50%) translateY(-8px) scale(1.06); }
+  75%  { transform: translateX(-50%) translateY(4px) scale(0.97); }
+  100% { transform: translateX(-50%) translateY(0) scale(1); }
+}
+
+@keyframes float1 {
+  0%   { transform: translate(0, 0) scale(1); }
+  33%  { transform: translate(25%, -30%) scale(1.08); }
+  66%  { transform: translate(-20%, 22%) scale(0.94); }
+  100% { transform: translate(0, 0) scale(1); }
+}
+
+@keyframes float2 {
+  0%   { transform: translate(0, 0) scale(1); }
+  25%  { transform: translate(-28%, 20%) scale(1.07); }
+  50%  { transform: translate(22%, -25%) scale(0.93); }
+  75%  { transform: translate(-15%, 28%) scale(1.05); }
+  100% { transform: translate(0, 0) scale(1); }
+}
+
+@keyframes float3 {
+  0%   { transform: translate(0, 0) scale(1); }
+  40%  { transform: translate(30%, 22%) scale(1.09); }
+  70%  { transform: translate(-22%, -28%) scale(0.92); }
+  100% { transform: translate(0, 0) scale(1); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-float1,
+  .animate-float2,
+  .animate-float3 {
+    animation: none !important;
+  }
+}
+
+.animate-float1 { animation: float1 18s ease-in-out infinite; }
+.animate-float2 { animation: float2 24s ease-in-out infinite; }
+.animate-float3 { animation: float3 20s ease-in-out infinite; }
+
+@keyframes panelSlideUp {
+  from { opacity: 0; transform: translateY(24px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.animate-panel-slide-up { animation: panelSlideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1); }

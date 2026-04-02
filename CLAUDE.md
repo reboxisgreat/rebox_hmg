@@ -132,8 +132,8 @@ return new Response(readable, {
 - `getCardSummaryPrompt()` - 카드 내용 AI 요약
 - `getMasterPlanPrompt(cardResponses, participantName)` - 마스터플랜 JSON 생성
 - `getActionPlanPrompt(masterPlan, participantName)` - 액션플랜 JSON 생성
-- `getChecklistSupplementPrompt(masterPlan, monthlyChecklist)` - 체크리스트 보완 코칭
-- `getProblemDefinitionSystemPrompt(stepResponses)` - 진짜문제정의 AI 코칭
+- `getChecklistSupplementPrompt(masterPlan, yearlyPlan, monthlyChecklist)` - 체크리스트 보완 코칭 (인자 3개)
+- `getProblemDefinitionSystemPrompt()` - 진짜문제정의 AI 코칭 (인자 없음)
 
 ### 7. 에러 처리
 - API 호출 실패 시 사용자에게 친절한 한국어 에러 메시지 표시
@@ -280,15 +280,15 @@ total_score    = base_score + week_bonus + completion_bonus
 | 카테고리 | 카드 번호 | bg | border | icon-bg | text / accent |
 |----------|-----------|-----|--------|---------|---------------|
 | 고객가치 관리 | 1 | `#FFF1F2` | `#FECDD3` | `#FFE4E6` | `#DC2626` (red) |
-| 사람 관리     | 2 | `#EFF6FF` | `#BFDBFE` | `#DBEAFE` | `#2563EB` (blue) |
+| 사람 관리     | 2 | `#FFFBEB` | `#FDE68A` | `#FEF3C7` | `#D97706` (amber/yellow) |
 | 프로세스 관리 | 3 | `#F0FDF4` | `#BBF7D0` | `#DCFCE7` | `#16A34A` (green) |
 
 ```typescript
 // 공통 상수 (필요 시 lib/types.ts 또는 각 컴포넌트에 정의)
-const CARD_BG      = { 1: '#FFF1F2', 2: '#EFF6FF', 3: '#F0FDF4' }
-const CARD_BORDER  = { 1: '#FECDD3', 2: '#BFDBFE', 3: '#BBF7D0' }
-const CARD_ICON_BG = { 1: '#FFE4E6', 2: '#DBEAFE', 3: '#DCFCE7' }
-const CARD_COLOR   = { 1: '#DC2626', 2: '#2563EB', 3: '#16A34A' }
+const CARD_BG      = { 1: '#FFF1F2', 2: '#FFFBEB', 3: '#F0FDF4' }
+const CARD_BORDER  = { 1: '#FECDD3', 2: '#FDE68A', 3: '#BBF7D0' }
+const CARD_ICON_BG = { 1: '#FFE4E6', 2: '#FEF3C7', 3: '#DCFCE7' }
+const CARD_COLOR   = { 1: '#DC2626', 2: '#D97706', 3: '#16A34A' }
 ```
 
 ## 관리자 대시보드
@@ -300,21 +300,50 @@ const CARD_COLOR   = { 1: '#DC2626', 2: '#2563EB', 3: '#16A34A' }
   - CSV 내보내기 (UTF-8 BOM, Excel 호환)
 - Supabase `admin_progress_view` 뷰 활용
 
-## 구현 완료 현황 (2026-03-31 기준)
+## 구현 완료 현황 (2026-04-01 기준)
 - [x] 교육생 로그인 + 홈 대시보드 (진행 현황, 다음 단계 안내)
-- [x] 고객 진짜 문제 정의 페이지 (`/problem-definition`) + AI 코치 + PDF 저장
-  - Step1~4 입력 중 debounce 자동저장 (1초, 홈 이탈 후 복귀 시 유지)
-  - "AI 코치에게 검토 받기" 클릭 시 즉시 저장
-  - AI 스트리밍 완료마다 채팅 기록 자동저장
-- [x] 카드 1~3 Step1~4 챗봇 + AI 요약 + 확정 저장
+- [x] 고객 진짜 문제 정의 페이지 (`/problem-definition`) + AI 코치
+  - 단일 연속 챗봇 흐름 (Step1~4 AI 코칭 → `__SUMMARY_START__`/`__SUMMARY_END__` 자동감지)
+  - 최종 정리 패널: 실물 카드 레이아웃 (진짜문제정의 카드 스타일, `#A6444C` 테마)
+  - 모든 필드 인라인 직접 수정 가능 + 1초 디바운스 자동저장
+  - 패널 접기/펼치기 토글 (채팅 기록 열람 가능)
+  - 메인로고.png (`/public/메인로고.png`) 헤더 최상단 표시
+  - AI 스트리밍 완료마다 채팅 기록 자동저장 (PUT /api/problem-definition)
+- [x] 카드 1~3 Step1~4+5 챗봇 (`/chat`) — 단일 연속 AI 흐름
+  - `__SUMMARY_START__`/`__SUMMARY_END__` 블록 자동 파싱 → 실물 카드 레이아웃 패널
+  - 카드별 2×2 그리드 (As-is / To-be / Action □체크리스트 / Indicator □체크리스트)
+  - 카드 확정 후 다음 카드 자동 전환 (1→2→3→/masterplan)
+  - 미완료 카드도 chat_history PATCH 저장 (대화 보존)
+  - 다크 헤더: 카드 진행 바 + Step 진행 바 이중 표시
 - [x] Step5 코칭 (마스터플랜 페이지에서)
 - [x] 마스터플랜 AI 도출 + 편집 + 자동저장 + 확정
 - [x] 연간 플랜(Q1~Q4) + 30일 체크리스트 AI 도출
-- [x] AI 보완 챗봇 (supplement 모드)
+- [x] AI 보완 챗봇 (supplement 모드) — masterPlan + yearlyPlan + monthlyChecklist 전달
 - [x] 액션플랜 확정 시 tracking_logs 자동 생성
 - [x] 체크리스트 수행 현황 트래킹 (상태 변경, 메모)
 - [x] 점수 시스템 + 리더보드 바텀시트
 - [x] 관리자 대시보드 + 개인별 상세 + CSV 내보내기
 - [x] PDF 저장 (html-to-image + jsPDF)
 - [x] 전체 용어 실장급 기준 통일 (구성원/조직/실장님)
+- [x] 완료 토스트 애니메이션 강화 (`toastPop` keyframe, 크게 튀어오르는 효과)
 - [ ] 이메일 알림 (SendGrid) - 미구현
+
+## 최종 정리 패널 UI 패턴 (실물 카드 레이아웃)
+
+### chat/page.tsx — 카드 1/2/3
+- 카드 배경: `CARD_BG[cardNumber]`, 테두리: `CARD_BORDER[cardNumber]`
+- HEADER: 카드명(`CARD_SHORT_NAME`) + 서브텍스트 + "HMG xClass" pill
+- 키워드 3개 pill: `parseKeywords(step1)` → flex-1 균등 박스
+- 2×2 grid: As-is(step2) / To-be(step3) / Action(step4, `parseItems` □체크리스트) / Indicator(step5, □체크리스트)
+- FOOTER: re:BOX 브랜딩
+
+### problem-definition/page.tsx — 진짜문제정의
+- 테마: `#FFF9F0` bg, `#A6444C` border·accent
+- 메인로고 (`/public/메인로고.png`) 우상단
+- 세로 스택 흰 카드 4개: 나의 고객(step1) / 진짜문제(step2) / 한 문장 정의(step3, italic) / 키워드(step4, #pill)
+- 모든 필드: 항상 편집 가능 textarea (투명 → 포커스 시 흰 박스), 1초 디바운스 자동저장
+- 접기/펼치기 토글 (`summaryCollapsed` state)
+
+## 저장 충돌 주의
+Claude Code(터미널)와 Cursor(IDE)가 동시에 같은 파일을 수정하면 저장 충돌 발생.
+Cursor 팝업이 뜰 경우 **"덮어쓰기" 누르지 말 것** — Claude 버전이 최신. 팝업을 닫거나 무시.

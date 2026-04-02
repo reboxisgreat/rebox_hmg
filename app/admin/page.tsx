@@ -43,7 +43,7 @@ function AdminLogin({ onSuccess }: { onSuccess: () => void }) {
     <div className="min-h-screen bg-[#F5F5F5] flex items-center justify-center px-5">
       <div className="w-full max-w-sm bg-white rounded-2xl shadow-[0_1px_3px_rgba(0,0,0,0.06)] border border-[#EBEBEB] p-8">
         <div className="text-center mb-8">
-          <p className="text-xs font-semibold text-[#02855B] tracking-widest uppercase mb-1">HMG xClass</p>
+          <p className="text-xs font-semibold text-[#02855B] tracking-widest uppercase mb-1">리더스러닝랩 xClass 조직관리 과정</p>
           <h1 className="text-xl font-bold text-[#111111]">관리자 로그인</h1>
         </div>
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -140,7 +140,7 @@ function buildCoverHtml(p: Participant): string {
     </div>`
 }
 
-const CARD_DOT_COLORS: Record<number, string> = { 1: '#DC2626', 2: '#2563EB', 3: '#16A34A' }
+const CARD_DOT_COLORS: Record<number, string> = { 1: '#DC2626', 2: '#D97706', 3: '#16A34A' }
 
 // 카드 한 장만 렌더링 (페이지 분할 없이 한 페이지에 딱 맞게)
 function buildSingleCardHtml(cardNum: 1 | 2 | 3, cards: CardResponse[], sectionLabel?: string): string {
@@ -211,7 +211,7 @@ function buildMasterPlanHtml(mp: MasterPlan): string {
   const areas = [
     { label: '고객가치', whatKey: 'customer_what' as const, whyKey: 'customer_why' as const, color: '#2563EB', bg: '#EFF6FF' },
     { label: '프로세스', whatKey: 'process_what' as const,  whyKey: 'process_why' as const,  color: '#EA580C', bg: '#FFF7ED' },
-    { label: '사람',    whatKey: 'people_what' as const,    whyKey: 'people_why' as const,    color: '#16A34A', bg: '#F0FDF4' },
+    { label: '사람',    whatKey: 'people_what' as const,    whyKey: 'people_why' as const,    color: '#D97706', bg: '#FFFBEB' },
   ]
   const areasHtml = areas.map(({ label, whatKey, whyKey, color, bg }) => `
     <div style="border:1px solid #EBEBEB;border-left:4px solid ${color};border-radius:10px;overflow:hidden;margin-bottom:12px;">
@@ -572,7 +572,7 @@ function DetailModal({
                 {([
                   ['고객가치', 'customer_what', 'customer_why', 'bg-[#EFF6FF]', 'text-[#2563EB]', 'border-l-[#2563EB]'],
                   ['프로세스', 'process_what',  'process_why',  'bg-[#FFF7ED]', 'text-[#EA580C]', 'border-l-[#EA580C]'],
-                  ['사람',    'people_what',   'people_why',   'bg-[#F0FDF4]', 'text-[#16A34A]', 'border-l-[#16A34A]'],
+                  ['사람',    'people_what',   'people_why',   'bg-[#FFFBEB]', 'text-[#D97706]', 'border-l-[#D97706]'],
                 ] as const).map(([label, whatKey, whyKey, hBg, hText, lBorder]) => (
                   <div key={label} className={`border border-[#EBEBEB] border-l-4 ${lBorder} rounded-2xl overflow-hidden`}>
                     <div className={`px-4 py-2.5 ${hBg}`}>
@@ -757,7 +757,7 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
         <div className="max-w-7xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-6">
             <div>
-              <p className="text-xs font-semibold text-[#02855B] tracking-widest uppercase">HMG xClass</p>
+              <img src="/메인로고.png" alt="리더스러닝랩 xClass" className="h-7 object-contain mb-0.5" />
               <h1 className="text-lg font-bold text-[#111111]">관리자 대시보드</h1>
             </div>
             <div className="flex gap-1 bg-[#F5F5F5] rounded-xl p-1">

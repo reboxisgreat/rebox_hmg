@@ -9,7 +9,7 @@ import type { Message } from '@/lib/gemini'
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json()
-    const { cardNumber, step, messages, cardResponses, mode, masterPlan, monthlyChecklist } = body
+    const { cardNumber, step, messages, cardResponses, mode, masterPlan, yearlyPlan, monthlyChecklist } = body
 
     if (!messages || !Array.isArray(messages)) {
       return NextResponse.json({ error: '메시지가 없습니다.' }, { status: 400 })
@@ -18,10 +18,10 @@ export async function POST(req: NextRequest) {
     let systemPrompt: string
 
     if (mode === 'supplement') {
-      if (!masterPlan || !monthlyChecklist) {
+      if (!masterPlan || !yearlyPlan || !monthlyChecklist) {
         return NextResponse.json({ error: '보완 모드 데이터가 없습니다.' }, { status: 400 })
       }
-      systemPrompt = getChecklistSupplementPrompt(masterPlan, monthlyChecklist)
+      systemPrompt = getChecklistSupplementPrompt(masterPlan, yearlyPlan, monthlyChecklist)
     } else if (step === 5 && cardResponses) {
       systemPrompt = getStep5SystemPrompt(cardResponses)
     } else {
@@ -40,10 +40,14 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    const formattedMessages: Message[] = messages.map((m: { role: string; content: string }) => ({
-      role: m.role as 'user' | 'model',
-      content: m.content,
-    }))
+    // 빈 배열이면 AI가 먼저 말을 걸도록 트리거 메시지 추가
+    const formattedMessages: Message[] =
+      messages.length > 0
+        ? messages.map((m: { role: string; content: string }) => ({
+            role: m.role as 'user' | 'model',
+            content: m.content,
+          }))
+        : [{ role: 'user' as const, content: '실습을 시작해주세요.' }]
 
     return generateStreamingResponse(systemPrompt, formattedMessages)
   } catch (error) {

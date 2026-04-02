@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
+import Image from 'next/image'
 import ChatWindow from '@/components/chat/ChatWindow'
 import { CARD_TITLES } from '@/lib/types'
 import type { ChatMessage } from '@/lib/types'
@@ -37,7 +38,7 @@ const STEP5_INITIAL: Record<CardNumber, string> = {
 
 const PLAN_ROWS: { label: string; whatKey: keyof MasterPlanState; whyKey: keyof MasterPlanState; headerBg: string; headerText: string; accentBorder: string }[] = [
   { label: '고객가치', whatKey: 'customer_what', whyKey: 'customer_why', headerBg: 'bg-[#FFF1F2]', headerText: 'text-[#DC2626]', accentBorder: 'border-l-[#DC2626]' },
-  { label: '사람',    whatKey: 'people_what',   whyKey: 'people_why',   headerBg: 'bg-[#EFF6FF]', headerText: 'text-[#2563EB]', accentBorder: 'border-l-[#2563EB]' },
+  { label: '사람',    whatKey: 'people_what',   whyKey: 'people_why',   headerBg: 'bg-[#FFFBEB]', headerText: 'text-[#D97706]', accentBorder: 'border-l-[#D97706]' },
   { label: '프로세스', whatKey: 'process_what',  whyKey: 'process_why',  headerBg: 'bg-[#F0FDF4]', headerText: 'text-[#16A34A]', accentBorder: 'border-l-[#16A34A]' },
 ]
 
@@ -269,21 +270,21 @@ export default function MasterPlanPage() {
           </div>
           <div className="flex items-center justify-between -mx-1 mb-2">
             <button
-              onClick={() => router.push('/chat')}
-              className="flex items-center gap-0.5 h-8 px-2 rounded-xl active:bg-[#F5F5F5] text-[#8A8A8A]"
-            >
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                <polyline points="15 18 9 12 15 6" />
-              </svg>
-              <span className="text-xs font-medium">이전</span>
-            </button>
-            <button
               onClick={() => router.push('/')}
               className="flex items-center gap-0.5 h-8 px-2 rounded-xl active:bg-[#F5F5F5] text-[#8A8A8A]"
             >
-              <span className="text-xs font-medium">홈</span>
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/>
+              </svg>
+              <span className="text-xs font-medium">홈</span>
+            </button>
+            <button
+              onClick={() => router.push('/chat')}
+              className="flex items-center gap-0.5 h-8 px-2 rounded-xl active:bg-[#F5F5F5] text-[#8A8A8A]"
+            >
+              <span className="text-xs font-medium">이전</span>
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="9 18 15 12 9 6" />
               </svg>
             </button>
           </div>
@@ -322,21 +323,21 @@ export default function MasterPlanPage() {
       <div className="relative flex flex-col items-center justify-center px-6 gap-6 bg-[#F5F5F5]" style={{ height: '100dvh' }}>
         <div className="absolute top-0 left-0 right-0 flex items-center justify-between px-3 pt-3">
           <button
-            onClick={() => router.push('/chat')}
-            className="flex items-center gap-0.5 h-8 px-2 rounded-xl active:bg-[#F5F5F5] text-[#8A8A8A]"
-          >
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-              <polyline points="15 18 9 12 15 6" />
-            </svg>
-            <span className="text-xs font-medium">이전</span>
-          </button>
-          <button
             onClick={() => router.push('/')}
             className="flex items-center gap-0.5 h-8 px-2 rounded-xl active:bg-[#F5F5F5] text-[#8A8A8A]"
           >
-            <span className="text-xs font-medium">홈</span>
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/>
+            </svg>
+            <span className="text-xs font-medium">홈</span>
+          </button>
+          <button
+            onClick={() => router.push('/chat')}
+            className="flex items-center gap-0.5 h-8 px-2 rounded-xl active:bg-[#F5F5F5] text-[#8A8A8A]"
+          >
+            <span className="text-xs font-medium">이전</span>
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <polyline points="9 18 15 12 9 6" />
             </svg>
           </button>
         </div>
@@ -364,7 +365,7 @@ export default function MasterPlanPage() {
         <div className="text-center">
           <div className="w-12 h-12 border-2 border-[#111111] border-t-transparent rounded-full animate-spin mx-auto mb-4" />
           <p className="text-base font-semibold text-[#111111] mb-1 tracking-tight">마스터플랜을 작성하고 있습니다...</p>
-          <p className="text-sm text-[#8A8A8A]">AI가 오전·오후 내용을 분석하고 있어요</p>
+          <p className="text-sm text-[#8A8A8A]">AI가 전체 카드 내용을 분석하고 있어요</p>
         </div>
       </div>
     )
@@ -375,27 +376,30 @@ export default function MasterPlanPage() {
     <div className="relative flex flex-col" style={{ height: '100dvh' }}>
       {/* 헤더 */}
       <header className="bg-white border-b border-[#EBEBEB] px-4 py-3 shrink-0">
+        <div className="flex justify-end mb-1">
+          <Image src="/메인로고.png" alt="메인 로고" width={160} height={80} className="object-contain" />
+        </div>
         <div className="flex items-center justify-between -mx-1 mb-1">
+          <button
+            onClick={() => router.push('/')}
+            className="flex items-center gap-0.5 h-8 px-2 rounded-xl active:bg-[#F5F5F5] text-[#8A8A8A]"
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/>
+            </svg>
+            <span className="text-xs font-medium">홈</span>
+          </button>
           {!isPostCompletion ? (
             <button
               onClick={() => router.push('/chat')}
               className="flex items-center gap-0.5 h-8 px-2 rounded-xl active:bg-[#F5F5F5] text-[#8A8A8A]"
             >
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                <polyline points="15 18 9 12 15 6" />
-              </svg>
               <span className="text-xs font-medium">이전</span>
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="9 18 15 12 9 6" />
+              </svg>
             </button>
           ) : <div />}
-          <button
-            onClick={() => router.push('/')}
-            className="flex items-center gap-0.5 h-8 px-2 rounded-xl active:bg-[#F5F5F5] text-[#8A8A8A]"
-          >
-            <span className="text-xs font-medium">홈</span>
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/>
-            </svg>
-          </button>
         </div>
         <h1 className="text-base font-bold text-[#111111] tracking-tight">나의 조직관리 마스터플랜</h1>
         <p className="text-xs text-[#8A8A8A] mt-0.5">내용을 수정하면 자동 저장됩니다</p>
@@ -452,7 +456,15 @@ export default function MasterPlanPage() {
       {/* 하단 버튼 */}
       <div className="px-4 pb-4 pt-2 border-t border-[#EBEBEB] bg-white shrink-0">
         {isPostCompletion ? (
-          <p className="text-center text-xs text-[#8A8A8A] py-1.5">수정 내용은 자동으로 저장됩니다</p>
+          <div className="space-y-2">
+            <button
+              onClick={() => router.push('/actionplan')}
+              className="w-full h-12 rounded-xl bg-[#111111] active:bg-[#3A3A3A] text-white font-semibold text-sm transition-colors"
+            >
+              액션플랜으로 →
+            </button>
+            <p className="text-center text-xs text-[#8A8A8A]">수정 내용은 자동으로 저장됩니다</p>
+          </div>
         ) : (
           <button
             onClick={handleConfirm}

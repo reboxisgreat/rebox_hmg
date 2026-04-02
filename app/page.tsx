@@ -2,7 +2,11 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
+import dynamic from 'next/dynamic'
 import { CARD_TITLES } from '@/lib/types'
+import confettiData from '@/public/confetti.json'
+
+const Lottie = dynamic(() => import('lottie-react'), { ssr: false })
 import {
   ChevronRight,
   CheckCircle2,
@@ -14,7 +18,6 @@ import {
   Trophy,
   LogOut,
   KeyRound,
-  Sparkles,
   ArrowRight,
   User,
   Target,
@@ -225,20 +228,51 @@ function LoginForm({ onLogin }: { onLogin: (id: string, name: string) => void })
   }
 
   return (
-    <div className="min-h-screen bg-[#F7F7F8] flex flex-col" style={{ minHeight: '100dvh' }}>
-      {/* 상단 브랜딩 영역 */}
-      <div className="flex-1 flex flex-col items-center justify-center px-5 pt-16 pb-8">
+    <div className="relative min-h-screen flex flex-col overflow-hidden" style={{ minHeight: '100dvh', background: '#F7F7F8' }}>
+      {/* 애니메이션 서클 배경 */}
+      <div className="absolute inset-0 pointer-events-none" aria-hidden="true">
+        {/* 에메랄드 서클 — 좌상단 */}
+        <div
+          className="animate-float1 absolute rounded-full"
+          style={{
+            width: '80vw', height: '80vw',
+            top: '-20vw', left: '-20vw',
+            background: 'rgba(2, 133, 91, 0.35)',
+            filter: 'blur(40px)',
+          }}
+        />
+        {/* 블루 서클 — 우하단 */}
+        <div
+          className="animate-float2 absolute rounded-full"
+          style={{
+            width: '70vw', height: '70vw',
+            bottom: '-15vw', right: '-15vw',
+            background: 'rgba(37, 99, 235, 0.30)',
+            filter: 'blur(45px)',
+          }}
+        />
+        {/* 퍼플 서클 — 중앙 */}
+        <div
+          className="animate-float3 absolute rounded-full"
+          style={{
+            width: '60vw', height: '60vw',
+            top: '28%', left: '15%',
+            background: 'rgba(124, 58, 237, 0.22)',
+            filter: 'blur(38px)',
+          }}
+        />
+      </div>
+
+      {/* 콘텐츠 */}
+      <div className="relative z-10 flex-1 flex flex-col items-center justify-center px-5 pt-16 pb-8">
         <div className="w-full max-w-md">
           {/* 로고 영역 */}
           <div className="mb-10 text-center">
-            <div className="inline-flex items-center gap-2 bg-[#111] text-white px-4 py-2 rounded-2xl mb-6">
-              <Sparkles size={14} />
-              <span className="text-xs font-bold tracking-[0.12em] uppercase">HMG xClass</span>
-            </div>
+            <img src="/메인로고.png" alt="리더스러닝랩 xClass" className="h-16 mx-auto object-contain mb-4" />
             <h1 className="text-[2rem] font-bold text-[#111] leading-tight tracking-tight mb-2">
-              조직관리<br />교육 플랫폼
+              리더스러닝랩<br />xClass 조직관리 과정
             </h1>
-            <p className="text-sm text-[#8A8A8A] leading-relaxed">
+            <p className="text-sm text-[#6B7280] leading-relaxed">
               현대자동차그룹 실장급 리더 교육 프로그램
             </p>
           </div>
@@ -267,7 +301,7 @@ function LoginForm({ onLogin }: { onLogin: (id: string, name: string) => void })
                   type="password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  placeholder="비밀번호"
+                  placeholder="초기 비밀번호는 1234입니다."
                   className="w-full h-13 px-4 rounded-xl border border-[#E8E8E8] bg-[#F7F7F8] text-[#111] text-base placeholder-[#B0B0B0] focus:outline-none focus:border-[#111] focus:bg-white transition-colors"
                   style={{ height: '52px' }}
                   autoComplete="current-password"
@@ -289,7 +323,7 @@ function LoginForm({ onLogin }: { onLogin: (id: string, name: string) => void })
                   <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
                 ) : (
                   <>
-                    교육 시작하기
+                    실습 시작하기
                     <ArrowRight size={18} />
                   </>
                 )}
@@ -297,7 +331,7 @@ function LoginForm({ onLogin }: { onLogin: (id: string, name: string) => void })
             </form>
           </div>
 
-          <p className="mt-6 text-center text-xs text-[#B0B0B0]">사전 등록된 참가자만 접속할 수 있습니다.</p>
+          <p className="mt-6 text-center text-xs text-[#B0B0B0]">사전 등록된 교육생만 접속할 수 있습니다.</p>
         </div>
       </div>
     </div>
@@ -376,57 +410,92 @@ function HomePage({
   const totalSteps = 6
 
   return (
-    <div className="flex flex-col bg-[#F7F7F8]" style={{ minHeight: '100dvh' }}>
+    <div className="relative flex flex-col overflow-hidden" style={{ minHeight: '100dvh', background: '#F0F4F8' }}>
+      {/* 전체 화면 애니메이션 배경 */}
+      <div className="absolute inset-0 pointer-events-none" aria-hidden="true">
+        <div
+          className="animate-float1 absolute rounded-full"
+          style={{
+            width: '90vw', height: '90vw',
+            top: '-20vw', right: '-20vw',
+            background: 'rgba(2, 133, 91, 0.22)',
+            filter: 'blur(60px)',
+          }}
+        />
+        <div
+          className="animate-float2 absolute rounded-full"
+          style={{
+            width: '80vw', height: '80vw',
+            bottom: '10vw', left: '-25vw',
+            background: 'rgba(37, 99, 235, 0.18)',
+            filter: 'blur(65px)',
+          }}
+        />
+        <div
+          className="animate-float1 absolute rounded-full"
+          style={{
+            width: '60vw', height: '60vw',
+            bottom: '-10vw', right: '-10vw',
+            background: 'rgba(2, 133, 91, 0.12)',
+            filter: 'blur(50px)',
+            animationDelay: '2s',
+          }}
+        />
+      </div>
+
       {/* 헤더 */}
-      <div className="bg-white px-5 pt-14 pb-5">
-        <div className="flex items-start justify-between mb-4">
-          <div className="inline-flex items-center gap-1.5 bg-[#F0FDF4] px-3 py-1.5 rounded-full">
-            <Sparkles size={11} color="#02855B" />
-            <span className="text-[10px] font-bold text-[#02855B] tracking-[0.12em] uppercase">HMG xClass</span>
-          </div>
-          <button
-            onClick={onLogout}
-            className="p-2 rounded-xl active:bg-[#F7F7F8] transition-colors"
-          >
-            <LogOut size={18} color="#B0B0B0" />
-          </button>
-        </div>
-        <div className="flex items-start justify-between gap-3">
-          <h1 className="text-[1.6rem] font-bold text-[#111] leading-tight tracking-tight">
-            안녕하세요,<br />{participantName}님!
-          </h1>
-          {progress?.score ? (
+      <div className="relative px-5 pt-14 pb-5">
+        {/* 헤더 콘텐츠 */}
+        <div className="relative z-10">
+          <div className="flex items-start justify-between mb-4">
+            <div className="flex flex-col gap-1.5">
+              <img src="/메인로고.png" alt="리더스러닝랩 xClass" className="h-9 object-contain" />
+              <span className="text-[10px] font-bold text-[#000000] tracking-[0.12em] pl-0.5">리더스러닝랩 xClass 조직관리 과정</span>
+            </div>
             <button
-              onClick={() => router.push('/ranking')}
-              className="shrink-0 mt-1 rounded-2xl overflow-hidden shadow-md flex items-center gap-3 px-4 py-3 active:opacity-80 transition-opacity"
-              style={{ background: '#FEF9C3' }}
+              onClick={onLogout}
+              className="p-2 rounded-xl active:bg-[#F7F7F8] transition-colors"
             >
-              <span className="text-2xl leading-none">🏆</span>
-              <div>
-                <p className="text-[10px] font-bold text-[#CA8A04] tracking-wider leading-none">RANKING</p>
-                <p className="text-2xl font-black text-[#92400E] leading-tight">{progress.score.rank}위</p>
-                <p className="text-[10px] text-[#A16207] leading-none">{progress.score.total_participants}명 중</p>
-              </div>
-              <ChevronRight size={14} color="#CA8A04" />
+              <LogOut size={18} color="#000000" />
             </button>
-          ) : (
-            <div className="shrink-0 mt-1 rounded-2xl overflow-hidden shadow-md flex items-center gap-3 px-4 py-3"
-              style={{ background: '#F3F4F6' }}>
-              <span className="text-2xl leading-none">🏅</span>
-              <div>
-                <p className="text-[10px] font-bold text-[#9CA3AF] tracking-wider leading-none">RANKING</p>
-                <p className="text-base font-black text-[#6B7280] leading-tight">미참여</p>
-                <p className="text-[10px] text-[#9CA3AF] leading-none">지금 시작해보세요!</p>
+          </div>
+          <div className="flex items-start justify-between gap-3">
+            <h1 className="text-[1.6rem] font-bold text-[#111] leading-tight tracking-tight">
+              안녕하세요,<br />{participantName}님!
+            </h1>
+            {progress?.score ? (
+              <button
+                onClick={() => router.push('/ranking')}
+                className="shrink-0 mt-1 rounded-2xl overflow-hidden shadow-md flex items-center gap-3 px-4 py-3 active:opacity-80 transition-opacity"
+                style={{ background: '#FEF9C3' }}
+              >
+                <span className="text-2xl leading-none">🏆</span>
+                <div>
+                  <p className="text-[10px] font-bold text-[#CA8A04] tracking-wider leading-none">RANKING</p>
+                  <p className="text-2xl font-black text-[#92400E] leading-tight">{progress.score.rank}위</p>
+                  <p className="text-[10px] text-[#A16207] leading-none">{progress.score.total_participants}명 중</p>
+                </div>
+                <ChevronRight size={14} color="#CA8A04" />
+              </button>
+            ) : (
+              <div className="shrink-0 mt-1 rounded-2xl overflow-hidden shadow-md flex items-center gap-3 px-4 py-3"
+                style={{ background: '#F3F4F6' }}>
+                <span className="text-2xl leading-none">🏅</span>
+                <div>
+                  <p className="text-[10px] font-bold text-[#9CA3AF] tracking-wider leading-none">RANKING</p>
+                  <p className="text-base font-black text-[#6B7280] leading-tight">미참여</p>
+                  <p className="text-[10px] text-[#9CA3AF] leading-none">지금 시작해보세요!</p>
+                </div>
               </div>
+            )}
+          </div>
+          {progress?.participant.department && (
+            <div className="flex items-center gap-1.5 mt-2">
+              <User size={12} color="#8A8A8A" />
+              <p className="text-sm text-[#8A8A8A]">{progress.participant.department}</p>
             </div>
           )}
         </div>
-        {progress?.participant.department && (
-          <div className="flex items-center gap-1.5 mt-2">
-            <User size={12} color="#8A8A8A" />
-            <p className="text-sm text-[#8A8A8A]">{progress.participant.department}</p>
-          </div>
-        )}
       </div>
 
       {loading ? (
@@ -441,12 +510,21 @@ function HomePage({
 
           {/* 전체 진행 카드 */}
           {allDone ? (
-            <div className="bg-[#111] rounded-3xl px-5 py-5">
-              <div className="flex items-center gap-2 mb-1">
-                <span className="text-lg">🎉</span>
-                <p className="text-base font-bold text-white">모든 과정 완료!</p>
+            <div className="bg-[#111] rounded-3xl px-5 py-3 relative overflow-hidden flex items-center justify-between">
+              {/* 폭죽 애니메이션 — 좌측 */}
+              <Lottie
+                animationData={confettiData}
+                loop={true}
+                className="pointer-events-none flex-shrink-0"
+                style={{ width: 56, height: 56 }}
+              />
+              {/* 텍스트 */}
+              <div className="relative z-10 flex-1">
+                <div className="flex items-center gap-2 mb-1">
+                  <p className="text-base font-bold text-white">모든 실습을 완료했습니다!</p>
+                </div>
+                <p className="text-xs text-white/50">각 항목을 눌러 내용을 다시 확인할 수 있어요.</p>
               </div>
-              <p className="text-xs text-white/50">각 항목을 눌러 내용을 다시 확인할 수 있어요.</p>
             </div>
           ) : (
             <button
@@ -513,9 +591,9 @@ function HomePage({
             <div className="px-4 space-y-2 pb-4">
             {([1, 2, 3] as const).map((n) => {
               const done = progress?.cards.find((c) => c.card_number === n)?.is_confirmed ?? false
-              const CARD_BG: Record<number, string> = { 1: '#FFF1F2', 2: '#EFF6FF', 3: '#F0FDF4' }
-              const CARD_BORDER: Record<number, string> = { 1: '#FECDD3', 2: '#BFDBFE', 3: '#BBF7D0' }
-              const CARD_ICON_BG: Record<number, string> = { 1: '#FFE4E6', 2: '#DBEAFE', 3: '#DCFCE7' }
+              const CARD_BG: Record<number, string> = { 1: '#FFF1F2', 2: '#FFFBEB', 3: '#F0FDF4' }
+              const CARD_BORDER: Record<number, string> = { 1: '#FECDD3', 2: '#FDE68A', 3: '#BBF7D0' }
+              const CARD_ICON_BG: Record<number, string> = { 1: '#FFE4E6', 2: '#FEF3C7', 3: '#DCFCE7' }
               return (
                 <button
                   key={n}
@@ -558,48 +636,44 @@ function HomePage({
             <button
               onClick={() => router.push('/masterplan')}
               className="rounded-3xl p-4 active:scale-[0.97] transition-all relative"
-              style={progress?.masterPlan?.is_confirmed
-                ? { background: 'linear-gradient(135deg, #1F2937 0%, #374151 100%)', boxShadow: '0 4px 12px rgba(0,0,0,0.2)' }
-                : { background: '#fff', boxShadow: '0 1px 4px rgba(0,0,0,0.06)' }}
+              style={{ background: '#fff', boxShadow: '0 1px 4px rgba(0,0,0,0.06)' }}
             >
               {progress?.masterPlan?.is_confirmed && (
                 <div className="absolute top-3 right-3 w-5 h-5 flex items-center justify-center">
                   <svg width="14" height="11" viewBox="0 0 14 11" fill="none">
-                    <path d="M1 5L5 9L13 1" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                    <path d="M1 5L5 9L13 1" stroke="#EA580C" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
                   </svg>
                 </div>
               )}
               <div className="flex flex-col items-center justify-center gap-2 pt-4 pb-1">
                 <div className="w-10 h-10 rounded-2xl flex items-center justify-center"
-                  style={progress?.masterPlan?.is_confirmed ? { background: 'rgba(255,255,255,0.15)' } : { background: '#FFF7ED' }}>
-                  <Map size={20} color={progress?.masterPlan?.is_confirmed ? '#fff' : '#EA580C'} />
+                  style={{ background: '#FFF7ED' }}>
+                  <Map size={20} color="#EA580C" />
                 </div>
                 <p className="text-base font-bold leading-snug text-center"
-                  style={{ color: progress?.masterPlan?.is_confirmed ? '#fff' : '#111' }}>마스터플랜</p>
+                  style={{ color: '#111' }}>마스터플랜</p>
               </div>
             </button>
 
             <button
               onClick={() => router.push('/actionplan')}
               className="rounded-3xl p-4 active:scale-[0.97] transition-all relative"
-              style={progress?.actionPlan?.is_confirmed
-                ? { background: 'linear-gradient(135deg, #1F2937 0%, #374151 100%)', boxShadow: '0 4px 12px rgba(0,0,0,0.2)' }
-                : { background: '#fff', boxShadow: '0 1px 4px rgba(0,0,0,0.06)' }}
+              style={{ background: '#fff', boxShadow: '0 1px 4px rgba(0,0,0,0.06)' }}
             >
               {progress?.actionPlan?.is_confirmed && (
                 <div className="absolute top-3 right-3 w-5 h-5 flex items-center justify-center">
                   <svg width="14" height="11" viewBox="0 0 14 11" fill="none">
-                    <path d="M1 5L5 9L13 1" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                    <path d="M1 5L5 9L13 1" stroke="#7C3AED" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
                   </svg>
                 </div>
               )}
               <div className="flex flex-col items-center justify-center gap-2 pt-4 pb-1">
                 <div className="w-10 h-10 rounded-2xl flex items-center justify-center"
-                  style={progress?.actionPlan?.is_confirmed ? { background: 'rgba(255,255,255,0.15)' } : { background: '#F5F3FF' }}>
-                  <CalendarCheck size={20} color={progress?.actionPlan?.is_confirmed ? '#fff' : '#7C3AED'} />
+                  style={{ background: '#F5F3FF' }}>
+                  <CalendarCheck size={20} color="#7C3AED" />
                 </div>
                 <p className="text-base font-bold leading-snug text-center"
-                  style={{ color: progress?.actionPlan?.is_confirmed ? '#fff' : '#111' }}>액션플랜</p>
+                  style={{ color: '#111' }}>액션플랜</p>
               </div>
             </button>
           </div>
@@ -617,7 +691,7 @@ function HomePage({
                 <div>
                   <p className="text-[10px] font-bold text-[#8A8A8A] uppercase tracking-[0.08em]">30일 트래킹</p>
                   <div className="flex items-center gap-2">
-                    <p className="text-base font-bold text-[#111]">실행 현황</p>
+                    <p className="text-base font-bold text-[#111]">액션플랜 수행 현황</p>
                     {progress?.score && progress.score.total_participants > 0 && (
                       <div
                         role="button"

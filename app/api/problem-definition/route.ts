@@ -29,14 +29,17 @@ export async function GET(req: NextRequest) {
 // POST: Gemini AI 코칭 스트리밍
 export async function POST(req: NextRequest) {
   try {
-    const { messages, stepResponses } = await req.json()
-    const systemPrompt = getProblemDefinitionSystemPrompt(stepResponses)
-    // Gemini API는 contents가 반드시 1개 이상이어야 함
-    // 첫 코칭 시작 시 messages가 빈 배열이면 트리거 메시지를 추가
-    const msgs: Message[] =
+    const { messages } = await req.json()
+    const systemPrompt = getProblemDefinitionSystemPrompt()
+    // 첫 시작 시 messages가 빈 배열이면 트리거 메시지를 추가
+    let msgs: Message[] =
       Array.isArray(messages) && messages.length > 0
         ? (messages as Message[])
-        : [{ role: 'user', content: '작성한 내용을 검토하고 코칭을 시작해주세요.' }]
+        : [{ role: 'user', content: '실습을 시작해주세요.' }]
+    // Gemini requires contents to start with 'user' role
+    if (msgs[0]?.role === 'model') {
+      msgs = [{ role: 'user', content: '실습을 시작해주세요.' }, ...msgs]
+    }
     return generateStreamingResponse(systemPrompt, msgs)
   } catch (error) {
     console.error('Problem definition POST error:', error)
@@ -55,10 +58,10 @@ export async function PUT(req: NextRequest) {
     const { error } = await supabase.from('problem_definitions').upsert(
       {
         participant_id: participantId,
-        step1_customer: step1,
-        step2_problem: step2,
-        step3_definition: step3,
-        step4_keywords: step4,
+        step1_customer: step1 ?? '',
+        step2_problem: step2 ?? '',
+        step3_definition: step3 ?? '',
+        step4_keywords: step4 ?? '',
         chat_history: chatHistory ?? [],
         is_confirmed: isConfirmed ?? false,
       },

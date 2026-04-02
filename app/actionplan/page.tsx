@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { useRouter } from 'next/navigation'
+import Image from 'next/image'
 import type { QuarterlyPlan, WeeklyChecklist, ChecklistItem, ChatMessage } from '@/lib/types'
 import { toPng } from 'html-to-image'
 import jsPDF from 'jspdf'
@@ -22,10 +23,12 @@ interface MasterPlanData {
 // ─── AI 보완 챗봇 컴포넌트 ────────────────────────────────────────────────────
 
 function SupplementChat({
-  slogan,
+  masterPlan,
+  yearlyPlan,
   monthlyChecklist,
 }: {
-  slogan: string
+  masterPlan: MasterPlanData
+  yearlyPlan: QuarterlyPlan[]
   monthlyChecklist: WeeklyChecklist[]
 }) {
   const INIT_MSG = '30일 실행 로드맵을 함께 점검해볼게요! 실행이 막히거나 더 구체화하고 싶은 항목이 있으신가요?'
@@ -55,6 +58,17 @@ function SupplementChat({
       setStreaming(true)
       if (textareaRef.current) textareaRef.current.style.height = 'auto'
 
+      const masterPlanForApi = {
+        slogan: masterPlan.slogan,
+        customer: { what: masterPlan.customer_what, why: masterPlan.customer_why },
+        process: { what: masterPlan.process_what, why: masterPlan.process_why },
+        people: { what: masterPlan.people_what, why: masterPlan.people_why },
+      }
+      const yearlyPlanForApi = yearlyPlan.map((q) => ({
+        quarter: q.quarter,
+        focus: q.focus,
+        actions: q.actions,
+      }))
       const clForPrompt = monthlyChecklist.map((w) => ({
         week: w.week,
         theme: w.theme,
@@ -67,7 +81,8 @@ function SupplementChat({
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             mode: 'supplement',
-            masterPlan: { slogan },
+            masterPlan: masterPlanForApi,
+            yearlyPlan: yearlyPlanForApi,
             monthlyChecklist: clForPrompt,
             messages: next.map((m) => ({ role: m.role, content: m.content })),
           }),
@@ -109,7 +124,7 @@ function SupplementChat({
         setStreaming(false)
       }
     },
-    [messages, streaming, slogan, monthlyChecklist]
+    [messages, streaming, masterPlan, yearlyPlan, monthlyChecklist]
   )
 
   const adjustHeight = () => {
@@ -211,6 +226,8 @@ export default function ActionPlanPage() {
   const [savedToast, setSavedToast] = useState(false)
   const checklistRef = useRef<HTMLDivElement>(null)
   const savedToastTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const autoSaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const isInitialLoad = useRef(true)
 
   // ── 액션플랜 AI 도출
   const generateActionPlan = useCallback(async (id: string, name: string, mp: MasterPlanData) => {
@@ -274,6 +291,7 @@ export default function ActionPlanPage() {
           } else {
             setPhase('editing')
           }
+          setTimeout(() => { isInitialLoad.current = false }, 500)
           return
         }
 
@@ -307,6 +325,18 @@ export default function ActionPlanPage() {
   const handleActionChange = useCallback((qi: number, ai: number, value: string) => {
     setYearlyPlan((prev) => prev.map((q, i) =>
       i !== qi ? q : { ...q, actions: q.actions.map((a, j) => j !== ai ? a : value) }
+    ))
+  }, [])
+
+  const handleActionDelete = useCallback((qi: number, ai: number) => {
+    setYearlyPlan((prev) => prev.map((q, i) =>
+      i !== qi ? q : { ...q, actions: q.actions.filter((_, j) => j !== ai) }
+    ))
+  }, [])
+
+  const handleActionAdd = useCallback((qi: number) => {
+    setYearlyPlan((prev) => prev.map((q, i) =>
+      i !== qi ? q : { ...q, actions: [...q.actions, ''] }
     ))
   }, [])
 
@@ -385,6 +415,26 @@ export default function ActionPlanPage() {
       }
     }
   }
+
+  // ── 자동저장 (confirmed 상태에서 데이터 변경 시 1초 디바운스)
+  useEffect(() => {
+    if (isInitialLoad.current) return
+    if (phase !== 'confirmed' || !participantId) return
+    if (autoSaveTimer.current) clearTimeout(autoSaveTimer.current)
+    autoSaveTimer.current = setTimeout(async () => {
+      try {
+        await fetch('/api/actionplan', {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ participantId, yearlyPlan, monthlyChecklist }),
+        })
+        if (savedToastTimer.current) clearTimeout(savedToastTimer.current)
+        setSavedToast(true)
+        savedToastTimer.current = setTimeout(() => setSavedToast(false), 2000)
+      } catch { /* silent */ }
+    }, 1000)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [yearlyPlan, monthlyChecklist])
 
   // ── 확정 / 변경 저장
   const handleConfirm = useCallback(async () => {
@@ -500,13 +550,20 @@ export default function ActionPlanPage() {
     <div className="relative flex flex-col" style={{ height: '100dvh' }}>
       {/* 저장 완료 토스트 */}
       {savedToast && (
-        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 px-5 py-3 rounded-2xl shadow-lg text-sm font-semibold whitespace-nowrap bg-[#111111] text-white animate-[slideUp_0.25s_ease-out]">
-          변경사항이 저장되었습니다 ✓
+        <div className="fixed bottom-8 left-1/2 z-50 animate-[toastPop_0.45s_cubic-bezier(0.34,1.56,0.64,1)_both]"
+          style={{ transform: 'translateX(-50%)' }}
+        >
+          <div className="px-7 py-4 rounded-3xl shadow-[0_8px_32px_rgba(0,0,0,0.28)] text-base font-bold whitespace-nowrap bg-[#111111] text-white">
+            변경사항이 저장되었습니다 ✓
+          </div>
         </div>
       )}
 
       {/* 헤더 */}
       <header className="bg-white border-b border-[#EBEBEB] px-4 py-3 shrink-0">
+        <div className="flex justify-end mb-1">
+          <Image src="/메인로고.png" alt="메인 로고" width={160} height={80} className="object-contain" />
+        </div>
         <div className="flex items-center justify-between -mx-1 mb-1">
           <button
             onClick={() => router.push('/masterplan')}
@@ -568,8 +625,21 @@ export default function ActionPlanPage() {
                         rows={2}
                         className="flex-1 text-sm text-[#111111] bg-[#F5F5F5] rounded-xl px-3 py-2 resize-none focus:outline-none focus:ring-1 focus:ring-[#111111] leading-snug"
                       />
+                      <button
+                        onClick={() => handleActionDelete(qi, ai)}
+                        className="w-8 h-8 text-[#D4D4D4] active:text-red-400 flex items-center justify-center rounded-lg text-xl leading-none shrink-0 mt-1"
+                        aria-label="삭제"
+                      >
+                        ×
+                      </button>
                     </div>
                   ))}
+                  <button
+                    onClick={() => handleActionAdd(qi)}
+                    className="w-full py-2.5 text-xs text-[#8A8A8A] border border-dashed border-[#D4D4D4] rounded-xl active:bg-[#F5F5F5] transition-colors"
+                  >
+                    + 항목 추가
+                  </button>
                 </div>
               </div>
             ))}
@@ -603,21 +673,32 @@ export default function ActionPlanPage() {
                   <div className="px-4 py-3 space-y-2">
                     {week.items.map((item, ii) => (
                       <div key={ii} className="flex gap-2 items-center">
-                        <input
-                          type="text"
-                          value={item.content}
-                          onChange={(e) => handleChecklistChange(wi, ii, e.target.value)}
-                          className="flex-1 text-sm text-[#111111] bg-[#EEF4FF] rounded-xl px-3 py-2 border border-[#C8DEFF] focus:outline-none focus:border-[#1D6FE8] focus:bg-white transition-colors"
-                          placeholder="항목을 입력하세요"
-                          style={{ minHeight: '44px' }}
-                        />
-                        <button
-                          onClick={() => handleChecklistDelete(wi, ii)}
-                          className="w-8 h-8 text-[#D4D4D4] active:text-red-400 flex items-center justify-center rounded-lg text-xl leading-none shrink-0"
-                          aria-label="삭제"
-                        >
-                          ×
-                        </button>
+                        {item.isFixed ? (
+                          <div
+                            className="flex-1 text-sm text-[#555] bg-[#F5F7FA] rounded-xl px-3 py-2 border border-[#C8DEFF] leading-snug"
+                            style={{ minHeight: '44px', display: 'flex', alignItems: 'center' }}
+                          >
+                            {item.content}
+                          </div>
+                        ) : (
+                          <input
+                            type="text"
+                            value={item.content}
+                            onChange={(e) => handleChecklistChange(wi, ii, e.target.value)}
+                            className="flex-1 text-sm text-[#111111] bg-[#EEF4FF] rounded-xl px-3 py-2 border border-[#C8DEFF] focus:outline-none focus:border-[#1D6FE8] focus:bg-white transition-colors"
+                            placeholder="항목을 입력하세요"
+                            style={{ minHeight: '44px' }}
+                          />
+                        )}
+                        {!item.isFixed && (
+                          <button
+                            onClick={() => handleChecklistDelete(wi, ii)}
+                            className="w-8 h-8 text-[#D4D4D4] active:text-red-400 flex items-center justify-center rounded-lg text-xl leading-none shrink-0"
+                            aria-label="삭제"
+                          >
+                            ×
+                          </button>
+                        )}
                       </div>
                     ))}
                     <button
@@ -634,7 +715,7 @@ export default function ActionPlanPage() {
             {/* AI 보완 챗봇 */}
             {masterPlan && (
               <div className="mt-4">
-                <SupplementChat slogan={masterPlan.slogan} monthlyChecklist={monthlyChecklist} />
+                <SupplementChat masterPlan={masterPlan} yearlyPlan={yearlyPlan} monthlyChecklist={monthlyChecklist} />
               </div>
             )}
           </div>
@@ -648,13 +729,6 @@ export default function ActionPlanPage() {
       <div className="px-4 pb-4 pt-2 border-t border-[#EBEBEB] bg-white shrink-0">
         {phase === 'confirmed' ? (
           <div className="space-y-2.5">
-            <button
-              onClick={handleConfirm}
-              disabled={phase as string === 'saving'}
-              className="w-full h-12 rounded-xl bg-[#111111] active:bg-[#3A3A3A] text-white font-semibold text-sm disabled:opacity-50 transition-colors"
-            >
-              변경사항 저장
-            </button>
             <button
               onClick={() => router.push('/tracking')}
               className="w-full h-12 rounded-xl bg-[#1D6FE8] active:bg-[#1558C0] text-white font-semibold text-sm transition-colors"

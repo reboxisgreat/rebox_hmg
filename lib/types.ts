@@ -81,6 +81,7 @@ export interface ChecklistItem {
   content: string
   status: '미착수' | '진행중' | '완료'
   memo: string
+  isFixed?: boolean  // true면 수정·삭제 불가 (고정 항목)
 }
 
 // 액션플랜 전체
