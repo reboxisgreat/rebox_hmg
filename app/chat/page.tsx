@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { Sparkles, ChevronLeft, ArrowRight, X, ChevronDown, ChevronUp, Home } from 'lucide-react'
+import { Sparkles, ChevronRight, ArrowRight, X, ChevronDown, ChevronUp, Home } from 'lucide-react'
 import Image from 'next/image'
 import type { ChatMessage } from '@/lib/types'
 import { CARD_TITLES, STEP_TITLES } from '@/lib/types'
@@ -390,18 +390,7 @@ function ChatPageContent() {
       setShowConfirmModal(false)
 
       if (currentCard < 3) {
-        const nextCard = (currentCard + 1) as CardNumber
-        setCurrentCard(nextCard)
-        currentCardRef.current = nextCard
-        setMessages([])
-        setSummary(null)
-        setShowSummary(false)
-        setSummaryCollapsed(false)
-        setCurrentStep(1)
-        setChatError('')
-        setInput('')
-        chatInitiatedRef.current = false
-        setShouldAutoStart(true)
+        router.push(`/chat?card=${currentCard + 1}`)
       } else {
         router.push('/masterplan')
       }
@@ -713,17 +702,6 @@ function ChatPageContent() {
         </div>
 
         <div className="flex items-center justify-between mb-3">
-          {currentCard > 1 ? (
-            <button
-              onClick={() => router.push(`/chat?card=${currentCard - 1}`)}
-              className="flex items-center gap-1.5 text-[#3A3A3A] active:opacity-60 transition-colors"
-            >
-              <ChevronLeft size={15} />
-              <span className="text-[12px] font-medium">이전으로 가기</span>
-            </button>
-          ) : (
-            <div />
-          )}
           <button
             onClick={() => router.push('/')}
             className="flex items-center gap-1.5 text-[#3A3A3A] active:opacity-60 transition-colors"
@@ -731,6 +709,17 @@ function ChatPageContent() {
             <Home size={15} />
             <span className="text-[12px] font-medium">홈으로 이동</span>
           </button>
+          {currentCard < 3 ? (
+            <button
+              onClick={() => router.push(`/chat?card=${currentCard + 1}`)}
+              className="flex items-center gap-1.5 text-[#3A3A3A] active:opacity-60 transition-colors"
+            >
+              <span className="text-[12px] font-medium">다음으로 가기</span>
+              <ChevronRight size={15} />
+            </button>
+          ) : (
+            <div />
+          )}
         </div>
 
         <div className="flex items-end justify-between mb-2">
