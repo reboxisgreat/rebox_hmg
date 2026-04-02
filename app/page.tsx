@@ -9,9 +9,6 @@ import confettiData from '@/public/confetti.json'
 const Lottie = dynamic(() => import('lottie-react'), { ssr: false })
 import {
   ChevronRight,
-  CheckCircle2,
-  Circle,
-  MessageSquare,
   Map,
   CalendarCheck,
   BarChart3,
@@ -418,8 +415,8 @@ function HomePage({
           style={{
             width: '90vw', height: '90vw',
             top: '-20vw', right: '-20vw',
-            background: 'rgba(2, 133, 91, 0.22)',
-            filter: 'blur(60px)',
+            background: 'rgba(2, 133, 91, 0.42)',
+            filter: 'blur(40px)',
           }}
         />
         <div
@@ -427,8 +424,8 @@ function HomePage({
           style={{
             width: '80vw', height: '80vw',
             bottom: '10vw', left: '-25vw',
-            background: 'rgba(37, 99, 235, 0.18)',
-            filter: 'blur(65px)',
+            background: 'rgba(37, 99, 235, 0.38)',
+            filter: 'blur(42px)',
           }}
         />
         <div
@@ -436,8 +433,8 @@ function HomePage({
           style={{
             width: '60vw', height: '60vw',
             bottom: '-10vw', right: '-10vw',
-            background: 'rgba(2, 133, 91, 0.12)',
-            filter: 'blur(50px)',
+            background: 'rgba(2, 133, 91, 0.28)',
+            filter: 'blur(35px)',
             animationDelay: '2s',
           }}
         />
@@ -553,185 +550,208 @@ function HomePage({
             </button>
           )}
 
+          {/* 단계 카드 공통 상태 아이콘 */}
           {/* 1단계: 진짜문제 정의 */}
           <button
             onClick={() => router.push('/problem-definition')}
-            className="w-full flex items-center justify-between px-5 py-4 bg-white rounded-3xl shadow-[0_1px_4px_rgba(0,0,0,0.06)] active:opacity-80 transition-opacity"
+            className="w-full flex items-center justify-between px-4 py-3.5 rounded-2xl active:opacity-80 transition-opacity text-left" style={{ backgroundColor: '#ffffff', boxShadow: '0 2px 12px rgba(0,0,0,0.09)', isolation: 'isolate', position: 'relative', zIndex: 1 }}
           >
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-[#FFF7ED] rounded-2xl flex items-center justify-center shrink-0">
+              <div className="w-10 h-10 bg-[#FFF7ED] rounded-xl flex items-center justify-center shrink-0">
                 <Target size={20} color="#EA580C" />
               </div>
-              <div className="text-left">
-                <p className="text-[10px] font-bold text-[#8A8A8A] uppercase tracking-[0.08em]">1단계</p>
-                <p className="text-base font-bold text-[#111]">진짜문제 정의</p>
+              <div>
+                <p className="text-[11px] text-[#AAAAAA] font-medium">1단계</p>
+                <p className="text-[15px] font-bold text-[#111]">진짜문제 정의</p>
               </div>
             </div>
-            <div className="flex items-center gap-2">
-              {progress?.problemDefinition?.is_confirmed ? (
-                <CheckCircle2 size={20} color="#02855B" />
-              ) : (
-                <Circle size={20} color="#D4D4D4" />
-              )}
-              <ChevronRight size={16} color="#D4D4D4" />
-            </div>
+            {progress?.problemDefinition?.is_confirmed ? (
+              <div className="w-7 h-7 rounded-full bg-[#02855B] flex items-center justify-center shrink-0">
+                <svg width="13" height="10" viewBox="0 0 13 10" fill="none"><path d="M1 5L4.5 8.5L12 1" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+              </div>
+            ) : (
+              <div className="w-7 h-7 rounded-full border border-[#DDDDDD] flex items-center justify-center shrink-0">
+                <ChevronRight size={14} color="#CCCCCC" />
+              </div>
+            )}
           </button>
 
-          {/* 2단계: 카드 실습 */}
-          <div className="bg-white rounded-3xl overflow-hidden shadow-[0_1px_4px_rgba(0,0,0,0.06)]">
-            <div className="flex items-center justify-center gap-3 px-5 pt-4 pb-3">
-              <div className="w-9 h-9 bg-[#EFF6FF] rounded-xl flex items-center justify-center shrink-0">
-                <MessageSquare size={18} color="#2563EB" />
+          {/* 2단계: 고객가치 관리 */}
+          <button
+            onClick={() => router.push('/chat')}
+            className="w-full flex items-center justify-between px-4 py-3.5 rounded-2xl active:opacity-80 transition-opacity text-left" style={{ backgroundColor: '#ffffff', boxShadow: '0 2px 12px rgba(0,0,0,0.09)', isolation: 'isolate', position: 'relative', zIndex: 1 }}
+          >
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-[#FFF1F2] rounded-xl flex items-center justify-center shrink-0">
+                <span className="text-xl">{CARD_ICONS[1]}</span>
               </div>
               <div>
-                <p className="text-[10px] font-bold text-[#8A8A8A] uppercase tracking-[0.08em]">2단계</p>
-                <p className="text-base font-bold text-[#111]">카드 실습</p>
+                <p className="text-[11px] text-[#AAAAAA] font-medium">2단계</p>
+                <p className="text-[15px] font-bold text-[#111]">{CARD_TITLES[1]}</p>
               </div>
             </div>
-            <div className="px-4 space-y-2 pb-4">
-            {([1, 2, 3] as const).map((n) => {
-              const done = progress?.cards.find((c) => c.card_number === n)?.is_confirmed ?? false
-              const CARD_BG: Record<number, string> = { 1: '#FFF1F2', 2: '#FFFBEB', 3: '#F0FDF4' }
-              const CARD_BORDER: Record<number, string> = { 1: '#FECDD3', 2: '#FDE68A', 3: '#BBF7D0' }
-              const CARD_ICON_BG: Record<number, string> = { 1: '#FFE4E6', 2: '#FEF3C7', 3: '#DCFCE7' }
-              return (
-                <button
-                  key={n}
-                  onClick={() => router.push('/chat')}
-                  className="w-full flex items-center justify-between px-4 py-3.5 rounded-2xl active:opacity-80 transition-opacity text-left border"
-                  style={{ backgroundColor: CARD_BG[n], borderColor: CARD_BORDER[n] }}
-                >
-                  <div className="flex items-center gap-3">
-                    <span className="text-xl w-9 h-9 flex items-center justify-center rounded-xl" style={{ backgroundColor: CARD_ICON_BG[n] }}>{CARD_ICONS[n]}</span>
-                    <p className="text-base font-semibold text-[#111]">{CARD_TITLES[n]}</p>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    {done ? (
-                      <CheckCircle2 size={20} color="#02855B" />
-                    ) : (
-                      <Circle size={20} color="#D4D4D4" />
-                    )}
-                    <ChevronRight size={16} color="#D4D4D4" />
-                  </div>
-                </button>
-              )
-            })}
+            {(progress?.cards.find((c) => c.card_number === 1)?.is_confirmed ?? false) ? (
+              <div className="w-7 h-7 rounded-full bg-[#02855B] flex items-center justify-center shrink-0">
+                <svg width="13" height="10" viewBox="0 0 13 10" fill="none"><path d="M1 5L4.5 8.5L12 1" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+              </div>
+            ) : (
+              <div className="w-7 h-7 rounded-full border border-[#DDDDDD] flex items-center justify-center shrink-0">
+                <ChevronRight size={14} color="#CCCCCC" />
+              </div>
+            )}
+          </button>
+
+          {/* 3단계: 사람 관리 */}
+          <button
+            onClick={() => router.push('/chat')}
+            className="w-full flex items-center justify-between px-4 py-3.5 rounded-2xl active:opacity-80 transition-opacity text-left" style={{ backgroundColor: '#ffffff', boxShadow: '0 2px 12px rgba(0,0,0,0.09)', isolation: 'isolate', position: 'relative', zIndex: 1 }}
+          >
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-[#FFFBEB] rounded-xl flex items-center justify-center shrink-0">
+                <span className="text-xl">{CARD_ICONS[2]}</span>
+              </div>
+              <div>
+                <p className="text-[11px] text-[#AAAAAA] font-medium">3단계</p>
+                <p className="text-[15px] font-bold text-[#111]">{CARD_TITLES[2]}</p>
+              </div>
             </div>
-          </div>
+            {(progress?.cards.find((c) => c.card_number === 2)?.is_confirmed ?? false) ? (
+              <div className="w-7 h-7 rounded-full bg-[#02855B] flex items-center justify-center shrink-0">
+                <svg width="13" height="10" viewBox="0 0 13 10" fill="none"><path d="M1 5L4.5 8.5L12 1" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+              </div>
+            ) : (
+              <div className="w-7 h-7 rounded-full border border-[#DDDDDD] flex items-center justify-center shrink-0">
+                <ChevronRight size={14} color="#CCCCCC" />
+              </div>
+            )}
+          </button>
+
+          {/* 4단계: 프로세스 관리 */}
+          <button
+            onClick={() => router.push('/chat')}
+            className="w-full flex items-center justify-between px-4 py-3.5 rounded-2xl active:opacity-80 transition-opacity text-left" style={{ backgroundColor: '#ffffff', boxShadow: '0 2px 12px rgba(0,0,0,0.09)', isolation: 'isolate', position: 'relative', zIndex: 1 }}
+          >
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-[#F0FDF4] rounded-xl flex items-center justify-center shrink-0">
+                <span className="text-xl">{CARD_ICONS[3]}</span>
+              </div>
+              <div>
+                <p className="text-[11px] text-[#AAAAAA] font-medium">4단계</p>
+                <p className="text-[15px] font-bold text-[#111]">{CARD_TITLES[3]}</p>
+              </div>
+            </div>
+            {(progress?.cards.find((c) => c.card_number === 3)?.is_confirmed ?? false) ? (
+              <div className="w-7 h-7 rounded-full bg-[#02855B] flex items-center justify-center shrink-0">
+                <svg width="13" height="10" viewBox="0 0 13 10" fill="none"><path d="M1 5L4.5 8.5L12 1" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+              </div>
+            ) : (
+              <div className="w-7 h-7 rounded-full border border-[#DDDDDD] flex items-center justify-center shrink-0">
+                <ChevronRight size={14} color="#CCCCCC" />
+              </div>
+            )}
+          </button>
 
           {/* 슬로건 */}
           {progress?.masterPlan?.is_confirmed && progress.masterPlan.slogan && (
             <button
               onClick={() => router.push('/masterplan')}
               className="w-full rounded-3xl px-5 py-4 text-left active:scale-[0.98] transition-all"
-              style={{ background: 'linear-gradient(135deg, #1F2937 0%, #374151 100%)', boxShadow: '0 4px 12px rgba(0,0,0,0.2)' }}
+              style={{ background: 'linear-gradient(135deg, #1F2937 0%, #374151 100%)', boxShadow: '0 4px 12px rgba(0,0,0,0.2)', isolation: 'isolate', position: 'relative', zIndex: 1 }}
             >
-              <p className="text-[11px] font-bold text-white/40 uppercase tracking-widest mb-1">나의 리더십 슬로건</p>
+              <p className="text-[11px] font-bold text-white/40 uppercase tracking-widest mb-1">나의 2026년 슬로건</p>
               <p className="text-base font-bold text-white leading-snug">"{progress.masterPlan.slogan}"</p>
             </button>
           )}
 
-          {/* 2열 그리드: 마스터플랜 + 액션플랜 */}
-          <div className="grid grid-cols-2 gap-3">
-            <button
-              onClick={() => router.push('/masterplan')}
-              className="rounded-3xl p-4 active:scale-[0.97] transition-all relative"
-              style={{ background: '#fff', boxShadow: '0 1px 4px rgba(0,0,0,0.06)' }}
-            >
-              {progress?.masterPlan?.is_confirmed && (
-                <div className="absolute top-3 right-3 w-5 h-5 flex items-center justify-center">
-                  <svg width="14" height="11" viewBox="0 0 14 11" fill="none">
-                    <path d="M1 5L5 9L13 1" stroke="#EA580C" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                  </svg>
-                </div>
-              )}
-              <div className="flex flex-col items-center justify-center gap-2 pt-4 pb-1">
-                <div className="w-10 h-10 rounded-2xl flex items-center justify-center"
-                  style={{ background: '#FFF7ED' }}>
-                  <Map size={20} color="#EA580C" />
-                </div>
-                <p className="text-base font-bold leading-snug text-center"
-                  style={{ color: '#111' }}>마스터플랜</p>
+          {/* 5단계: 마스터플랜 */}
+          <button
+            onClick={() => router.push('/masterplan')}
+            className="w-full flex items-center justify-between px-4 py-3.5 rounded-2xl active:opacity-80 transition-opacity text-left" style={{ backgroundColor: '#ffffff', boxShadow: '0 2px 12px rgba(0,0,0,0.09)', isolation: 'isolate', position: 'relative', zIndex: 1 }}
+          >
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-[#FFF7ED] rounded-xl flex items-center justify-center shrink-0">
+                <Map size={20} color="#EA580C" />
               </div>
-            </button>
-
-            <button
-              onClick={() => router.push('/actionplan')}
-              className="rounded-3xl p-4 active:scale-[0.97] transition-all relative"
-              style={{ background: '#fff', boxShadow: '0 1px 4px rgba(0,0,0,0.06)' }}
-            >
-              {progress?.actionPlan?.is_confirmed && (
-                <div className="absolute top-3 right-3 w-5 h-5 flex items-center justify-center">
-                  <svg width="14" height="11" viewBox="0 0 14 11" fill="none">
-                    <path d="M1 5L5 9L13 1" stroke="#7C3AED" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                  </svg>
-                </div>
-              )}
-              <div className="flex flex-col items-center justify-center gap-2 pt-4 pb-1">
-                <div className="w-10 h-10 rounded-2xl flex items-center justify-center"
-                  style={{ background: '#F5F3FF' }}>
-                  <CalendarCheck size={20} color="#7C3AED" />
-                </div>
-                <p className="text-base font-bold leading-snug text-center"
-                  style={{ color: '#111' }}>액션플랜</p>
+              <div>
+                <p className="text-[11px] text-[#AAAAAA] font-medium">5단계</p>
+                <p className="text-[15px] font-bold text-[#111]">마스터플랜</p>
               </div>
-            </button>
-          </div>
+            </div>
+            {progress?.masterPlan?.is_confirmed ? (
+              <div className="w-7 h-7 rounded-full bg-[#02855B] flex items-center justify-center shrink-0">
+                <svg width="13" height="10" viewBox="0 0 13 10" fill="none"><path d="M1 5L4.5 8.5L12 1" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+              </div>
+            ) : (
+              <div className="w-7 h-7 rounded-full border border-[#DDDDDD] flex items-center justify-center shrink-0">
+                <ChevronRight size={14} color="#CCCCCC" />
+              </div>
+            )}
+          </button>
 
-          {/* 30일 트래킹 */}
+          {/* 6단계: 액션플랜 */}
+          <button
+            onClick={() => router.push('/actionplan')}
+            className="w-full flex items-center justify-between px-4 py-3.5 rounded-2xl active:opacity-80 transition-opacity text-left" style={{ backgroundColor: '#ffffff', boxShadow: '0 2px 12px rgba(0,0,0,0.09)', isolation: 'isolate', position: 'relative', zIndex: 1 }}
+          >
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-[#F5F3FF] rounded-xl flex items-center justify-center shrink-0">
+                <CalendarCheck size={20} color="#7C3AED" />
+              </div>
+              <div>
+                <p className="text-[11px] text-[#AAAAAA] font-medium">6단계</p>
+                <p className="text-[15px] font-bold text-[#111]">액션플랜</p>
+              </div>
+            </div>
+            {progress?.actionPlan?.is_confirmed ? (
+              <div className="w-7 h-7 rounded-full bg-[#02855B] flex items-center justify-center shrink-0">
+                <svg width="13" height="10" viewBox="0 0 13 10" fill="none"><path d="M1 5L4.5 8.5L12 1" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+              </div>
+            ) : (
+              <div className="w-7 h-7 rounded-full border border-[#DDDDDD] flex items-center justify-center shrink-0">
+                <ChevronRight size={14} color="#CCCCCC" />
+              </div>
+            )}
+          </button>
+
+          {/* 7단계: 액션플랜 수행 현황 */}
           <button
             onClick={() => router.push('/tracking')}
-            className="w-full bg-white rounded-3xl p-5 text-left active:scale-[0.98] transition-all shadow-[0_1px_4px_rgba(0,0,0,0.06)]"
+            className="w-full flex items-center justify-between px-4 py-3.5 rounded-2xl active:opacity-80 transition-opacity text-left" style={{ backgroundColor: '#ffffff', boxShadow: '0 2px 12px rgba(0,0,0,0.09)', isolation: 'isolate', position: 'relative', zIndex: 1 }}
           >
-            <div className="flex items-start justify-between mb-4">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-[#ECFDF5] rounded-2xl flex items-center justify-center">
-                  <BarChart3 size={20} color="#059669" />
-                </div>
-                <div>
-                  <p className="text-[10px] font-bold text-[#8A8A8A] uppercase tracking-[0.08em]">30일 트래킹</p>
-                  <div className="flex items-center gap-2">
-                    <p className="text-base font-bold text-[#111]">액션플랜 수행 현황</p>
-                    {progress?.score && progress.score.total_participants > 0 && (
-                      <div
-                        role="button"
-                        onClick={(e) => { e.stopPropagation(); router.push('/ranking') }}
-                        className="flex items-center gap-1 bg-[#FEF9C3] rounded-full px-2 py-0.5 active:opacity-70 cursor-pointer"
-                      >
-                        <Trophy size={11} color="#CA8A04" />
-                        <span className="text-xs font-bold text-[#CA8A04]">{progress.score.rank}위</span>
-                      </div>
-                    )}
-                  </div>
-                </div>
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-[#ECFDF5] rounded-xl flex items-center justify-center shrink-0">
+                <BarChart3 size={20} color="#059669" />
               </div>
-              <ChevronRight size={16} color="#D4D4D4" />
-            </div>
-
-            {progress && progress.tracking.total > 0 ? (
-              <>
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-sm text-[#8A8A8A]">
-                    {progress.tracking.completed}개 완료 / {progress.tracking.total}개
-                  </span>
-                  <span className={`text-sm font-bold ${trackingPct === 100 ? 'text-[#059669]' : 'text-[#111]'}`}>
-                    {trackingPct}%
-                  </span>
+              <div>
+                <p className="text-[11px] text-[#AAAAAA] font-medium">7단계</p>
+                <div className="flex items-center gap-2">
+                  <p className="text-[15px] font-bold text-[#111]">액션플랜 수행 현황</p>
+                  {progress?.score && progress.score.total_participants > 0 && (
+                    <div
+                      role="button"
+                      onClick={(e) => { e.stopPropagation(); router.push('/ranking') }}
+                      className="flex items-center gap-1 bg-[#FEF9C3] rounded-full px-2 py-0.5 active:opacity-70 cursor-pointer"
+                    >
+                      <Trophy size={11} color="#CA8A04" />
+                      <span className="text-xs font-bold text-[#CA8A04]">{progress.score.rank}위</span>
+                    </div>
+                  )}
                 </div>
-                <div className="h-2 bg-[#F0F0F0] rounded-full overflow-hidden">
-                  <div
-                    className={`h-full rounded-full transition-all ${trackingPct === 100 ? 'bg-[#059669]' : 'bg-[#111]'}`}
-                    style={{ width: `${trackingPct}%` }}
-                  />
-                </div>
-                {progress.score && progress.score.total_participants > 0 && (
-                  <p className="mt-2 text-xs text-[#8A8A8A]">
-                    총 {progress.score.total_score}점 · 전체 {progress.score.total_participants}명 중 {progress.score.rank}위
+                {progress && progress.tracking.total > 0 && (
+                  <p className="text-[11px] text-[#AAAAAA] mt-0.5">
+                    {progress.tracking.completed}/{progress.tracking.total}개 완료 · {trackingPct}%
                   </p>
                 )}
-              </>
+              </div>
+            </div>
+            {progress && progress.tracking.total > 0 && trackingPct === 100 ? (
+              <div className="w-7 h-7 rounded-full bg-[#02855B] flex items-center justify-center shrink-0">
+                <svg width="13" height="10" viewBox="0 0 13 10" fill="none"><path d="M1 5L4.5 8.5L12 1" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+              </div>
             ) : (
-              <p className="text-sm text-[#B0B0B0]">액션플랜 확정 후 트래킹을 시작할 수 있어요.</p>
+              <div className="w-7 h-7 rounded-full border border-[#DDDDDD] flex items-center justify-center shrink-0">
+                <ChevronRight size={14} color="#CCCCCC" />
+              </div>
             )}
           </button>
 
@@ -739,14 +759,14 @@ function HomePage({
           <div className="flex gap-2 pt-1">
             <button
               onClick={() => setShowChangePassword(true)}
-              className="flex-1 flex items-center justify-center gap-1.5 py-3 rounded-2xl bg-white shadow-[0_1px_4px_rgba(0,0,0,0.06)] active:bg-[#F7F7F8] transition-colors"
+              className="flex-1 flex items-center justify-center gap-1.5 py-3 rounded-2xl active:bg-[#F7F7F8] transition-colors" style={{ backgroundColor: '#ffffff', boxShadow: '0 2px 10px rgba(0,0,0,0.09)', isolation: 'isolate', position: 'relative', zIndex: 1 }}
             >
               <KeyRound size={14} color="#8A8A8A" />
               <span className="text-xs font-semibold text-[#8A8A8A]">비밀번호 변경</span>
             </button>
             <button
               onClick={onLogout}
-              className="flex-1 flex items-center justify-center gap-1.5 py-3 rounded-2xl bg-white shadow-[0_1px_4px_rgba(0,0,0,0.06)] active:bg-[#F7F7F8] transition-colors"
+              className="flex-1 flex items-center justify-center gap-1.5 py-3 rounded-2xl active:bg-[#F7F7F8] transition-colors" style={{ backgroundColor: '#ffffff', boxShadow: '0 2px 10px rgba(0,0,0,0.09)', isolation: 'isolate', position: 'relative', zIndex: 1 }}
             >
               <LogOut size={14} color="#8A8A8A" />
               <span className="text-xs font-semibold text-[#8A8A8A]">로그아웃</span>
