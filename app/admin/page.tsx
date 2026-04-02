@@ -663,10 +663,29 @@ interface MasterPlanCard {
   participants: { name: string; department: string | null } | null
 }
 
+const PINNED_KEY = 'admin_pinned_masterplans'
+
 function MasterPlanGallery({ onSelectParticipant }: { onSelectParticipant: (id: string) => void }) {
   const [cards, setCards] = useState<MasterPlanCard[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
+  const [pinnedIds, setPinnedIds] = useState<Set<string>>(() => {
+    try {
+      const saved = localStorage.getItem(PINNED_KEY)
+      return new Set(saved ? JSON.parse(saved) : [])
+    } catch { return new Set() }
+  })
+
+  const togglePin = (e: React.MouseEvent, id: string) => {
+    e.stopPropagation()
+    setPinnedIds((prev) => {
+      const next = new Set(prev)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
+      localStorage.setItem(PINNED_KEY, JSON.stringify([...next]))
+      return next
+    })
+  }
 
   useEffect(() => {
     fetch('/api/admin/masterplans')
@@ -678,6 +697,12 @@ function MasterPlanGallery({ onSelectParticipant }: { onSelectParticipant: (id: 
       .catch(() => setError('데이터를 불러오는 중 오류가 발생했습니다.'))
       .finally(() => setLoading(false))
   }, [])
+
+  const sortedCards = [...cards].sort((a, b) => {
+    const ap = pinnedIds.has(a.id) ? 0 : 1
+    const bp = pinnedIds.has(b.id) ? 0 : 1
+    return ap - bp
+  })
 
   const AREAS = [
     { whatKey: 'customer_what' as const, whyKey: 'customer_why' as const, label: '고객가치', color: '#DC2626', bg: '#FFF1F2', border: '#FECDD3' },
@@ -716,56 +741,93 @@ function MasterPlanGallery({ onSelectParticipant }: { onSelectParticipant: (id: 
     )
   }
 
+  const pinnedCount = sortedCards.filter((c) => pinnedIds.has(c.id)).length
+
   return (
-    <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
-      {cards.map((card) => (
-        <button
-          key={card.id}
-          onClick={() => onSelectParticipant(card.participant_id)}
-          className="rounded-2xl border border-[#EBEBEB] bg-white overflow-hidden shadow-sm text-left hover:shadow-md hover:border-[#CCCCCC] transition-all active:scale-[0.99]"
-        >
-          {/* 슬로건 헤더 */}
-          <div className="bg-[#111111] px-4 py-3 flex items-start justify-between gap-2">
-            <div className="min-w-0">
-              <div className="flex items-center gap-2 mb-1">
-                <p className="text-[11px] font-bold text-white/90 truncate">{card.participants?.name ?? '-'}</p>
-                <span className="text-[9px] text-white/40 truncate shrink-0">{card.participants?.department ?? ''}</span>
-              </div>
-              <p className="text-[10px] font-semibold text-white/40 mb-0.5 uppercase tracking-wider">슬로건</p>
-              <p className="text-[13px] font-bold text-white leading-snug">
-                {card.slogan ?? <span className="text-white/30 italic font-normal">미작성</span>}
-              </p>
-            </div>
-            <span className={`shrink-0 text-[9px] font-bold px-1.5 py-0.5 rounded-full whitespace-nowrap mt-0.5 ${
-              card.is_confirmed ? 'bg-[#ECFDF5] text-[#02855B]' : 'bg-white/10 text-white/40'
-            }`}>
-              {card.is_confirmed ? '확정' : '미확정'}
-            </span>
-          </div>
-          {/* 3영역 */}
-          <div className="p-3 space-y-2">
-            {AREAS.map(({ whatKey, whyKey, label, color, bg, border }) => (
-              <div key={whatKey} className="rounded-xl border p-3" style={{ backgroundColor: bg, borderColor: border }}>
-                <p className="text-[11px] font-bold mb-2" style={{ color }}>{label}</p>
-                <div className="space-y-1.5">
-                  <div>
-                    <p className="text-[10px] font-semibold text-[#8A8A8A] mb-0.5">What</p>
-                    <p className="text-[12px] text-[#1A1A1A] leading-relaxed">
-                      {card[whatKey] ?? <span className="text-[#CCCCCC] italic">미작성</span>}
-                    </p>
+    <div className="space-y-4">
+      {pinnedCount > 0 && (
+        <div className="flex items-center gap-2">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="#CA8A04"><path d="M16 12V4h1V2H7v2h1v8l-2 2v2h5.2v6h1.6v-6H18v-2l-2-2z"/></svg>
+          <p className="text-[12px] font-bold text-[#CA8A04]">상단 고정 {pinnedCount}개</p>
+          <div className="flex-1 h-px bg-[#FDE68A]" />
+        </div>
+      )}
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
+        {sortedCards.map((card) => {
+          const pinned = pinnedIds.has(card.id)
+          return (
+            <div
+              key={card.id}
+              className={`rounded-2xl overflow-hidden shadow-sm transition-all ${
+                pinned
+                  ? 'border-2 border-[#FCD34D] shadow-[0_0_0_3px_rgba(252,211,77,0.2)]'
+                  : 'border border-[#EBEBEB] hover:shadow-md hover:border-[#CCCCCC]'
+              }`}
+              style={{ backgroundColor: 'white' }}
+            >
+              {/* 슬로건 헤더 */}
+              <div className="bg-[#111111] px-4 py-3 flex items-start justify-between gap-2">
+                <button
+                  onClick={() => onSelectParticipant(card.participant_id)}
+                  className="min-w-0 flex-1 text-left"
+                >
+                  <div className="flex items-center gap-2 mb-1">
+                    <p className="text-[11px] font-bold text-white/90 truncate">{card.participants?.name ?? '-'}</p>
+                    <span className="text-[9px] text-white/40 truncate shrink-0">{card.participants?.department ?? ''}</span>
                   </div>
-                  <div>
-                    <p className="text-[10px] font-semibold text-[#8A8A8A] mb-0.5">Why</p>
-                    <p className="text-[12px] text-[#3A3A3A] leading-relaxed">
-                      {card[whyKey] ?? <span className="text-[#CCCCCC] italic">미작성</span>}
-                    </p>
-                  </div>
+                  <p className="text-[10px] font-semibold text-white/40 mb-0.5 uppercase tracking-wider">슬로건</p>
+                  <p className="text-[13px] font-bold text-white leading-snug">
+                    {card.slogan ?? <span className="text-white/30 italic font-normal">미작성</span>}
+                  </p>
+                </button>
+                <div className="flex flex-col items-end gap-1.5 shrink-0">
+                  <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full whitespace-nowrap ${
+                    card.is_confirmed ? 'bg-[#ECFDF5] text-[#02855B]' : 'bg-white/10 text-white/40'
+                  }`}>
+                    {card.is_confirmed ? '확정' : '미확정'}
+                  </span>
+                  <button
+                    onClick={(e) => togglePin(e, card.id)}
+                    title={pinned ? '고정 해제' : '상단 고정'}
+                    className={`w-7 h-7 rounded-full flex items-center justify-center transition-all ${
+                      pinned
+                        ? 'bg-[#FCD34D] hover:bg-[#FBD224]'
+                        : 'bg-white/10 hover:bg-white/20'
+                    }`}
+                  >
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill={pinned ? '#111' : 'rgba(255,255,255,0.6)'}><path d="M16 12V4h1V2H7v2h1v8l-2 2v2h5.2v6h1.6v-6H18v-2l-2-2z"/></svg>
+                  </button>
                 </div>
               </div>
-            ))}
-          </div>
-        </button>
-      ))}
+              {/* 3영역 */}
+              <button
+                onClick={() => onSelectParticipant(card.participant_id)}
+                className="w-full p-3 space-y-2 text-left"
+              >
+                {AREAS.map(({ whatKey, whyKey, label, color, bg, border }) => (
+                  <div key={whatKey} className="rounded-xl border p-3" style={{ backgroundColor: bg, borderColor: border }}>
+                    <p className="text-[11px] font-bold mb-2" style={{ color }}>{label}</p>
+                    <div className="space-y-1.5">
+                      <div>
+                        <p className="text-[10px] font-semibold text-[#8A8A8A] mb-0.5">What</p>
+                        <p className="text-[12px] text-[#1A1A1A] leading-relaxed">
+                          {card[whatKey] ?? <span className="text-[#CCCCCC] italic">미작성</span>}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-[10px] font-semibold text-[#8A8A8A] mb-0.5">Why</p>
+                        <p className="text-[12px] text-[#3A3A3A] leading-relaxed">
+                          {card[whyKey] ?? <span className="text-[#CCCCCC] italic">미작성</span>}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </button>
+            </div>
+          )
+        })}
+      </div>
     </div>
   )
 }
