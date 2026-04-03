@@ -31,7 +31,7 @@ interface ProgressData {
   masterPlan: { slogan: string | null; is_confirmed: boolean } | null
   actionPlan: { is_confirmed: boolean } | null
   tracking: { completed: number; total: number }
-  score?: { total_score: number; rank: number; total_participants: number }
+  score?: { total_score: number; rank: number; total_participants: number; cohort: number | null }
 }
 
 // ── 카드 아이콘 ───────────────────────────────────────────────────────────────
@@ -478,7 +478,9 @@ function HomePage({
               >
                 <span className="text-2xl leading-none">🏆</span>
                 <div>
-                  <p className="text-[10px] font-bold text-[#CA8A04] tracking-wider leading-none">RANKING</p>
+                  <p className="text-[10px] font-bold text-[#CA8A04] tracking-wider leading-none">
+                    {progress.score.cohort ? `${progress.score.cohort}차수 RANKING` : 'RANKING'}
+                  </p>
                   <p className="text-2xl font-black text-[#92400E] leading-tight">{progress.score.rank}위</p>
                   <p className="text-[10px] text-[#A16207] leading-none">{progress.score.total_participants}명 중</p>
                 </div>

@@ -31,10 +31,10 @@ export async function GET(req: NextRequest) {
 
     const supabase = createSupabaseServiceClient()
 
-    const [participantResult, cardsResult, masterResult, actionResult, trackingResult, allLogsResult, problemDefResult] = await Promise.all([
+    const [participantResult, cardsResult, masterResult, actionResult, trackingResult, allLogsResult, problemDefResult, allParticipantsResult] = await Promise.all([
       supabase
         .from('participants')
-        .select('name, department')
+        .select('name, department, cohort')
         .eq('id', participantId)
         .single(),
       supabase
@@ -63,16 +63,25 @@ export async function GET(req: NextRequest) {
         .select('is_confirmed')
         .eq('participant_id', participantId)
         .maybeSingle(),
+      supabase
+        .from('participants')
+        .select('id, cohort'),
     ])
 
     const myLogs = trackingResult.data ?? []
     const allLogs = allLogsResult.data ?? []
+    const allParticipants = allParticipantsResult.data ?? []
     const myScore = calcScore(myLogs)
-    const participantIds = [...new Set(allLogs.map((l) => l.participant_id))]
-    const allScores = participantIds.map((pid) =>
-      calcScore(allLogs.filter((l) => l.participant_id === pid))
+    const myCohort = participantResult.data?.cohort ?? null
+
+    // 차수 내 순위 (cohort가 있으면 차수 기준, 없으면 전체 기준)
+    const rankGroup = myCohort
+      ? allParticipants.filter((p) => p.cohort === myCohort)
+      : allParticipants
+    const rankScores = rankGroup.map((p) =>
+      calcScore(allLogs.filter((l) => l.participant_id === p.id))
     )
-    const myRank = allScores.filter((s) => s > myScore).length + 1
+    const myRank = rankScores.filter((s) => s > myScore).length + 1
 
     return NextResponse.json({
       participant: participantResult.data ?? { name: '', department: '' },
@@ -87,7 +96,8 @@ export async function GET(req: NextRequest) {
       score: {
         total_score: myScore,
         rank: myRank,
-        total_participants: participantIds.length,
+        total_participants: rankGroup.length,
+        cohort: myCohort,
       },
     })
   } catch (error) {
