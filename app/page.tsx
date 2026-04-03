@@ -463,7 +463,7 @@ function HomePage({
           <div className="flex items-start justify-between mb-4">
             <div className="flex flex-col gap-1.5">
               <img src="/main-logo.png" alt="리더스러닝랩 xClass" className="h-9 object-contain" />
-              <span className="text-[13px] font-bold text-[#000000] tracking-[0.12em] pl-0.5">리더스러닝랩 xClass 조직관리 과정</span>
+              <span className="text-[14px] font-bold text-[#000000] tracking-[0.12em] pl-0.5">리더스러닝랩 xClass 조직관리 과정</span>
             </div>
           </div>
           <div className="flex items-start justify-between gap-3">
