@@ -1,15 +1,13 @@
 # HMG xClass 조직관리 교육 플랫폼
 
-## 프로젝트 개요
 현대자동차그룹(HMG) **실장급 리더** 대상 조직관리 교육 플랫폼.
 교육 당일 챗봇 실습 → 마스터플랜 도출 → 교육 이후 액션플랜 트래킹까지 하나로 연결.
 
 ## 기술 스택
 - Frontend: Next.js (App Router), TypeScript 5, React 19, Tailwind CSS 4
 - DB: Supabase (PostgreSQL)
-- AI: Google Gemini 2.5 Flash API (`gemini-2.5-flash`, 스트리밍 필수)
-- PDF 출력: html-to-image + jsPDF
-- 배포: Vercel
+- AI: Google Gemini 2.5 Flash (`gemini-2.5-flash`, 스트리밍 필수)
+- PDF: html-to-image + jsPDF / 배포: Vercel
 
 ## 환경변수 (.env.local)
 ```
@@ -18,340 +16,106 @@ NEXT_PUBLIC_SUPABASE_URL=
 NEXT_PUBLIC_SUPABASE_ANON_KEY=
 SUPABASE_SERVICE_ROLE_KEY=
 ADMIN_PASSWORD=
+NEXT_PUBLIC_EDUCATION_END_DATE=2026-06-18
 ```
 
 ## 폴더 구조
 ```
 /app
-  /page.tsx                    ← 교육생 로그인 + 홈 대시보드 (진행 현황 + 다음 단계 안내)
-  /problem-definition/page.tsx ← 카드 실습 전 고객 진짜 문제 정의 (Step1~4 + AI 코치)
-  /chat/page.tsx               ← 오전 세션: 카드 1~3 Step1~4 챗봇 + 요약 확정
-  /masterplan/page.tsx         ← 오후 세션: Step5 코칭 + 마스터플랜 AI 도출 + 편집
-  /actionplan/page.tsx         ← 연간 플랜(Q1~Q4) + 30일 체크리스트 + AI 보완 챗봇
-  /tracking/page.tsx           ← 교육 이후 체크리스트 수행 현황 + 리더보드
+  /page.tsx                    ← 로그인 + 홈 대시보드
+  /problem-definition/page.tsx ← 고객 진짜 문제 정의 (Step1~4 + AI 코치)
+  /chat/page.tsx               ← 카드 1~3 Step1~4 챗봇 + 요약 확정
+  /masterplan/page.tsx         ← Step5 코칭 + 마스터플랜 AI 도출 + 편집
+  /actionplan/page.tsx         ← 연간 플랜(Q1~Q4) + 30일 체크리스트 + AI 챗봇
+  /tracking/page.tsx           ← 체크리스트 수행 현황 + 리더보드
+  /closed/page.tsx             ← 교육 마감 안내 페이지
   /admin/page.tsx              ← 관리자 대시보드 (비밀번호 보호, CSV 내보내기)
   /api
-    /chat/route.ts             ← Gemini 스트리밍 챗봇 (normal 모드 & supplement 모드)
-    /card/route.ts             ← 카드 GET/POST(저장)/PATCH(Step5 업데이트)
-    /masterplan/route.ts       ← 마스터플랜 GET/POST(AI 도출)/PATCH(편집+확정)
-    /actionplan/route.ts       ← 액션플랜 GET/POST(AI 도출)/PATCH(확정+트래킹 로그 생성)
-    /progress/route.ts         ← 교육생 전체 진행 현황 (홈 대시보드용)
-    /tracking/route.ts         ← 트래킹 로그 GET/PATCH(상태+메모 업데이트)
-    /leaderboard/route.ts      ← 전체 참가자 점수 순위
-    /problem-definition/route.ts ← 진짜문제정의 GET/POST(AI 코칭 스트리밍)/PUT(저장)
-    /admin/
-      /auth/route.ts           ← 관리자 비밀번호 검증
-      /progress/route.ts       ← 관리자용 전체 진행 현황
-      /participant/route.ts    ← 개인별 상세 데이터
-      /masterplans/route.ts    ← 전체 마스터플랜 갤러리 데이터 (participants join)
+    /chat/route.ts             ← Gemini 스트리밍 (normal / supplement 모드)
+    /card/route.ts             ← 카드 GET/POST/PATCH
+    /masterplan/route.ts       ← 마스터플랜 GET/POST/PATCH
+    /actionplan/route.ts       ← 액션플랜 GET/POST/PATCH
+    /progress/route.ts         ← 홈 대시보드용 진행 현황
+    /tracking/route.ts         ← 트래킹 로그 GET/PATCH
+    /leaderboard/route.ts      ← 점수 순위 (차수별)
+    /problem-definition/route.ts
+    /admin/ → auth / progress / participant / masterplans
 /lib
-  /gemini.ts                   ← Gemini API 스트리밍 유틸 (generateStreamingResponse, generateSingleResponse, fetchStream)
-  /supabase.ts                 ← Supabase 클라이언트 팩토리
-  /prompts.ts                  ← 모든 AI 프롬프트 중앙 관리
-  /types.ts                    ← TypeScript 타입 정의 (DB 엔티티 + 상수)
+  /gemini.ts    ← 스트리밍 유틸 (generateStreamingResponse, fetchStream)
+  /supabase.ts  ← 클라이언트 팩토리
+  /prompts.ts   ← 모든 AI 프롬프트 중앙 관리
+  /types.ts     ← TypeScript 타입 + 상수
+  /utils.ts     ← isEducationEnded() 등 공통 유틸
 /components
-  /chat/ChatWindow.tsx         ← 스트리밍 챗봇 UI (카드별, 단계별 재사용)
-  /chat/MessageBubble.tsx      ← 메시지 말풍선 (user/model 스타일 구분)
-  /tracking/Leaderboard.tsx    ← 바텀시트 리더보드 (현재 유저 하이라이트)
+  /chat/ChatWindow.tsx / MessageBubble.tsx
+  /tracking/Leaderboard.tsx
+middleware.ts   ← 마감일 이후 /closed 자동 리다이렉트
 ```
 
 ## 핵심 규칙
 
 ### 1. Gemini 스트리밍 필수
-- 모든 AI 응답은 반드시 스트리밍으로 구현
-- `fetch` + `ReadableStream` + SSE 방식 사용
-- 절대로 `await` 후 한 번에 응답 반환하지 말 것
-- 글자가 실시간으로 타이핑되듯 출력되어야 함
+모든 AI 응답은 `ReadableStream` + SSE 방식으로 스트리밍. `lib/gemini.ts`의 `generateStreamingResponse` 활용.
+클라이언트는 `fetchStream(url, body, onChunk, onDone, onError)` 사용.
+절대 `await` 후 한 번에 반환 금지.
 
 ```typescript
-// 올바른 스트리밍 구현 패턴 (lib/gemini.ts의 generateStreamingResponse 활용)
+// API route 패턴
 const stream = await ai.models.generateContentStream({...})
-const encoder = new TextEncoder()
-const readable = new ReadableStream({
-  async start(controller) {
-    for await (const chunk of stream) {
-      const text = chunk.text()
-      if (text) controller.enqueue(encoder.encode(`data: ${text}\n\n`))
-    }
-    controller.close()
+const readable = new ReadableStream({ async start(controller) {
+  for await (const chunk of stream) {
+    const text = chunk.text()
+    if (text) controller.enqueue(encoder.encode(`data: ${text}\n\n`))
   }
-})
-return new Response(readable, {
-  headers: {
-    'Content-Type': 'text/event-stream',
-    'Cache-Control': 'no-cache',
-    'Connection': 'keep-alive',
-  }
-})
+  controller.close()
+}})
+return new Response(readable, { headers: { 'Content-Type': 'text/event-stream', 'Cache-Control': 'no-cache' }})
 ```
-
-클라이언트에서는 `fetchStream(url, body, onChunk, onDone, onError)` 유틸 사용.
 
 ### 2. Supabase 클라이언트 구분
-- 교육생 접근: `createSupabaseBrowserClient()` (anon key) → RLS 적용
-- 관리자/서버: `createSupabaseServiceClient()` (service_role key) → RLS 우회
-- API Route에서는 항상 `createSupabaseServiceClient()` 사용
+- API Route: 항상 `createSupabaseServiceClient()` (service_role, RLS 우회)
+- 브라우저: `createSupabaseBrowserClient()` (anon key, RLS 적용)
 
-### 3. 교육생 세션 관리
-- 로그인 시 `participant_id` (UUID)와 `participant_name`을 `localStorage`에 저장
-- 모든 페이지에서 `participant_id` 없으면 로그인 페이지(`/`)로 리다이렉트
-- 홈(`/`)에서 진행 현황 기반 자동 다음 단계 안내:
-  - 카드 미완료 → `/chat`
-  - 카드 완료, 마스터플랜 없음 → `/masterplan`
-  - 마스터플랜 완료, 액션플랜 없음 → `/actionplan`
-  - 모두 완료 → `/tracking`
+### 3. 페이지 플로우 및 세션
+- `participant_id` / `participant_name` → `localStorage` 저장
+- 미로그인 시 `/` 리다이렉트
+- 진행 현황 기반 자동 다음 단계: 카드 미완료 → `/chat` → `/masterplan` → `/actionplan` → `/tracking`
+- `NEXT_PUBLIC_EDUCATION_END_DATE` 이후: middleware가 `/closed`로 리다이렉트 (관리자·API 제외)
 
-### 4. 모바일 최적화 필수
-- 교육생은 스마트폰으로 접속
-- 모든 UI는 모바일 퍼스트로 설계
-- 터치 친화적 버튼 크기 (최소 44px)
-- 채팅창 키보드 올라올 때 레이아웃 밀리지 않도록 처리
+### 4. 모바일 퍼스트
+교육생은 스마트폰 접속. 버튼 최소 44px. 키보드 올라올 때 레이아웃 고정.
 
 ### 5. 용어 규칙 (실장급 대상)
-전체 UI·프롬프트에서 실장급에 맞는 용어를 일관되게 사용:
-
-| 사용 금지 | 사용 표현 |
-|-----------|-----------|
+| 금지 | 사용 |
+|------|------|
 | 팀원 | 구성원 |
 | 팀 (조직 단위) | 조직 / 실(본부) |
-| 리더 (단독 호칭) | 실장님 / 실장급 리더 |
+| 리더 (단독) | 실장님 / 실장급 리더 |
 
-- 프롬프트는 **실(본부) 단위 거시적 관점**으로 질문 (개인 행동이 아닌 조직 구조·문화 레벨)
-- "팀장·팀원" 용어는 절대 사용 금지
+프롬프트는 실(본부) 단위 거시적 관점. "팀장·팀원" 절대 금지.
 
 ### 6. 프롬프트 관리
-- 모든 프롬프트는 `/lib/prompts.ts`에서 중앙 관리
-- 컴포넌트나 API route에 프롬프트 문자열 직접 작성 금지
-- 카드별, 단계별 프롬프트 함수로 분리
+모든 프롬프트는 `/lib/prompts.ts`에서만 관리. 컴포넌트·API route에 직접 작성 금지.
+함수: `getCard1~3SystemPrompt()`, `getStep5SystemPrompt()`, `getMasterPlanPrompt()`, `getActionPlanPrompt()`, `getChecklistSupplementPrompt()`, `getProblemDefinitionSystemPrompt()`
 
-현재 정의된 프롬프트 함수:
-- `getCard1SystemPrompt()` - 고객가치 카드 코칭
-- `getCard2SystemPrompt()` - 사람관리 카드 코칭
-- `getCard3SystemPrompt()` - 프로세스 카드 코칭
-- `getStep5SystemPrompt(cardResponses)` - Step5 성공지표 코칭
-- `getMasterPlanPrompt(cardResponses, participantName)` - 마스터플랜 JSON 생성
-- `getActionPlanPrompt(masterPlan, participantName)` - 액션플랜 JSON 생성
-- `getChecklistSupplementPrompt(masterPlan, yearlyPlan, monthlyChecklist)` - 체크리스트 보완 코칭 (인자 3개)
-- `getProblemDefinitionSystemPrompt()` - 진짜문제정의 AI 코칭 (인자 없음)
+### 7. 카드 색상 상수 (lib/types.ts)
+| 카드 | bg | border | color |
+|------|----|--------|-------|
+| 1 고객가치 | `#FFF1F2` | `#FECDD3` | `#DC2626` |
+| 2 사람관리 | `#FFFBEB` | `#FDE68A` | `#D97706` |
+| 3 프로세스 | `#F0FDF4` | `#BBF7D0` | `#16A34A` |
 
-### 7. 에러 처리
-- API 호출 실패 시 사용자에게 친절한 한국어 에러 메시지 표시
-- Gemini API 오류 시 재시도 버튼 제공
-- 네트워크 끊김 대비 중간 저장 로직 포함
+## DB 테이블 (Supabase)
+- `participants`: id, name, department, email, cohort(int4), last_active_at
+- `card_responses`: participant_id, card_number(1|2|3), step1~5 필드, chat_history(jsonb), is_confirmed
+- `master_plans`: participant_id, slogan, customer/process/people × what/why, is_confirmed
+- `action_plans`: participant_id, yearly_plan(jsonb), monthly_checklist(jsonb), ai_supplement_chat(jsonb), is_confirmed
+- `tracking_logs`: participant_id, week_number, item_index, item_content, status(미착수|진행중|완료), memo
+- `problem_definitions`: participant_id, step1~4 필드, chat_history(jsonb), is_confirmed
+- `admin_progress_view`: 관리자 대시보드용 집계 뷰
 
-## 카드 구조 (실습 내용)
-```
-카드 1: 고객가치 관리
-카드 2: 사람 관리
-카드 3: 프로세스 관리
+## 점수 시스템
+`완료수 × 10` + `주 완주 × 20` + `전체 완주 보너스 50`. 차수(cohort)별 순위 별도 집계.
 
-공통 Step 구조:
-- Step 1: 마음을 강타한 키워드 3가지 (자유 작성)
-- Step 2: As-Is 현재수준
-- Step 3: To-Be 지향점 (2028년 12월 31일 기준)
-- Step 4: 당장 실행할 액션
-- Step 5: 성공을 증명하는 지표 (오후 세션, 마스터플랜 페이지에서 입력)
-```
-
-## DB 스키마 (Supabase 테이블)
-
-### `participants`
-| 컬럼 | 타입 | 설명 |
-|------|------|------|
-| id | uuid | PK |
-| name | text | 이름 |
-| department | text | 소속 |
-| email | text | 이메일 |
-| created_at | timestamp | |
-| last_active_at | timestamp | 마지막 활동 시간 |
-
-### `card_responses`
-| 컬럼 | 타입 | 설명 |
-|------|------|------|
-| id | uuid | PK |
-| participant_id | uuid | FK → participants |
-| card_number | 1\|2\|3 | 카드 번호 |
-| card_topic | text | 고객가치\|사람관리\|프로세스 |
-| step1_keywords | text | |
-| step2_asis | text | |
-| step3_tobe | text | |
-| step4_action | text | |
-| step5_indicator | text | |
-| chat_history | jsonb | ChatMessage[] |
-| is_confirmed | boolean | |
-
-### `master_plans`
-| 컬럼 | 타입 | 설명 |
-|------|------|------|
-| id | uuid | PK |
-| participant_id | uuid | FK |
-| slogan | text | 리더십 슬로건 |
-| customer_what | text | |
-| customer_why | text | |
-| process_what | text | |
-| process_why | text | |
-| people_what | text | |
-| people_why | text | |
-| is_confirmed | boolean | |
-
-### `action_plans`
-| 컬럼 | 타입 | 설명 |
-|------|------|------|
-| id | uuid | PK |
-| participant_id | uuid | FK |
-| yearly_plan | jsonb | QuarterlyPlan[] (Q1~Q4) |
-| monthly_checklist | jsonb | WeeklyChecklist[] (4주) |
-| ai_supplement_chat | jsonb | ChatMessage[] |
-| is_confirmed | boolean | |
-
-### `tracking_logs`
-액션플랜 확정 시 자동 생성. 체크리스트 아이템별 1개 행.
-| 컬럼 | 타입 | 설명 |
-|------|------|------|
-| id | uuid | PK |
-| participant_id | uuid | FK |
-| week_number | 1\|2\|3\|4 | 주차 |
-| item_index | number | 아이템 인덱스 |
-| item_content | text | 내용 |
-| status | text | 미착수\|진행중\|완료 |
-| memo | text | 메모 |
-| updated_at | timestamp | |
-
-### `problem_definitions`
-| 컬럼 | 타입 | 설명 |
-|------|------|------|
-| id | uuid | PK |
-| participant_id | uuid | FK → participants |
-| step1_customer | text | 나의 고객 |
-| step2_problem | text | 고객의 문제 |
-| step3_definition | text | 한 문장 정의 |
-| step4_keywords | text | 핵심 키워드 |
-| chat_history | jsonb | ChatMessage[] |
-| is_confirmed | boolean | |
-
-### `admin_progress_view` (Supabase 뷰)
-관리자 대시보드용 집계 뷰.
-
-## 마스터플랜 출력 구조
-```
-슬로건 (1문장)
-+ 영역별 테이블:
-  고객가치 | What (액션+성공지표) | Why (이유 및 근거)
-  프로세스 | What               | Why
-  사람     | What               | Why
-```
-
-## 액션플랜 구조
-```typescript
-// 연간 계획 (Q1~Q4)
-QuarterlyPlan {
-  quarter: 'Q1' | 'Q2' | 'Q3' | 'Q4'
-  focus: string       // 분기별 집중 테마
-  actions: string[]   // 3개 행동 과제
-}
-
-// 30일 체크리스트 (4주 × 3개)
-WeeklyChecklist {
-  week: 1 | 2 | 3 | 4
-  theme: string  // 주차별 테마
-  items: ChecklistItem[]
-}
-
-ChecklistItem {
-  index: number
-  content: string
-  status: '미착수' | '진행중' | '완료'
-  memo: string
-}
-```
-
-## 점수 시스템 (리더보드)
-```
-base_score     = 완료 항목 수 × 10
-week_bonus     = 주차 완료 수 × 20  (한 주 모든 항목 완료 시)
-completion_bonus = 50               (전체 100% 완료 시)
-total_score    = base_score + week_bonus + completion_bonus
-```
-
-## 카테고리 대표 색상 (전체 일관 적용)
-카드 번호별 고정 색상 팔레트. 홈 카드 실습, 마스터플랜 카테고리 헤더 등 모든 곳에 동일하게 사용.
-
-| 카테고리 | 카드 번호 | bg | border | icon-bg | text / accent |
-|----------|-----------|-----|--------|---------|---------------|
-| 고객가치 관리 | 1 | `#FFF1F2` | `#FECDD3` | `#FFE4E6` | `#DC2626` (red) |
-| 사람 관리     | 2 | `#FFFBEB` | `#FDE68A` | `#FEF3C7` | `#D97706` (amber/yellow) |
-| 프로세스 관리 | 3 | `#F0FDF4` | `#BBF7D0` | `#DCFCE7` | `#16A34A` (green) |
-
-```typescript
-// 공통 상수 (필요 시 lib/types.ts 또는 각 컴포넌트에 정의)
-const CARD_BG      = { 1: '#FFF1F2', 2: '#FFFBEB', 3: '#F0FDF4' }
-const CARD_BORDER  = { 1: '#FECDD3', 2: '#FDE68A', 3: '#BBF7D0' }
-const CARD_ICON_BG = { 1: '#FFE4E6', 2: '#FEF3C7', 3: '#DCFCE7' }
-const CARD_COLOR   = { 1: '#DC2626', 2: '#D97706', 3: '#16A34A' }
-```
-
-## 관리자 대시보드
-- URL: `/admin` (비밀번호: ADMIN_PASSWORD 환경변수)
-- 기능:
-  - 전체 참가자 진행 현황 실시간 (30초 자동 갱신)
-  - 카드 완료 현황 (시각적 블록), 마스터플랜/액션플랜 상태, 트래킹 진행률
-  - 개인별 상세 보기 (탭: 카드 | 마스터플랜 | 액션플랜)
-  - 마스터플랜 갤러리 탭 — 전체 교육생 슬로건·3영역 카드 그리드 (패들릿 뷰), 클릭 시 상세 모달
-  - CSV 내보내기 (UTF-8 BOM, Excel 호환)
-- Supabase `admin_progress_view` 뷰 활용
-
-## 구현 완료 현황 (2026-04-02 기준)
-- [x] 교육생 로그인 + 홈 대시보드 (진행 현황, 다음 단계 안내)
-  - 슬로건 카드: Lottie 그라디언트 애니메이션 배경 (`/public/gradient-bg.json`)
-  - 단계별 순차 잠금: 이전 단계 `is_confirmed` 기반 활성화, 잠긴 단계 opacity-40 + 자물쇠 아이콘 (`isStepUnlocked` 헬퍼)
-- [x] 고객 진짜 문제 정의 페이지 (`/problem-definition`) + AI 코치
-  - 단일 연속 챗봇 흐름 (Step1~4 AI 코칭 → `__SUMMARY_START__`/`__SUMMARY_END__` 자동감지)
-  - 최종 정리 패널: 실물 카드 레이아웃 (진짜문제정의 카드 스타일, `#A6444C` 테마)
-  - 모든 필드 인라인 직접 수정 가능 + 1초 디바운스 자동저장
-  - 패널 접기/펼치기 토글 (채팅 기록 열람 가능)
-  - 메인로고.png (`/public/main-logo.png`) 헤더 최상단 표시
-  - AI 스트리밍 완료마다 채팅 기록 자동저장 (PUT /api/problem-definition)
-- [x] 카드 1~3 Step1~4+5 챗봇 (`/chat`) — 단일 연속 AI 흐름
-  - `__SUMMARY_START__`/`__SUMMARY_END__` 블록 자동 파싱 → 실물 카드 레이아웃 패널
-  - 카드별 2×2 그리드 (As-is / To-be / Action □체크리스트 / Indicator □체크리스트)
-  - 키워드 pill: `[0,1,2]` 고정 3개 read-only 렌더링 (편집 불가)
-  - 카드 확정 후 다음 카드 자동 전환 (1→2→3→/masterplan)
-  - 미완료 카드도 chat_history PATCH 저장 (대화 보존)
-  - 다크 헤더: Step 진행 바만 표시 (카드 dot-bar 제거)
-- [x] Step5 코칭 (마스터플랜 페이지에서)
-- [x] 마스터플랜 AI 도출 + 편집 + 자동저장 + 확정
-  - textarea auto-resize (`useRef` Map + scrollHeight 동기화)
-  - 슬로건 박스: Lottie 그라디언트 애니메이션 배경 (`rendererSettings: preserveAspectRatio xMidYMid slice`)
-- [x] 연간 플랜(Q1~Q4) + 30일 체크리스트 AI 도출
-  - 액션플랜 UI 전면 개선: Q1~Q4 분기별 색상 코딩, 홈 디자인 언어 통일
-  - 체크리스트 영역: 전체 블리드 제거, 파란색 → 녹색 테마 통일
-- [x] AI 보완 챗봇 (supplement 모드) — masterPlan + yearlyPlan + monthlyChecklist 전달
-- [x] 액션플랜 확정 시 tracking_logs 자동 생성
-- [x] 체크리스트 수행 현황 트래킹 (상태 변경, 메모)
-- [x] 점수 시스템 + 리더보드 바텀시트
-- [x] 관리자 대시보드 + 개인별 상세 + CSV 내보내기
-  - 마스터플랜 갤러리 탭 (패들릿 뷰): 전체 교육생 슬로건·3영역 카드 그리드
-- [x] PDF 저장 (html-to-image + jsPDF)
-- [x] 전체 용어 실장급 기준 통일 (구성원/조직/실장님)
-- [x] 완료 토스트 애니메이션 강화 (`toastPop` keyframe, 크게 튀어오르는 효과)
-- [ ] 이메일 알림 (SendGrid) - 미구현
-
-## 최종 정리 패널 UI 패턴 (실물 카드 레이아웃)
-
-### chat/page.tsx — 카드 1/2/3
-- 카드 배경: `CARD_BG[cardNumber]`, 테두리: `CARD_BORDER[cardNumber]`
-- HEADER: 카드명(`CARD_SHORT_NAME`) + 서브텍스트 + "HMG xClass" pill
-- 키워드 3개 pill: `[0,1,2].map(i => ...)` 고정 렌더링 → 항상 3개, read-only `<p>` (편집 불가)
-- 2×2 grid: As-is(step2) / To-be(step3) / Action(step4, `parseItems` □체크리스트) / Indicator(step5, □체크리스트)
-- FOOTER: re:BOX 브랜딩
-
-### problem-definition/page.tsx — 진짜문제정의
-- 테마: `#FFF9F0` bg, `#A6444C` border·accent
-- 메인로고 (`/public/main-logo.png`) 우상단
-- 세로 스택 흰 카드 4개: 나의 고객(step1) / 진짜문제(step2) / 한 문장 정의(step3, italic) / 키워드(step4, #pill)
-- 모든 필드: 항상 편집 가능 textarea (투명 → 포커스 시 흰 박스), 1초 디바운스 자동저장
-- 접기/펼치기 토글 (`summaryCollapsed` state)
-
-## 저장 충돌 주의
-Claude Code(터미널)와 Cursor(IDE)가 동시에 같은 파일을 수정하면 저장 충돌 발생.
-Cursor 팝업이 뜰 경우 **"덮어쓰기" 누르지 말 것** — Claude 버전이 최신. 팝업을 닫거나 무시.
+## 미구현
+- 이메일 알림 (SendGrid)
