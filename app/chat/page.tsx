@@ -402,6 +402,22 @@ function ChatPageContent() {
     }
   }
 
+  // 이동 전 현재 카드 채팅 기록 저장
+  const saveAndNavigate = useCallback(async (url: string) => {
+    if (participantId && messages.length > 0) {
+      await fetch('/api/card', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          participantId,
+          cardNumber: currentCard,
+          chatHistory: messages,
+        }),
+      }).catch(() => {})
+    }
+    router.push(url)
+  }, [participantId, messages, currentCard, router])
+
   // 리뷰 모드 핸들러
   const handleStartEdit = useCallback((cardNum: CardNumber) => {
     const card = savedCards.find(c => c.card_number === cardNum)
@@ -703,7 +719,7 @@ function ChatPageContent() {
 
         <div className="flex items-center justify-between mb-3">
           <button
-            onClick={() => router.push('/')}
+            onClick={() => saveAndNavigate('/')}
             className="flex items-center gap-1.5 text-[#3A3A3A] active:opacity-60 transition-colors"
           >
             <Home size={15} />
@@ -711,7 +727,7 @@ function ChatPageContent() {
           </button>
           {currentCard < 3 ? (
             <button
-              onClick={() => router.push(`/chat?card=${currentCard + 1}`)}
+              onClick={() => saveAndNavigate(`/chat?card=${currentCard + 1}`)}
               className="flex items-center gap-1.5 text-[#3A3A3A] active:opacity-60 transition-colors"
             >
               <span className="text-[12px] font-medium">다음으로 가기</span>
