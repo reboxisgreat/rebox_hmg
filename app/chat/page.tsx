@@ -251,6 +251,15 @@ function ChatPageContent() {
           setCurrentCard(next)
           currentCardRef.current = next
           setPhase('chatting')
+          // 이전 카드 스테일 상태 즉시 리셋
+          setMessages([])
+          setSummary(null)
+          setShowSummary(false)
+          setSummaryCollapsed(false)
+          setCurrentStep(1)
+          setChatError('')
+          setInput('')
+          chatInitiatedRef.current = false
 
           // 해당 카드의 채팅 기록 복원 (확정 카드 포함)
           const cardData = cards.find(c => c.card_number === next)
@@ -352,7 +361,11 @@ function ChatPageContent() {
     if (!participantId) return
     setResetting(true)
     try {
-      // 현재 카드 chat 초기화 (확정된 카드는 유지)
+      await fetch('/api/card', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ participantId, cardNumber: currentCard, chatHistory: [] }),
+      })
     } catch { /* ignore */ } finally {
       setResetting(false)
       setShowResetModal(false)
