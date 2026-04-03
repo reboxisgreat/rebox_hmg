@@ -689,7 +689,7 @@ function HomePage({
               </div>
               <div className="relative z-10 px-5 py-4">
                 <p className="text-[11px] font-bold uppercase tracking-widest mb-1 text-white/70">📣 나의 2026년 슬로건</p>
-                <p className="text-[20px] font-bold leading-snug text-white break-keep">"{progress.masterPlan.slogan}"</p>
+                <p className="text-[16px] font-bold leading-snug text-white break-keep">"{progress.masterPlan.slogan}"</p>
               </div>
             </button>
           )}
