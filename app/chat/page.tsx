@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { Sparkles, ChevronRight, ArrowRight, X, ChevronDown, ChevronUp, Home } from 'lucide-react'
+import { Sparkles, ChevronLeft, ChevronRight, ArrowRight, X, ChevronDown, ChevronUp, Home } from 'lucide-react'
 import Image from 'next/image'
 import type { ChatMessage } from '@/lib/types'
 import { CARD_TITLES, STEP_TITLES } from '@/lib/types'
@@ -718,13 +718,23 @@ function ChatPageContent() {
         </div>
 
         <div className="flex items-center justify-between mb-3">
-          <button
-            onClick={() => saveAndNavigate('/')}
-            className="flex items-center gap-1.5 text-[#3A3A3A] active:opacity-60 transition-colors"
-          >
-            <Home size={15} />
-            <span className="text-[12px] font-medium">홈으로 이동</span>
-          </button>
+          {currentCard > 1 ? (
+            <button
+              onClick={() => saveAndNavigate(`/chat?card=${currentCard - 1}`)}
+              className="flex items-center gap-1.5 text-[#3A3A3A] active:opacity-60 transition-colors"
+            >
+              <ChevronLeft size={15} />
+              <span className="text-[12px] font-medium">이전으로 가기</span>
+            </button>
+          ) : (
+            <button
+              onClick={() => saveAndNavigate('/')}
+              className="flex items-center gap-1.5 text-[#3A3A3A] active:opacity-60 transition-colors"
+            >
+              <Home size={15} />
+              <span className="text-[12px] font-medium">홈으로 이동</span>
+            </button>
+          )}
           {currentCard < 3 ? (
             <button
               onClick={() => saveAndNavigate(`/chat?card=${currentCard + 1}`)}
@@ -734,7 +744,13 @@ function ChatPageContent() {
               <ChevronRight size={15} />
             </button>
           ) : (
-            <div />
+            <button
+              onClick={() => saveAndNavigate('/')}
+              className="flex items-center gap-1.5 text-[#3A3A3A] active:opacity-60 transition-colors"
+            >
+              <Home size={15} />
+              <span className="text-[12px] font-medium">홈으로 이동</span>
+            </button>
           )}
         </div>
 
