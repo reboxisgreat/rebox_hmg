@@ -63,6 +63,42 @@ export async function GET(req: NextRequest) {
   }
 }
 
+// POST: 교육생 일괄 등록 (CSV 업로드용)
+export async function POST(req: NextRequest) {
+  try {
+    const { participants } = await req.json()
+
+    if (!Array.isArray(participants) || participants.length === 0) {
+      return NextResponse.json({ error: '등록할 교육생 데이터가 없습니다.' }, { status: 400 })
+    }
+
+    const supabase = createSupabaseServiceClient()
+    const rows = participants.map((p: { name: string; department: string; email: string; cohort: number | null }) => ({
+      name: p.name?.trim() || '',
+      department: p.department?.trim() || '',
+      email: p.email?.trim() || '',
+      cohort: p.cohort ?? null,
+      password: '1234',
+      password_changed: false,
+    })).filter((p) => p.name)
+
+    const { data, error } = await supabase
+      .from('participants')
+      .upsert(rows, { onConflict: 'email', ignoreDuplicates: false })
+      .select('id, name')
+
+    if (error) throw error
+
+    return NextResponse.json({ success: true, count: data?.length ?? 0 })
+  } catch (error) {
+    console.error('Participant bulk import error:', error)
+    return NextResponse.json(
+      { error: '교육생 등록 중 오류가 발생했습니다.' },
+      { status: 500 }
+    )
+  }
+}
+
 // PATCH: 비밀번호 초기화 (1234로 리셋)
 export async function PATCH(req: NextRequest) {
   try {

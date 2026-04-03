@@ -13,7 +13,7 @@ export async function GET() {
 
     // 모든 참가자 + 트래킹 로그 조회
     const [participantsResult, logsResult] = await Promise.all([
-      supabase.from('participants').select('id, name, department'),
+      supabase.from('participants').select('id, name, department, cohort'),
       supabase.from('tracking_logs').select('participant_id, week_number, status'),
     ])
 
@@ -24,7 +24,7 @@ export async function GET() {
     const allLogs = logsResult.data ?? []
 
     // 참가자별 점수 계산
-    const scores: ScoreEntry[] = participants.map((p) => {
+    const scores: Omit<ScoreEntry, 'rank' | 'cohort_rank'>[] = participants.map((p) => {
       const logs = allLogs.filter((l) => l.participant_id === p.id)
       const totalItems = logs.length
       const completedItems = logs.filter((l) => l.status === '완료').length
@@ -54,27 +54,38 @@ export async function GET() {
         participant_id: p.id,
         name: p.name,
         department: p.department,
+        cohort: p.cohort ?? null,
         base_score: baseScore,
         week_bonus: weekBonus,
         completion_bonus: completionBonus,
         total_score: totalScore,
         completed_items: completedItems,
         total_items: totalItems,
-        rank: 0, // 아래에서 정렬 후 부여
       }
     })
 
-    // 점수 내림차순 정렬 + 순위 부여 (동점이면 같은 순위)
+    // 전체 점수 내림차순 정렬 + 순위 부여 (동점 동순위)
     scores.sort((a, b) => b.total_score - a.total_score)
+    const scoredAll: ScoreEntry[] = scores.map((s) => ({ ...s, rank: 0, cohort_rank: 0 }))
     let currentRank = 1
-    for (let i = 0; i < scores.length; i++) {
-      if (i > 0 && scores[i].total_score < scores[i - 1].total_score) {
-        currentRank = i + 1
-      }
-      scores[i].rank = currentRank
+    for (let i = 0; i < scoredAll.length; i++) {
+      if (i > 0 && scoredAll[i].total_score < scoredAll[i - 1].total_score) currentRank = i + 1
+      scoredAll[i].rank = currentRank
     }
 
-    return NextResponse.json({ scores })
+    // 차수별 cohort_rank 부여
+    for (const cohort of [1, 2, 3]) {
+      const group = scoredAll
+        .filter((s) => s.cohort === cohort)
+        .sort((a, b) => b.total_score - a.total_score)
+      let cRank = 1
+      for (let i = 0; i < group.length; i++) {
+        if (i > 0 && group[i].total_score < group[i - 1].total_score) cRank = i + 1
+        group[i].cohort_rank = cRank
+      }
+    }
+
+    return NextResponse.json({ scores: scoredAll })
   } catch (error) {
     console.error('Leaderboard GET error:', error)
     return NextResponse.json({ error: '리더보드 조회 중 오류가 발생했어요.' }, { status: 500 })

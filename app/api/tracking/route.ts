@@ -40,7 +40,7 @@ export async function GET(req: NextRequest) {
 
     const supabase = createSupabaseServiceClient()
 
-    const [logsResult, planResult, allLogsResult] = await Promise.all([
+    const [logsResult, planResult, allLogsResult, participantResult, allParticipantsResult] = await Promise.all([
       supabase
         .from('tracking_logs')
         .select('*')
@@ -55,6 +55,14 @@ export async function GET(req: NextRequest) {
       supabase
         .from('tracking_logs')
         .select('participant_id, week_number, status'),
+      supabase
+        .from('participants')
+        .select('id, cohort')
+        .eq('id', participantId)
+        .maybeSingle(),
+      supabase
+        .from('participants')
+        .select('id, cohort'),
     ])
 
     if (logsResult.error) throw logsResult.error
@@ -71,16 +79,28 @@ export async function GET(req: NextRequest) {
     // 내 점수 계산
     const myLogs = logsResult.data ?? []
     const myScore = calcScore(myLogs)
+    const myCohort = participantResult.data?.cohort ?? null
 
-    // 전체 참가자 점수로 내 순위 계산
+    // 전체 참가자 목록 기반으로 순위 계산 (트래킹 미시작자 포함)
     const allLogs = allLogsResult.data ?? []
-    const participantIds = [...new Set(allLogs.map((l) => l.participant_id))]
-    const allScores = participantIds.map((pid) =>
-      calcScore(allLogs.filter((l) => l.participant_id === pid))
+    const allParticipants = allParticipantsResult.data ?? []
+    const allScores = allParticipants.map((p) =>
+      calcScore(allLogs.filter((l) => l.participant_id === p.id))
     )
-    // 내 점수보다 높은 사람 수 + 1 = 내 순위
     const myRank = allScores.filter((s) => s > myScore).length + 1
-    const totalParticipants = participantIds.length
+    const totalParticipants = allParticipants.length
+
+    // 차수별 순위 계산
+    let cohortRank = 0
+    let cohortTotal = 0
+    if (myCohort) {
+      const cohortParticipants = allParticipants.filter((p) => p.cohort === myCohort)
+      const cohortScores = cohortParticipants.map((p) =>
+        calcScore(allLogs.filter((l) => l.participant_id === p.id))
+      )
+      cohortRank = cohortScores.filter((s) => s > myScore).length + 1
+      cohortTotal = cohortParticipants.length
+    }
 
     return NextResponse.json({
       logs: myLogs,
@@ -89,6 +109,9 @@ export async function GET(req: NextRequest) {
         total_score: myScore,
         rank: myRank,
         total_participants: totalParticipants,
+        cohort_rank: cohortRank,
+        cohort_total: cohortTotal,
+        cohort: myCohort,
         completed_items: myLogs.filter((l) => l.status === '완료').length,
         total_items: myLogs.length,
       },

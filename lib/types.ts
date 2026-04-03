@@ -9,6 +9,7 @@ export interface Participant {
   name: string
   department: string
   email: string
+  cohort: number | null
   created_at: string
   last_active_at: string
 }
@@ -114,6 +115,7 @@ export interface AdminProgressRow {
   name: string
   department: string
   email: string
+  cohort: number | null
   last_active_at: string
   problem_definition_status: '완료' | '미완료'
   cards_completed: number       // 0~3
@@ -129,6 +131,7 @@ export interface ScoreEntry {
   participant_id: string
   name: string
   department: string
+  cohort: number | null
   base_score: number      // 완료 항목 × 10
   week_bonus: number      // 주차 완주 보너스 × 20
   completion_bonus: number // 전체 완주 보너스 50
@@ -136,6 +139,7 @@ export interface ScoreEntry {
   completed_items: number
   total_items: number
   rank: number
+  cohort_rank: number
 }
 
 // 내 점수 + 순위 (트래킹 페이지용)
@@ -143,6 +147,9 @@ export interface MyScore {
   total_score: number
   rank: number
   total_participants: number
+  cohort_rank: number
+  cohort_total: number
+  cohort: number | null
   completed_items: number
   total_items: number
 }

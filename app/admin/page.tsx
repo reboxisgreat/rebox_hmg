@@ -832,6 +832,169 @@ function MasterPlanGallery({ onSelectParticipant }: { onSelectParticipant: (id: 
   )
 }
 
+// ─────────────────────────────────────────────
+// CSV 업로드 모달
+// ─────────────────────────────────────────────
+function CsvUploadModal({ onClose, onDone }: { onClose: () => void; onDone: () => void }) {
+  const [text, setText] = useState('')
+  const [preview, setPreview] = useState<Array<{ name: string; department: string; email: string; cohort: number | null }>>([])
+  const [uploading, setUploading] = useState(false)
+  const [result, setResult] = useState<{ type: 'ok' | 'err'; msg: string } | null>(null)
+  const fileRef = useRef<HTMLInputElement>(null)
+
+  const parseCSV = (raw: string) => {
+    const lines = raw.trim().split('\n').filter(Boolean)
+    const parsed: Array<{ name: string; department: string; email: string; cohort: number | null }> = []
+    for (const line of lines) {
+      const cols = line.split(',').map((c) => c.trim().replace(/^"|"$/g, ''))
+      if (cols.length < 2) continue
+      const [name, department, email, cohortStr] = cols
+      if (!name || name === '이름') continue // 헤더 건너뜀
+      const cohortNum = parseInt(cohortStr ?? '', 10)
+      parsed.push({
+        name,
+        department: department ?? '',
+        email: email ?? '',
+        cohort: [1, 2, 3].includes(cohortNum) ? cohortNum : null,
+      })
+    }
+    return parsed
+  }
+
+  const handleFile = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    const reader = new FileReader()
+    reader.onload = (ev) => {
+      const raw = ev.target?.result as string
+      setText(raw)
+      setPreview(parseCSV(raw))
+    }
+    reader.readAsText(file, 'UTF-8')
+  }
+
+  const handleTextChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    setText(e.target.value)
+    setPreview(parseCSV(e.target.value))
+  }
+
+  const handleUpload = async () => {
+    if (preview.length === 0) return
+    setUploading(true)
+    setResult(null)
+    try {
+      const res = await fetch('/api/admin/participant', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ participants: preview }),
+      })
+      const data = await res.json()
+      if (!res.ok) { setResult({ type: 'err', msg: data.error ?? '오류가 발생했습니다.' }); return }
+      setResult({ type: 'ok', msg: `${data.count}명이 등록되었습니다.` })
+      setTimeout(() => { onDone(); onClose() }, 1500)
+    } catch {
+      setResult({ type: 'err', msg: '서버 오류가 발생했습니다.' })
+    } finally {
+      setUploading(false)
+    }
+  }
+
+  const backdrop = useRef<HTMLDivElement>(null)
+
+  return (
+    <div
+      ref={backdrop}
+      onClick={(e) => { if (e.target === backdrop.current) onClose() }}
+      className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4"
+    >
+      <div className="bg-white rounded-2xl w-full max-w-xl flex flex-col shadow-xl max-h-[85vh]">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-[#EBEBEB] shrink-0">
+          <div>
+            <h2 className="text-base font-bold text-[#111111]">교육생 일괄 등록</h2>
+            <p className="text-xs text-[#8A8A8A] mt-0.5">CSV 파일 또는 직접 붙여넣기 — 컬럼: 이름, 소속, 이메일, 차수</p>
+          </div>
+          <button onClick={onClose} className="w-9 h-9 rounded-xl bg-[#F5F5F5] flex items-center justify-center text-[#8A8A8A]">✕</button>
+        </div>
+        <div className="flex-1 overflow-y-auto px-6 py-4 space-y-4">
+          {/* 파일 업로드 */}
+          <div>
+            <input ref={fileRef} type="file" accept=".csv,.txt" onChange={handleFile} className="hidden" />
+            <button
+              onClick={() => fileRef.current?.click()}
+              className="h-9 px-4 rounded-xl border border-dashed border-[#D4D4D4] text-sm text-[#8A8A8A] hover:border-[#111111] hover:text-[#111111] transition-colors"
+            >
+              CSV 파일 선택
+            </button>
+            <span className="text-xs text-[#8A8A8A] ml-3">또는 아래에 직접 붙여넣기</span>
+          </div>
+          {/* 텍스트 입력 */}
+          <textarea
+            value={text}
+            onChange={handleTextChange}
+            placeholder={`이름,소속,이메일,차수\n홍길동,마케팅실,hong@hmg.com,1\n김영희,전략실,kim@hmg.com,2`}
+            rows={6}
+            className="w-full rounded-xl border border-[#EBEBEB] bg-[#F5F5F5] px-4 py-3 text-sm font-mono text-[#3A3A3A] focus:outline-none focus:border-[#111111] resize-none"
+          />
+          {/* 미리보기 */}
+          {preview.length > 0 && (
+            <div>
+              <p className="text-xs font-semibold text-[#8A8A8A] mb-2">{preview.length}명 미리보기</p>
+              <div className="rounded-xl border border-[#EBEBEB] overflow-hidden">
+                <table className="w-full text-xs">
+                  <thead>
+                    <tr className="bg-[#F5F5F5] border-b border-[#EBEBEB]">
+                      {['이름', '소속', '이메일', '차수'].map((h) => (
+                        <th key={h} className="text-left px-3 py-2 font-semibold text-[#8A8A8A]">{h}</th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {preview.slice(0, 10).map((p, i) => (
+                      <tr key={i} className="border-b border-[#F5F5F5]">
+                        <td className="px-3 py-2 font-medium text-[#111111]">{p.name}</td>
+                        <td className="px-3 py-2 text-[#8A8A8A]">{p.department}</td>
+                        <td className="px-3 py-2 text-[#8A8A8A]">{p.email}</td>
+                        <td className="px-3 py-2">
+                          {p.cohort ? (
+                            <span className="bg-[#DBEAFE] text-[#2563EB] px-2 py-0.5 rounded-full font-semibold">{p.cohort}차수</span>
+                          ) : (
+                            <span className="text-[#D4D4D4]">-</span>
+                          )}
+                        </td>
+                      </tr>
+                    ))}
+                    {preview.length > 10 && (
+                      <tr>
+                        <td colSpan={4} className="px-3 py-2 text-center text-[#8A8A8A]">... 외 {preview.length - 10}명</td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+          {result && (
+            <div className={`px-4 py-3 rounded-xl text-sm font-medium ${result.type === 'ok' ? 'bg-[#DCFCE7] text-[#16A34A]' : 'bg-red-50 text-red-600'}`}>
+              {result.msg}
+            </div>
+          )}
+        </div>
+        <div className="px-6 py-4 border-t border-[#EBEBEB] shrink-0 flex justify-end gap-2">
+          <button onClick={onClose} className="h-10 px-5 rounded-xl border border-[#EBEBEB] text-sm font-medium text-[#8A8A8A]">취소</button>
+          <button
+            onClick={handleUpload}
+            disabled={uploading || preview.length === 0}
+            className="h-10 px-5 rounded-xl bg-[#111111] text-white text-sm font-medium disabled:opacity-50 flex items-center gap-2"
+          >
+            {uploading && <svg className="animate-spin" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg>}
+            {uploading ? '등록 중...' : `${preview.length}명 등록`}
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 function AdminDashboard({ onLogout }: { onLogout: () => void }) {
   const [activeTab, setActiveTab] = useState<'progress' | 'ranking' | 'gallery'>('progress')
   const [rows, setRows] = useState<AdminProgressRow[]>([])
@@ -842,6 +1005,9 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
   const [selectedInitialTab, setSelectedInitialTab] = useState<'cards' | 'masterplan' | 'actionplan'>('cards')
   const [lastRefreshed, setLastRefreshed] = useState<Date>(new Date())
   const [bulkPdfLoading, setBulkPdfLoading] = useState(false)
+  const [cohortFilter, setCohortFilter] = useState<'all' | 1 | 2 | 3>('all')
+  const [rankingSubTab, setRankingSubTab] = useState<'cohort' | 'total'>('cohort')
+  const [showCsvUpload, setShowCsvUpload] = useState(false)
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
   const fetchData = useCallback(async () => {
@@ -873,12 +1039,16 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
     return () => { if (timerRef.current) clearInterval(timerRef.current) }
   }, [fetchData])
 
+  // 현재 필터 적용된 rows
+  const filteredRows = cohortFilter === 'all' ? rows : rows.filter((r) => r.cohort === cohortFilter)
+
   const downloadCSV = () => {
-    const headers = ['이름', '소속', '이메일', '진짜문제정의', '카드완료', '마스터플랜', '액션플랜', '트래킹완료율', '마지막접속']
-    const csvRows = rows.map((r) => [
+    const headers = ['이름', '소속', '이메일', '차수', '진짜문제정의', '카드완료', '마스터플랜', '액션플랜', '트래킹완료율', '마지막접속']
+    const csvRows = filteredRows.map((r) => [
       r.name,
       r.department,
       r.email,
+      r.cohort ? `${r.cohort}차수` : '-',
       r.problem_definition_status,
       `${r.cards_completed}/3`,
       r.masterplan_status,
@@ -935,9 +1105,9 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
     return d.toLocaleDateString('ko-KR', { month: 'short', day: 'numeric' })
   }
 
-  const completedCount = rows.filter((r) => r.cards_completed === 3).length
-  const masterplanCount = rows.filter((r) => r.masterplan_status === '완료').length
-  const actionplanCount = rows.filter((r) => r.actionplan_status === '완료').length
+  const completedCount = filteredRows.filter((r) => r.cards_completed === 3).length
+  const masterplanCount = filteredRows.filter((r) => r.masterplan_status === '완료').length
+  const actionplanCount = filteredRows.filter((r) => r.actionplan_status === '완료').length
 
   return (
     <div className="min-h-screen bg-[#F5F5F5]">
@@ -987,6 +1157,16 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
             {activeTab === 'progress' && (
               <>
                 <button
+                  onClick={() => setShowCsvUpload(true)}
+                  className="h-9 px-4 rounded-xl border border-[#EBEBEB] bg-white text-sm font-medium text-[#3A3A3A] hover:bg-[#F5F5F5] flex items-center gap-1.5"
+                >
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                    <polyline points="17 8 12 3 7 8" /><line x1="12" y1="3" x2="12" y2="15" />
+                  </svg>
+                  교육생 업로드
+                </button>
+                <button
                   onClick={downloadAllPDF}
                   disabled={bulkPdfLoading || rows.length === 0}
                   className="h-9 px-4 rounded-xl border border-[#EBEBEB] bg-white text-sm font-medium text-[#3A3A3A] hover:bg-[#F5F5F5] disabled:opacity-50 flex items-center gap-1.5"
@@ -996,7 +1176,7 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
                   ) : (
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
                   )}
-                  {bulkPdfLoading ? 'PDF 생성 중...' : '전체 PDF 일괄 다운로드'}
+                  {bulkPdfLoading ? 'PDF 생성 중...' : '전체 PDF 다운로드'}
                 </button>
                 <button
                   onClick={downloadCSV}
@@ -1025,124 +1205,254 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
         {/* 랭킹 탭 */}
         {activeTab === 'ranking' && (
           <div>
-            {/* 요약 */}
-            <div className="grid grid-cols-3 gap-4 mb-6">
-              {[
-                { label: '참여자 수', value: scores.length, unit: '명' },
-                { label: '트래킹 시작', value: scores.filter((s) => s.total_items > 0).length, unit: '명' },
-                { label: '전체 완주', value: scores.filter((s) => s.total_items > 0 && s.completed_items === s.total_items).length, unit: '명' },
-              ].map((stat) => (
-                <div key={stat.label} className="bg-white rounded-2xl border border-[#EBEBEB] px-5 py-4 shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
-                  <p className="text-xs text-[#8A8A8A] mb-1">{stat.label}</p>
-                  <p className="text-2xl font-bold text-[#111111]">
-                    {stat.value}
-                    <span className="text-sm font-normal text-[#8A8A8A] ml-1">{stat.unit}</span>
-                  </p>
-                </div>
+            {/* 서브탭 */}
+            <div className="flex gap-1 bg-[#F5F5F5] rounded-xl p-1 w-fit mb-5">
+              {([
+                { id: 'cohort', label: '차수별 랭킹' },
+                { id: 'total', label: '전체 랭킹' },
+              ] as const).map(({ id, label }) => (
+                <button
+                  key={id}
+                  onClick={() => setRankingSubTab(id)}
+                  className={`px-4 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+                    rankingSubTab === id ? 'bg-white text-[#111111] shadow-sm' : 'text-[#8A8A8A] hover:text-[#111111]'
+                  }`}
+                >
+                  {label}
+                </button>
               ))}
             </div>
 
-            {/* 랭킹 테이블 */}
-            <div className="bg-white rounded-2xl border border-[#EBEBEB] overflow-hidden shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr className="border-b border-[#EBEBEB] bg-[#F5F5F5]">
-                      {['순위', '이름', '소속', '완료 항목', '기본 점수', '주차 보너스', '완주 보너스', '총점'].map((h) => (
-                        <th key={h} className="text-left px-4 py-3 text-xs font-semibold text-[#8A8A8A] whitespace-nowrap">
-                          {h}
-                        </th>
-                      ))}
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {loading && Array.from({ length: 5 }).map((_, i) => (
-                      <tr key={i} className="border-b border-[#F5F5F5]">
-                        {Array.from({ length: 8 }).map((_, j) => (
-                          <td key={j} className="px-4 py-3">
-                            <div className="h-4 bg-[#F5F5F5] rounded animate-pulse" />
-                          </td>
-                        ))}
-                      </tr>
-                    ))}
-                    {!loading && scores.length === 0 && (
-                      <tr>
-                        <td colSpan={8} className="text-center py-12 text-[#8A8A8A] text-sm">
-                          트래킹 데이터가 없습니다.
-                        </td>
-                      </tr>
-                    )}
-                    {!loading && scores.map((s, idx) => {
-                      const medal = s.rank === 1 ? '🥇' : s.rank === 2 ? '🥈' : s.rank === 3 ? '🥉' : null
-                      const pct = s.total_items > 0 ? Math.round((s.completed_items / s.total_items) * 100) : 0
-                      const isTop3 = s.rank <= 3 && s.total_score > 0
-                      return (
-                        <tr
-                          key={s.participant_id}
-                          className={`border-b border-[#F5F5F5] transition-colors ${isTop3 ? 'bg-[#FAFFF8]' : idx % 2 === 0 ? '' : 'bg-[#FAFAFA]'}`}
-                        >
-                          <td className="px-4 py-3 whitespace-nowrap">
-                            <span className={`font-bold ${s.rank === 1 ? 'text-[#B45309]' : s.rank === 2 ? 'text-[#6B7280]' : s.rank === 3 ? 'text-[#92400E]' : 'text-[#8A8A8A]'}`}>
-                              {medal ? `${medal} ` : ''}{s.rank}위
-                            </span>
-                          </td>
-                          <td className="px-4 py-3 font-medium text-[#111111] whitespace-nowrap">{s.name}</td>
-                          <td className="px-4 py-3 text-[#8A8A8A] max-w-[160px] truncate">{s.department}</td>
-                          <td className="px-4 py-3">
-                            <div className="flex items-center gap-2">
-                              <div className="w-20 h-1.5 bg-[#EBEBEB] rounded-full overflow-hidden">
-                                <div
-                                  className={`h-full rounded-full transition-all ${pct === 100 ? 'bg-[#16A34A]' : 'bg-[#111111]'}`}
-                                  style={{ width: `${pct}%` }}
-                                />
-                              </div>
-                              <span className="text-xs text-[#8A8A8A] whitespace-nowrap">
-                                {s.completed_items}/{s.total_items}
-                              </span>
-                            </div>
-                          </td>
-                          <td className="px-4 py-3 text-[#111111] font-medium">{s.base_score}점</td>
-                          <td className="px-4 py-3">
-                            {s.week_bonus > 0
-                              ? <span className="text-[#2563EB] font-medium">+{s.week_bonus}점</span>
-                              : <span className="text-[#D4D4D4]">-</span>
-                            }
-                          </td>
-                          <td className="px-4 py-3">
-                            {s.completion_bonus > 0
-                              ? <span className="text-[#16A34A] font-medium">+{s.completion_bonus}점</span>
-                              : <span className="text-[#D4D4D4]">-</span>
-                            }
-                          </td>
-                          <td className="px-4 py-3">
-                            <span className={`font-bold text-base ${isTop3 ? 'text-[#02855B]' : 'text-[#111111]'}`}>
-                              {s.total_score}점
-                            </span>
-                          </td>
-                        </tr>
-                      )
-                    })}
-                  </tbody>
-                </table>
+            {/* 차수별 랭킹 */}
+            {rankingSubTab === 'cohort' && (
+              <div className="space-y-6">
+                {[1, 2, 3].map((cohort) => {
+                  const cohortScores = scores.filter((s) => s.cohort === cohort)
+                    .sort((a, b) => a.cohort_rank - b.cohort_rank)
+                  if (cohortScores.length === 0) return null
+                  return (
+                    <div key={cohort}>
+                      <div className="flex items-center gap-3 mb-3">
+                        <span className="px-3 py-1 rounded-full text-xs font-bold bg-[#DBEAFE] text-[#2563EB]">{cohort}차수</span>
+                        <span className="text-xs text-[#8A8A8A]">{cohortScores.length}명</span>
+                      </div>
+                      <div className="bg-white rounded-2xl border border-[#EBEBEB] overflow-hidden shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
+                        <div className="overflow-x-auto">
+                          <table className="w-full text-sm">
+                            <thead>
+                              <tr className="border-b border-[#EBEBEB] bg-[#F5F5F5]">
+                                {['차수 내 순위', '이름', '소속', '완료 항목', '기본 점수', '주차 보너스', '완주 보너스', '총점'].map((h) => (
+                                  <th key={h} className="text-left px-4 py-3 text-xs font-semibold text-[#8A8A8A] whitespace-nowrap">{h}</th>
+                                ))}
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {cohortScores.map((s, idx) => {
+                                const medal = s.cohort_rank === 1 ? '🥇' : s.cohort_rank === 2 ? '🥈' : s.cohort_rank === 3 ? '🥉' : null
+                                const pct = s.total_items > 0 ? Math.round((s.completed_items / s.total_items) * 100) : 0
+                                const isTop3 = s.cohort_rank <= 3 && s.total_score > 0
+                                return (
+                                  <tr key={s.participant_id} className={`border-b border-[#F5F5F5] ${isTop3 ? 'bg-[#FAFFF8]' : idx % 2 === 0 ? '' : 'bg-[#FAFAFA]'}`}>
+                                    <td className="px-4 py-3 whitespace-nowrap">
+                                      <span className={`font-bold ${s.cohort_rank === 1 ? 'text-[#B45309]' : s.cohort_rank === 2 ? 'text-[#6B7280]' : s.cohort_rank === 3 ? 'text-[#92400E]' : 'text-[#8A8A8A]'}`}>
+                                        {medal ? `${medal} ` : ''}{s.cohort_rank}위
+                                      </span>
+                                    </td>
+                                    <td className="px-4 py-3 font-medium text-[#111111] whitespace-nowrap">{s.name}</td>
+                                    <td className="px-4 py-3 text-[#8A8A8A] max-w-[160px] truncate">{s.department}</td>
+                                    <td className="px-4 py-3">
+                                      <div className="flex items-center gap-2">
+                                        <div className="w-20 h-1.5 bg-[#EBEBEB] rounded-full overflow-hidden">
+                                          <div className={`h-full rounded-full transition-all ${pct === 100 ? 'bg-[#16A34A]' : 'bg-[#111111]'}`} style={{ width: `${pct}%` }} />
+                                        </div>
+                                        <span className="text-xs text-[#8A8A8A] whitespace-nowrap">{s.completed_items}/{s.total_items}</span>
+                                      </div>
+                                    </td>
+                                    <td className="px-4 py-3 text-[#111111] font-medium">{s.base_score}점</td>
+                                    <td className="px-4 py-3">{s.week_bonus > 0 ? <span className="text-[#2563EB] font-medium">+{s.week_bonus}점</span> : <span className="text-[#D4D4D4]">-</span>}</td>
+                                    <td className="px-4 py-3">{s.completion_bonus > 0 ? <span className="text-[#16A34A] font-medium">+{s.completion_bonus}점</span> : <span className="text-[#D4D4D4]">-</span>}</td>
+                                    <td className="px-4 py-3"><span className={`font-bold text-base ${isTop3 ? 'text-[#02855B]' : 'text-[#111111]'}`}>{s.total_score}점</span></td>
+                                  </tr>
+                                )
+                              })}
+                            </tbody>
+                          </table>
+                        </div>
+                      </div>
+                    </div>
+                  )
+                })}
+                {/* 차수 미지정 */}
+                {(() => {
+                  const noCohort = scores.filter((s) => s.cohort === null).sort((a, b) => a.rank - b.rank)
+                  if (noCohort.length === 0) return null
+                  return (
+                    <div>
+                      <div className="flex items-center gap-3 mb-3">
+                        <span className="px-3 py-1 rounded-full text-xs font-bold bg-[#F3F4F6] text-[#6B7280]">차수 미지정</span>
+                        <span className="text-xs text-[#8A8A8A]">{noCohort.length}명</span>
+                      </div>
+                      <div className="bg-white rounded-2xl border border-[#EBEBEB] overflow-hidden shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
+                        <div className="overflow-x-auto">
+                          <table className="w-full text-sm">
+                            <thead>
+                              <tr className="border-b border-[#EBEBEB] bg-[#F5F5F5]">
+                                {['순위', '이름', '소속', '완료 항목', '기본 점수', '주차 보너스', '완주 보너스', '총점'].map((h) => (
+                                  <th key={h} className="text-left px-4 py-3 text-xs font-semibold text-[#8A8A8A] whitespace-nowrap">{h}</th>
+                                ))}
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {noCohort.map((s, idx) => {
+                                const pct = s.total_items > 0 ? Math.round((s.completed_items / s.total_items) * 100) : 0
+                                return (
+                                  <tr key={s.participant_id} className={`border-b border-[#F5F5F5] ${idx % 2 === 0 ? '' : 'bg-[#FAFAFA]'}`}>
+                                    <td className="px-4 py-3 text-[#8A8A8A] font-bold whitespace-nowrap">{s.rank}위</td>
+                                    <td className="px-4 py-3 font-medium text-[#111111] whitespace-nowrap">{s.name}</td>
+                                    <td className="px-4 py-3 text-[#8A8A8A] max-w-[160px] truncate">{s.department}</td>
+                                    <td className="px-4 py-3">
+                                      <div className="flex items-center gap-2">
+                                        <div className="w-20 h-1.5 bg-[#EBEBEB] rounded-full overflow-hidden">
+                                          <div className={`h-full rounded-full transition-all ${pct === 100 ? 'bg-[#16A34A]' : 'bg-[#111111]'}`} style={{ width: `${pct}%` }} />
+                                        </div>
+                                        <span className="text-xs text-[#8A8A8A] whitespace-nowrap">{s.completed_items}/{s.total_items}</span>
+                                      </div>
+                                    </td>
+                                    <td className="px-4 py-3 text-[#111111] font-medium">{s.base_score}점</td>
+                                    <td className="px-4 py-3">{s.week_bonus > 0 ? <span className="text-[#2563EB] font-medium">+{s.week_bonus}점</span> : <span className="text-[#D4D4D4]">-</span>}</td>
+                                    <td className="px-4 py-3">{s.completion_bonus > 0 ? <span className="text-[#16A34A] font-medium">+{s.completion_bonus}점</span> : <span className="text-[#D4D4D4]">-</span>}</td>
+                                    <td className="px-4 py-3"><span className="font-bold text-base text-[#111111]">{s.total_score}점</span></td>
+                                  </tr>
+                                )
+                              })}
+                            </tbody>
+                          </table>
+                        </div>
+                      </div>
+                    </div>
+                  )
+                })()}
               </div>
-              {!loading && scores.length > 0 && (
-                <div className="px-4 py-3 border-t border-[#EBEBEB] text-xs text-[#8A8A8A] text-right">
-                  총 {scores.length}명 · 30초마다 자동 갱신
+            )}
+
+            {/* 전체 랭킹 */}
+            {rankingSubTab === 'total' && (
+              <div>
+                {/* 요약 */}
+                <div className="grid grid-cols-3 gap-4 mb-5">
+                  {[
+                    { label: '전체 참여자', value: scores.length, unit: '명' },
+                    { label: '트래킹 시작', value: scores.filter((s) => s.total_items > 0).length, unit: '명' },
+                    { label: '전체 완주', value: scores.filter((s) => s.total_items > 0 && s.completed_items === s.total_items).length, unit: '명' },
+                  ].map((stat) => (
+                    <div key={stat.label} className="bg-white rounded-2xl border border-[#EBEBEB] px-5 py-4 shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
+                      <p className="text-xs text-[#8A8A8A] mb-1">{stat.label}</p>
+                      <p className="text-2xl font-bold text-[#111111]">{stat.value}<span className="text-sm font-normal text-[#8A8A8A] ml-1">{stat.unit}</span></p>
+                    </div>
+                  ))}
                 </div>
-              )}
-            </div>
+                <div className="bg-white rounded-2xl border border-[#EBEBEB] overflow-hidden shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-sm">
+                      <thead>
+                        <tr className="border-b border-[#EBEBEB] bg-[#F5F5F5]">
+                          {['전체 순위', '이름', '소속', '차수', '완료 항목', '기본 점수', '주차 보너스', '완주 보너스', '총점'].map((h) => (
+                            <th key={h} className="text-left px-4 py-3 text-xs font-semibold text-[#8A8A8A] whitespace-nowrap">{h}</th>
+                          ))}
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {loading && Array.from({ length: 5 }).map((_, i) => (
+                          <tr key={i} className="border-b border-[#F5F5F5]">
+                            {Array.from({ length: 9 }).map((_, j) => (
+                              <td key={j} className="px-4 py-3"><div className="h-4 bg-[#F5F5F5] rounded animate-pulse" /></td>
+                            ))}
+                          </tr>
+                        ))}
+                        {!loading && scores.length === 0 && (
+                          <tr><td colSpan={9} className="text-center py-12 text-[#8A8A8A] text-sm">트래킹 데이터가 없습니다.</td></tr>
+                        )}
+                        {!loading && scores.sort((a, b) => a.rank - b.rank).map((s, idx) => {
+                          const medal = s.rank === 1 ? '🥇' : s.rank === 2 ? '🥈' : s.rank === 3 ? '🥉' : null
+                          const pct = s.total_items > 0 ? Math.round((s.completed_items / s.total_items) * 100) : 0
+                          const isTop3 = s.rank <= 3 && s.total_score > 0
+                          return (
+                            <tr key={s.participant_id} className={`border-b border-[#F5F5F5] ${isTop3 ? 'bg-[#FAFFF8]' : idx % 2 === 0 ? '' : 'bg-[#FAFAFA]'}`}>
+                              <td className="px-4 py-3 whitespace-nowrap">
+                                <span className={`font-bold ${s.rank === 1 ? 'text-[#B45309]' : s.rank === 2 ? 'text-[#6B7280]' : s.rank === 3 ? 'text-[#92400E]' : 'text-[#8A8A8A]'}`}>
+                                  {medal ? `${medal} ` : ''}{s.rank}위
+                                </span>
+                              </td>
+                              <td className="px-4 py-3 font-medium text-[#111111] whitespace-nowrap">{s.name}</td>
+                              <td className="px-4 py-3 text-[#8A8A8A] max-w-[160px] truncate">{s.department}</td>
+                              <td className="px-4 py-3">
+                                {s.cohort ? (
+                                  <span className="bg-[#DBEAFE] text-[#2563EB] px-2 py-0.5 rounded-full text-xs font-semibold">{s.cohort}차수</span>
+                                ) : <span className="text-[#D4D4D4] text-xs">-</span>}
+                              </td>
+                              <td className="px-4 py-3">
+                                <div className="flex items-center gap-2">
+                                  <div className="w-20 h-1.5 bg-[#EBEBEB] rounded-full overflow-hidden">
+                                    <div className={`h-full rounded-full transition-all ${pct === 100 ? 'bg-[#16A34A]' : 'bg-[#111111]'}`} style={{ width: `${pct}%` }} />
+                                  </div>
+                                  <span className="text-xs text-[#8A8A8A] whitespace-nowrap">{s.completed_items}/{s.total_items}</span>
+                                </div>
+                              </td>
+                              <td className="px-4 py-3 text-[#111111] font-medium">{s.base_score}점</td>
+                              <td className="px-4 py-3">{s.week_bonus > 0 ? <span className="text-[#2563EB] font-medium">+{s.week_bonus}점</span> : <span className="text-[#D4D4D4]">-</span>}</td>
+                              <td className="px-4 py-3">{s.completion_bonus > 0 ? <span className="text-[#16A34A] font-medium">+{s.completion_bonus}점</span> : <span className="text-[#D4D4D4]">-</span>}</td>
+                              <td className="px-4 py-3"><span className={`font-bold text-base ${isTop3 ? 'text-[#02855B]' : 'text-[#111111]'}`}>{s.total_score}점</span></td>
+                            </tr>
+                          )
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                  {!loading && scores.length > 0 && (
+                    <div className="px-4 py-3 border-t border-[#EBEBEB] text-xs text-[#8A8A8A] text-right">
+                      총 {scores.length}명 · 30초마다 자동 갱신
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
           </div>
         )}
 
         {/* 진행 현황 탭 */}
         {activeTab === 'progress' && <>
+        {/* 차수 필터 */}
+        <div className="flex gap-1 bg-[#F5F5F5] rounded-xl p-1 w-fit mb-5">
+          {([
+            { id: 'all', label: '전체' },
+            { id: 1, label: '1차수' },
+            { id: 2, label: '2차수' },
+            { id: 3, label: '3차수' },
+          ] as const).map(({ id, label }) => (
+            <button
+              key={String(id)}
+              onClick={() => setCohortFilter(id)}
+              className={`px-4 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+                cohortFilter === id ? 'bg-white text-[#111111] shadow-sm' : 'text-[#8A8A8A] hover:text-[#111111]'
+              }`}
+            >
+              {label}
+              {id !== 'all' && (
+                <span className="ml-1.5 text-xs text-[#8A8A8A]">
+                  {rows.filter((r) => r.cohort === id).length}명
+                </span>
+              )}
+            </button>
+          ))}
+        </div>
+
         {/* 요약 카드 */}
         <div className="grid grid-cols-4 gap-4 mb-6">
           {[
-            { label: '전체 교육생', value: rows.length, unit: '명', color: 'text-[#111111]' },
-            { label: '카드 완료', value: completedCount, unit: `/ ${rows.length}`, color: 'text-[#111111]' },
-            { label: '마스터플랜 완료', value: masterplanCount, unit: `/ ${rows.length}`, color: 'text-[#111111]' },
-            { label: '액션플랜 완료', value: actionplanCount, unit: `/ ${rows.length}`, color: 'text-[#111111]' },
+            { label: cohortFilter === 'all' ? '전체 교육생' : `${cohortFilter}차수 교육생`, value: filteredRows.length, unit: '명', color: 'text-[#111111]' },
+            { label: '카드 완료', value: completedCount, unit: `/ ${filteredRows.length}`, color: 'text-[#111111]' },
+            { label: '마스터플랜 완료', value: masterplanCount, unit: `/ ${filteredRows.length}`, color: 'text-[#111111]' },
+            { label: '액션플랜 완료', value: actionplanCount, unit: `/ ${filteredRows.length}`, color: 'text-[#111111]' },
           ].map((stat) => (
             <div key={stat.label} className="bg-white rounded-2xl border border-[#EBEBEB] px-5 py-4 shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
               <p className="text-xs text-[#8A8A8A] mb-1">{stat.label}</p>
@@ -1170,7 +1480,7 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-[#EBEBEB] bg-[#F5F5F5]">
-                  {['이름', '소속', '진짜문제정의', '카드완료', '마스터플랜', '액션플랜', '트래킹 완료율', '마지막 접속'].map((h) => (
+                  {['이름', '소속', '차수', '진짜문제정의', '카드완료', '마스터플랜', '액션플랜', '트래킹 완료율', '마지막 접속'].map((h) => (
                     <th key={h} className="text-left px-4 py-3 text-xs font-semibold text-[#8A8A8A] whitespace-nowrap">
                       {h}
                     </th>
@@ -1181,7 +1491,7 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
                 {loading && (
                   Array.from({ length: 5 }).map((_, i) => (
                     <tr key={i} className="border-b border-[#F5F5F5]">
-                      {Array.from({ length: 8 }).map((_, j) => (
+                      {Array.from({ length: 9 }).map((_, j) => (
                         <td key={j} className="px-4 py-3">
                           <div className="h-4 bg-[#F5F5F5] rounded animate-pulse" />
                         </td>
@@ -1189,14 +1499,14 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
                     </tr>
                   ))
                 )}
-                {!loading && rows.length === 0 && (
+                {!loading && filteredRows.length === 0 && (
                   <tr>
-                    <td colSpan={8} className="text-center py-12 text-[#8A8A8A] text-sm">
-                      등록된 교육생이 없습니다.
+                    <td colSpan={9} className="text-center py-12 text-[#8A8A8A] text-sm">
+                      {cohortFilter === 'all' ? '등록된 교육생이 없습니다.' : `${cohortFilter}차수 교육생이 없습니다.`}
                     </td>
                   </tr>
                 )}
-                {!loading && rows.map((row) => {
+                {!loading && filteredRows.map((row) => {
                   const trackingRate = row.tracking_total > 0
                     ? Math.round((row.tracking_done / row.tracking_total) * 100)
                     : 0
@@ -1209,6 +1519,11 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
                     >
                       <td className="px-4 py-3 font-medium text-[#111111] whitespace-nowrap">{row.name}</td>
                       <td className="px-4 py-3 text-[#8A8A8A] max-w-[160px] truncate">{row.department}</td>
+                      <td className="px-4 py-3">
+                        {row.cohort ? (
+                          <span className="bg-[#DBEAFE] text-[#2563EB] px-2 py-0.5 rounded-full text-xs font-semibold">{row.cohort}차수</span>
+                        ) : <span className="text-[#D4D4D4] text-xs">-</span>}
+                      </td>
                       <td className="px-4 py-3">
                         <StatusBadge status={row.problem_definition_status} />
                       </td>
@@ -1259,9 +1574,9 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
             </table>
           </div>
 
-          {!loading && rows.length > 0 && (
+          {!loading && filteredRows.length > 0 && (
             <div className="px-4 py-3 border-t border-[#EBEBEB] text-xs text-[#8A8A8A] text-right">
-              총 {rows.length}명 · 30초마다 자동 갱신
+              {cohortFilter === 'all' ? `전체 ${rows.length}명` : `${cohortFilter}차수 ${filteredRows.length}명 / 전체 ${rows.length}명`} · 30초마다 자동 갱신
             </div>
           )}
         </div>
@@ -1285,6 +1600,14 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
           participantId={selectedId}
           initialTab={selectedInitialTab}
           onClose={() => { setSelectedId(null); setSelectedInitialTab('cards') }}
+        />
+      )}
+
+      {/* CSV 업로드 모달 */}
+      {showCsvUpload && (
+        <CsvUploadModal
+          onClose={() => setShowCsvUpload(false)}
+          onDone={fetchData}
         />
       )}
     </div>

@@ -351,25 +351,43 @@ export default function TrackingPage() {
           <div>
             <p className="text-[10px] font-bold tracking-[0.12em] uppercase text-[#8A8A8A] mb-0.5">30일 실행 체크리스트</p>
             <h1 className="text-base font-bold text-[#111111] tracking-tight">나의 실행 현황</h1>
-            {/* 점수 + 순위 */}
-            {myScore !== null && (
-              <button
-                onClick={() => router.push('/ranking')}
-                className="flex items-center gap-1.5 mt-1.5 active:opacity-70"
-              >
-                <span className="text-sm font-bold text-[#111111]">🏆 {myScore.total_score}점</span>
-                <span className="text-xs text-[#8A8A8A]">
-                  {myScore.total_participants > 0 ? `${myScore.rank}위 / ${myScore.total_participants}명` : ''}
-                </span>
-                <span className="text-xs text-[#02855B] font-semibold">랭킹 보기 →</span>
-              </button>
-            )}
           </div>
           <div className="text-right shrink-0 ml-3">
             <p className="text-2xl font-bold text-[#111111] tracking-tight">{progressPct}<span className="text-base font-medium text-[#8A8A8A]">%</span></p>
             <p className="text-xs text-[#8A8A8A]">{completedItems}/{totalItems} 완료</p>
           </div>
         </div>
+
+        {/* 랭킹 카드 2개 */}
+        {myScore !== null && (myScore.cohort_total > 0 || myScore.total_participants > 0) && (
+          <div className="grid grid-cols-2 gap-2 mb-3">
+            {/* 차수 내 순위 */}
+            {myScore.cohort_total > 0 && myScore.cohort !== null ? (
+              <div className="bg-[#F0FDF4] border border-[#BBF7D0] rounded-2xl px-3 py-2.5">
+                <p className="text-[10px] font-bold text-[#16A34A] tracking-wide uppercase mb-1">{myScore.cohort}차수 내 순위</p>
+                <p className="text-xl font-bold text-[#111111] leading-none">
+                  {myScore.cohort_rank}위
+                  <span className="text-xs font-normal text-[#8A8A8A] ml-1">/ {myScore.cohort_total}명</span>
+                </p>
+                <p className="text-xs text-[#16A34A] mt-0.5">완료율 {myScore.total_items > 0 ? Math.round((myScore.completed_items / myScore.total_items) * 100) : 0}%</p>
+              </div>
+            ) : (
+              <div className="bg-[#F5F5F5] border border-[#EBEBEB] rounded-2xl px-3 py-2.5">
+                <p className="text-[10px] font-bold text-[#8A8A8A] tracking-wide uppercase mb-1">차수 내 순위</p>
+                <p className="text-sm text-[#D4D4D4]">차수 미지정</p>
+              </div>
+            )}
+            {/* 전체 순위 */}
+            <div className="bg-[#EFF6FF] border border-[#BFDBFE] rounded-2xl px-3 py-2.5">
+              <p className="text-[10px] font-bold text-[#2563EB] tracking-wide uppercase mb-1">전체 순위</p>
+              <p className="text-xl font-bold text-[#111111] leading-none">
+                {myScore.rank}위
+                <span className="text-xs font-normal text-[#8A8A8A] ml-1">/ {myScore.total_participants}명</span>
+              </p>
+              <p className="text-xs text-[#2563EB] mt-0.5">🏆 {myScore.total_score}점</p>
+            </div>
+          </div>
+        )}
 
         {/* 프로그레스바 */}
         <div className="h-2.5 bg-[#EBEBEB] rounded-full overflow-hidden mb-2">
