@@ -479,7 +479,7 @@ function HomePage({
                 <span className="text-2xl leading-none">🏆</span>
                 <div>
                   <p className="text-[10px] font-bold text-[#CA8A04] tracking-wider leading-none">
-                    {progress.score.cohort ? `${progress.score.cohort}차수 RANKING` : 'RANKING'}
+                    {progress.score.cohort ? `${progress.score.cohort}차수 랭킹` : '주차별 랭킹'}
                   </p>
                   <p className="text-2xl font-black text-[#92400E] leading-tight">{progress.score.rank}위</p>
                   <p className="text-[10px] text-[#A16207] leading-none">{progress.score.total_participants}명 중</p>
