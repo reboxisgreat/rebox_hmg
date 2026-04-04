@@ -256,7 +256,7 @@ function LoginForm({ onLogin }: { onLogin: (id: string, name: string) => void })
           style={{
             width: '60vw', height: '60vw',
             top: '28%', left: '15%',
-            background: 'rgba(124, 58, 237, 0.22)',
+            background: 'rgba(234, 179, 8, 0.30)',
             filter: 'blur(38px)',
           }}
         />
@@ -266,18 +266,27 @@ function LoginForm({ onLogin }: { onLogin: (id: string, name: string) => void })
       <div className="relative z-10 flex-1 flex flex-col items-center justify-center px-5 pt-16 pb-8">
         <div className="w-full max-w-md">
           {/* 로고 영역 */}
-          <div className="mb-10 text-center">
-            <img src="/main-logo.png" alt="리더스러닝랩 xClass" className="h-16 mx-auto object-contain mb-4" />
+          <div className="mb-23 text-center">
+            <img src="/main-logo.png" alt="리더스러닝랩 xClass" className="h-16 mx-auto object-contain mb-6" />
             <h1 className="text-[2rem] font-bold text-[#111] leading-tight tracking-tight mb-2">
               리더스러닝랩<br />xClass 조직관리 과정
             </h1>
-            <p className="text-sm text-[#6B7280] leading-relaxed">
-              현대자동차그룹 실장급 리더 교육 프로그램
+            <p className="text-sm leading-relaxed">
+              현대자동차그룹 실장급 리더 교육
             </p>
           </div>
 
           {/* 로그인 카드 */}
-          <div className="bg-white rounded-3xl shadow-[0_2px_16px_rgba(0,0,0,0.07)] p-7">
+          <div className="relative mt-20">
+            {/* 강아지 캐릭터 — 카드 위에 반쯤 걸쳐서 등장 */}
+            <div className="absolute -top-20 left-1/2 -translate-x-1/2 z-10 w-36 h-36">
+              <img
+                src="/dog-character.jpg"
+                alt="강아지 캐릭터"
+                className="w-full h-full object-cover object-top rounded-full shadow-lg border-4 border-white"
+              />
+            </div>
+          <div className="bg-white rounded-3xl shadow-[0_2px_16px_rgba(0,0,0,0.07)] p-7 pt-16">
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
                 <label className="block text-sm font-semibold text-[#111] mb-1.5">이메일</label>
@@ -285,7 +294,7 @@ function LoginForm({ onLogin }: { onLogin: (id: string, name: string) => void })
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  placeholder="example@hyundai.com"
+                  placeholder="example@gmail.com"
                   className="w-full h-13 px-4 rounded-xl border border-[#E8E8E8] bg-[#F7F7F8] text-[#111] text-base placeholder-[#B0B0B0] focus:outline-none focus:border-[#111] focus:bg-white transition-colors"
                   style={{ height: '52px' }}
                   autoComplete="email"
@@ -300,7 +309,7 @@ function LoginForm({ onLogin }: { onLogin: (id: string, name: string) => void })
                   type="password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  placeholder="초기 비밀번호는 1234입니다."
+                  placeholder="초기 비밀번호: 1234"
                   className="w-full h-13 px-4 rounded-xl border border-[#E8E8E8] bg-[#F7F7F8] text-[#111] text-base placeholder-[#B0B0B0] focus:outline-none focus:border-[#111] focus:bg-white transition-colors"
                   style={{ height: '52px' }}
                   autoComplete="current-password"
@@ -329,8 +338,9 @@ function LoginForm({ onLogin }: { onLogin: (id: string, name: string) => void })
               </button>
             </form>
           </div>
+          </div>
 
-          <p className="mt-6 text-center text-xs text-[#B0B0B0]">사전 등록된 교육생만 접속할 수 있습니다.</p>
+          <p className="mt-4 text-center text-xs">사전 등록된 교육생만 접속할 수 있습니다.</p>
         </div>
       </div>
     </div>
@@ -461,7 +471,7 @@ function HomePage({
         {/* 헤더 콘텐츠 */}
         <div className="relative z-10">
           <div className="flex items-start justify-between mb-4">
-            <div className="flex flex-col gap-1.5">
+            <div className="flex flex-col gap-3">
               <img src="/main-logo.png" alt="리더스러닝랩 xClass" className="h-9 object-contain" />
               <span className="text-[14px] font-bold text-[#000000] tracking-[0.12em] pl-0.5">리더스러닝랩 xClass 조직관리 과정</span>
             </div>
