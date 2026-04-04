@@ -306,6 +306,17 @@ function getDateStr() {
   return new Date().toISOString().slice(0, 10)
 }
 
+function CohortBadge({ cohort, size = 'sm' }: { cohort: number; size?: 'sm' | 'xs' }) {
+  const colors: Record<number, string> = {
+    1: 'bg-[#DBEAFE] text-[#1D4ED8]',
+    2: 'bg-[#D1FAE5] text-[#065F46]',
+    3: 'bg-[#FEF3C7] text-[#92400E]',
+  }
+  const cls = colors[cohort] ?? 'bg-[#F3F4F6] text-[#374151]'
+  const padding = size === 'xs' ? 'px-2 py-0.5 text-xs' : 'px-2 py-0.5'
+  return <span className={`${cls} ${padding} rounded-full font-semibold`}>{cohort}차수</span>
+}
+
 // ─────────────────────────────────────────────
 // 교육생 상세 모달
 // ─────────────────────────────────────────────
@@ -956,7 +967,7 @@ function CsvUploadModal({ onClose, onDone }: { onClose: () => void; onDone: () =
                         <td className="px-3 py-2 text-[#8A8A8A]">{p.email}</td>
                         <td className="px-3 py-2">
                           {p.cohort ? (
-                            <span className="bg-[#DBEAFE] text-[#2563EB] px-2 py-0.5 rounded-full font-semibold">{p.cohort}차수</span>
+                            <CohortBadge cohort={p.cohort} />
                           ) : (
                             <span className="text-[#D4D4D4]">-</span>
                           )}
@@ -1233,7 +1244,7 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
                   return (
                     <div key={cohort}>
                       <div className="flex items-center gap-3 mb-3">
-                        <span className="px-3 py-1 rounded-full text-xs font-bold bg-[#DBEAFE] text-[#2563EB]">{cohort}차수</span>
+                        <CohortBadge cohort={cohort} size="xs" />
                         <span className="text-xs text-[#8A8A8A]">{cohortScores.length}명</span>
                       </div>
                       <div className="bg-white rounded-2xl border border-[#EBEBEB] overflow-hidden shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
@@ -1387,7 +1398,7 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
                               <td className="px-4 py-3 text-[#8A8A8A] max-w-[160px] truncate">{s.department}</td>
                               <td className="px-4 py-3">
                                 {s.cohort ? (
-                                  <span className="bg-[#DBEAFE] text-[#2563EB] px-2 py-0.5 rounded-full text-xs font-semibold">{s.cohort}차수</span>
+                                  <CohortBadge cohort={s.cohort} size="xs" />
                                 ) : <span className="text-[#D4D4D4] text-xs">-</span>}
                               </td>
                               <td className="px-4 py-3">
@@ -1521,7 +1532,7 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
                       <td className="px-4 py-3 text-[#8A8A8A] max-w-[160px] truncate">{row.department}</td>
                       <td className="px-4 py-3">
                         {row.cohort ? (
-                          <span className="bg-[#DBEAFE] text-[#2563EB] px-2 py-0.5 rounded-full text-xs font-semibold">{row.cohort}차수</span>
+                          <CohortBadge cohort={row.cohort} size="xs" />
                         ) : <span className="text-[#D4D4D4] text-xs">-</span>}
                       </td>
                       <td className="px-4 py-3">

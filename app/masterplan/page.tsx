@@ -441,7 +441,7 @@ export default function MasterPlanPage() {
               value={masterPlan.slogan}
               onChange={(e) => handleFieldChange('slogan', e.target.value)}
               placeholder="슬로건을 입력하세요"
-              className="w-full text-[20px] font-bold text-white text-center bg-transparent resize-none focus:outline-none overflow-hidden leading-tight placeholder-white/40 py-0 h-auto"
+              className="w-full text-[18px] font-bold text-white text-center bg-transparent resize-none focus:outline-none overflow-hidden leading-tight placeholder-white/40 py-0 h-auto break-keep"
             />
           </div>
         </div>

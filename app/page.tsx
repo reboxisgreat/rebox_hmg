@@ -268,7 +268,7 @@ function LoginForm({ onLogin }: { onLogin: (id: string, name: string) => void })
           {/* 로고 영역 */}
           <div className="mb-23 text-center">
             <img src="/main-logo.png" alt="리더스러닝랩 xClass" className="h-16 mx-auto object-contain mb-6" />
-            <h1 className="text-[2rem] font-bold text-[#111] leading-tight tracking-tight mb-2">
+            <h1 className="text-[2rem] font-bold text-[#111] leading-tight tracking-tight mb-1.5">
               리더스러닝랩<br />xClass 조직관리 과정
             </h1>
             <p className="text-sm leading-relaxed">
@@ -436,32 +436,34 @@ function HomePage({
     <div className="relative flex flex-col overflow-hidden" style={{ minHeight: '100dvh', background: '#F0F4F8' }}>
       {/* 전체 화면 애니메이션 배경 */}
       <div className="absolute inset-0 pointer-events-none" aria-hidden="true">
+        {/* 에메랄드 서클 — 좌상단 */}
         <div
           className="animate-float1 absolute rounded-full"
           style={{
-            width: '90vw', height: '90vw',
-            top: '-20vw', right: '-20vw',
-            background: 'rgba(2, 133, 91, 0.42)',
+            width: '80vw', height: '80vw',
+            top: '-20vw', left: '-20vw',
+            background: 'rgba(2, 133, 91, 0.35)',
             filter: 'blur(40px)',
           }}
         />
+        {/* 블루 서클 — 우하단 */}
         <div
           className="animate-float2 absolute rounded-full"
           style={{
-            width: '80vw', height: '80vw',
-            bottom: '10vw', left: '-25vw',
-            background: 'rgba(37, 99, 235, 0.38)',
-            filter: 'blur(42px)',
+            width: '70vw', height: '70vw',
+            bottom: '-15vw', right: '-15vw',
+            background: 'rgba(37, 99, 235, 0.30)',
+            filter: 'blur(45px)',
           }}
         />
+        {/* 옐로 서클 — 중앙 */}
         <div
-          className="animate-float1 absolute rounded-full"
+          className="animate-float3 absolute rounded-full"
           style={{
             width: '60vw', height: '60vw',
-            bottom: '-10vw', right: '-10vw',
-            background: 'rgba(2, 133, 91, 0.28)',
-            filter: 'blur(35px)',
-            animationDelay: '2s',
+            top: '28%', left: '15%',
+            background: 'rgba(234, 179, 8, 0.30)',
+            filter: 'blur(38px)',
           }}
         />
       </div>
@@ -588,7 +590,7 @@ function HomePage({
               </div>
             </div>
             {progress?.problemDefinition?.is_confirmed ? (
-              <div className="w-7 h-7 rounded-full bg-[#02855B] flex items-center justify-center shrink-0">
+              <div className="w-7 h-7 rounded-full bg-[#111] flex items-center justify-center shrink-0">
                 <svg width="13" height="10" viewBox="0 0 13 10" fill="none"><path d="M1 5L4.5 8.5L12 1" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
               </div>
             ) : !isStepUnlocked(0) ? (
@@ -617,7 +619,7 @@ function HomePage({
               </div>
             </div>
             {(progress?.cards.find((c) => c.card_number === 1)?.is_confirmed ?? false) ? (
-              <div className="w-7 h-7 rounded-full bg-[#02855B] flex items-center justify-center shrink-0">
+              <div className="w-7 h-7 rounded-full bg-[#111] flex items-center justify-center shrink-0">
                 <svg width="13" height="10" viewBox="0 0 13 10" fill="none"><path d="M1 5L4.5 8.5L12 1" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
               </div>
             ) : !isStepUnlocked(1) ? (
@@ -646,7 +648,7 @@ function HomePage({
               </div>
             </div>
             {(progress?.cards.find((c) => c.card_number === 2)?.is_confirmed ?? false) ? (
-              <div className="w-7 h-7 rounded-full bg-[#02855B] flex items-center justify-center shrink-0">
+              <div className="w-7 h-7 rounded-full bg-[#111] flex items-center justify-center shrink-0">
                 <svg width="13" height="10" viewBox="0 0 13 10" fill="none"><path d="M1 5L4.5 8.5L12 1" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
               </div>
             ) : !isStepUnlocked(2) ? (
@@ -675,7 +677,7 @@ function HomePage({
               </div>
             </div>
             {(progress?.cards.find((c) => c.card_number === 3)?.is_confirmed ?? false) ? (
-              <div className="w-7 h-7 rounded-full bg-[#02855B] flex items-center justify-center shrink-0">
+              <div className="w-7 h-7 rounded-full bg-[#111] flex items-center justify-center shrink-0">
                 <svg width="13" height="10" viewBox="0 0 13 10" fill="none"><path d="M1 5L4.5 8.5L12 1" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
               </div>
             ) : !isStepUnlocked(3) ? (
@@ -721,7 +723,7 @@ function HomePage({
               </div>
             </div>
             {progress?.masterPlan?.is_confirmed ? (
-              <div className="w-7 h-7 rounded-full bg-[#02855B] flex items-center justify-center shrink-0">
+              <div className="w-7 h-7 rounded-full bg-[#111] flex items-center justify-center shrink-0">
                 <svg width="13" height="10" viewBox="0 0 13 10" fill="none"><path d="M1 5L4.5 8.5L12 1" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
               </div>
             ) : !isStepUnlocked(4) ? (
@@ -750,7 +752,7 @@ function HomePage({
               </div>
             </div>
             {progress?.actionPlan?.is_confirmed ? (
-              <div className="w-7 h-7 rounded-full bg-[#02855B] flex items-center justify-center shrink-0">
+              <div className="w-7 h-7 rounded-full bg-[#111] flex items-center justify-center shrink-0">
                 <svg width="13" height="10" viewBox="0 0 13 10" fill="none"><path d="M1 5L4.5 8.5L12 1" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
               </div>
             ) : !isStepUnlocked(5) ? (
@@ -796,7 +798,7 @@ function HomePage({
               </div>
             </div>
             {progress && progress.tracking.total > 0 && trackingPct === 100 ? (
-              <div className="w-7 h-7 rounded-full bg-[#02855B] flex items-center justify-center shrink-0">
+              <div className="w-7 h-7 rounded-full bg-[#111] flex items-center justify-center shrink-0">
                 <svg width="13" height="10" viewBox="0 0 13 10" fill="none"><path d="M1 5L4.5 8.5L12 1" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
               </div>
             ) : !isStepUnlocked(6) ? (
