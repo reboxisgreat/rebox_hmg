@@ -92,9 +92,9 @@ export default function RankingPage() {
           </button>
         </div>
 
-        <p className="text-xs font-bold text-white/40 tracking-[0.18em] uppercase mb-1">리더스러닝랩 xClass</p>
+        <p className="text-xs font-bold text-white/40 tracking-[0.18em] mb-1">리더스러닝랩 xClass 조직관리 과정</p>
         <h1 className="text-2xl font-bold text-white tracking-tight">실행력 랭킹 🏆</h1>
-        <p className="text-sm text-white/50 mt-1">30일 체크리스트 완료 점수 기준</p>
+        <p className="text-sm text-white/50 mt-1">30일 체크리스트 완료 점수 기준<br/>전체 교육생 대상(1,2,3차수)</p>
 
         {/* 내 점수 배너 */}
         {myEntry && (
