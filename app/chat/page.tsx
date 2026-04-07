@@ -431,6 +431,16 @@ function ChatPageContent() {
     router.push(url)
   }, [participantId, messages, currentCard, router])
 
+  // 다음 카드로 이동 — 현재 카드 미완료 시 알림
+  const handleGoNext = useCallback(async () => {
+    const isConfirmed = savedCards.some(c => c.card_number === currentCard)
+    if (!isConfirmed) {
+      alert('현재 카드 학습을 완료하고 확정해야 다음으로 이동할 수 있어요.')
+      return
+    }
+    await saveAndNavigate(`/chat?card=${currentCard + 1}`)
+  }, [savedCards, currentCard, saveAndNavigate])
+
   // 리뷰 모드 핸들러
   const handleStartEdit = useCallback((cardNum: CardNumber) => {
     const card = savedCards.find(c => c.card_number === cardNum)
@@ -750,7 +760,7 @@ function ChatPageContent() {
           )}
           {currentCard < 3 ? (
             <button
-              onClick={() => saveAndNavigate(`/chat?card=${currentCard + 1}`)}
+              onClick={handleGoNext}
               className="flex items-center gap-1.5 text-[#3A3A3A] active:opacity-60 transition-colors"
             >
               <span className="text-[12px] font-medium">다음으로 가기</span>
@@ -985,7 +995,7 @@ function ChatPageContent() {
                   className="w-full rounded-2xl text-white text-base font-semibold active:scale-[0.98] transition-all flex items-center justify-center gap-2"
                   style={{ height: '52px', background: '#111111' }}
                 >
-                  {currentCard < 3 ? `확정하고 카드 ${currentCard + 1}로` : '확정 → 마스터플랜으로'}
+                  저장하기
                   <ArrowRight size={18} />
                 </button>
                 <button
