@@ -8,7 +8,7 @@ export interface Participant {
   id: string
   name: string
   department: string
-  email: string
+  username: string
   cohort: number | null
   created_at: string
   last_active_at: string
@@ -114,7 +114,7 @@ export interface AdminProgressRow {
   id: string
   name: string
   department: string
-  email: string
+  username: string
   cohort: number | null
   last_active_at: string
   problem_definition_status: '완료' | '미완료'

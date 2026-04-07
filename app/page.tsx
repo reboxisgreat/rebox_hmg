@@ -15,7 +15,6 @@ import {
   BarChart3,
   Trophy,
   LogOut,
-  KeyRound,
   ArrowRight,
   User,
   Target,
@@ -38,192 +37,37 @@ interface ProgressData {
 
 const CARD_ICONS: Record<number, string> = { 1: '🎯', 2: '👥', 3: '⚙️' }
 
-// ── 비밀번호 변경 폼 ───────────────────────────────────────────────────────────
-
-function ChangePasswordForm({
-  participantId,
-  participantName,
-  isFirstTime,
-  onDone,
-  onSkip,
-  onBack,
-}: {
-  participantId: string
-  participantName: string
-  isFirstTime: boolean
-  onDone: () => void
-  onSkip?: () => void
-  onBack?: () => void
-}) {
-  const [currentPassword, setCurrentPassword] = useState('')
-  const [newPassword, setNewPassword] = useState('')
-  const [confirmPassword, setConfirmPassword] = useState('')
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState('')
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setError('')
-    if (!newPassword) { setError('새 비밀번호를 입력해주세요.'); return }
-    if (newPassword.length < 4) { setError('비밀번호는 4자 이상이어야 합니다.'); return }
-    if (newPassword !== confirmPassword) { setError('새 비밀번호가 일치하지 않습니다.'); return }
-    setLoading(true)
-    try {
-      const res = await fetch('/api/auth', {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ participantId, currentPassword, newPassword }),
-      })
-      const data = await res.json()
-      if (!res.ok) { setError(data.error ?? '오류가 발생했어요.'); return }
-      onDone()
-    } catch {
-      setError('오류가 발생했어요. 다시 시도해주세요.')
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  return (
-    <div className="min-h-screen bg-[#F7F7F8] flex flex-col items-center justify-center px-5 py-12">
-      <div className="w-full max-w-md bg-white rounded-3xl shadow-[0_2px_16px_rgba(0,0,0,0.07)] p-8">
-        {onBack && (
-          <button
-            type="button"
-            onClick={onBack}
-            className="flex items-center gap-1.5 text-sm text-[#8A8A8A] mb-6 -ml-1 active:text-[#111] transition-colors"
-          >
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M15 18l-6-6 6-6" />
-            </svg>
-            홈으로
-          </button>
-        )}
-        <div className="w-12 h-12 bg-[#F0FDF4] rounded-2xl flex items-center justify-center mb-6">
-          <KeyRound size={22} color="#02855B" />
-        </div>
-        <h1 className="text-2xl font-bold text-[#111] mb-1">
-          {isFirstTime ? '초기 비밀번호 변경' : '비밀번호 변경'}
-        </h1>
-        <p className="text-sm text-[#8A8A8A] mb-7 leading-relaxed">
-          {isFirstTime
-            ? `${participantName}님, 보안을 위해 초기 비밀번호를 변경해주세요.`
-            : '새 비밀번호를 설정하세요.'}
-        </p>
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-[#111] mb-1.5">현재 비밀번호</label>
-            <input
-              type="password"
-              value={currentPassword}
-              onChange={(e) => setCurrentPassword(e.target.value)}
-              placeholder={isFirstTime ? '초기 비밀번호 (1234)' : '현재 비밀번호'}
-              className="w-full h-12 px-4 rounded-xl border border-[#E8E8E8] bg-[#F7F7F8] text-[#111] text-base placeholder-[#B0B0B0] focus:outline-none focus:border-[#111] focus:bg-white transition-colors"
-              autoComplete="current-password"
-              autoFocus
-              disabled={loading}
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-[#111] mb-1.5">새 비밀번호</label>
-            <input
-              type="password"
-              value={newPassword}
-              onChange={(e) => setNewPassword(e.target.value)}
-              placeholder="새 비밀번호 (4자 이상)"
-              className="w-full h-12 px-4 rounded-xl border border-[#E8E8E8] bg-[#F7F7F8] text-[#111] text-base placeholder-[#B0B0B0] focus:outline-none focus:border-[#111] focus:bg-white transition-colors"
-              autoComplete="new-password"
-              disabled={loading}
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-[#111] mb-1.5">새 비밀번호 확인</label>
-            <input
-              type="password"
-              value={confirmPassword}
-              onChange={(e) => setConfirmPassword(e.target.value)}
-              placeholder="새 비밀번호 재입력"
-              className="w-full h-12 px-4 rounded-xl border border-[#E8E8E8] bg-[#F7F7F8] text-[#111] text-base placeholder-[#B0B0B0] focus:outline-none focus:border-[#111] focus:bg-white transition-colors"
-              autoComplete="new-password"
-              disabled={loading}
-            />
-          </div>
-          {error && <p className="text-sm text-red-500 text-center">{error}</p>}
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full h-14 mt-2 rounded-2xl bg-[#111] text-white text-base font-semibold disabled:opacity-60 active:scale-[0.98] transition-all"
-          >
-            {loading ? '변경 중...' : '비밀번호 변경하기'}
-          </button>
-          {isFirstTime && onSkip && (
-            <button
-              type="button"
-              onClick={onSkip}
-              disabled={loading}
-              className="w-full h-12 mt-2 rounded-2xl text-[#8A8A8A] text-sm font-medium active:bg-[#F0F0F0] transition-colors"
-            >
-              다음에 변경하기
-            </button>
-          )}
-        </form>
-      </div>
-    </div>
-  )
-}
-
 // ── 로그인 폼 ─────────────────────────────────────────────────────────────────
 
-function LoginForm({ onLogin }: { onLogin: (id: string, name: string) => void }) {
-  const [email, setEmail] = useState('')
+function LoginForm({ onLogin, onRegister }: { onLogin: (id: string, name: string) => void; onRegister: () => void }) {
+  const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
-  const [pendingUser, setPendingUser] = useState<{ id: string; name: string } | null>(null)
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError('')
-    const trimmed = email.trim()
-    if (!trimmed) { setError('이메일을 입력해주세요.'); return }
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmed)) {
-      setError('올바른 이메일 주소를 입력해주세요.')
-      return
-    }
+    const trimmed = username.trim()
+    if (!trimmed) { setError('아이디를 입력해주세요.'); return }
     if (!password) { setError('비밀번호를 입력해주세요.'); return }
     setLoading(true)
     try {
       const res = await fetch('/api/auth', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: trimmed, password }),
+        body: JSON.stringify({ username: trimmed, password }),
       })
       const data = await res.json()
       if (!res.ok) { setError(data.error ?? '오류가 발생했어요.'); return }
       localStorage.setItem('participant_id', data.id)
       localStorage.setItem('participant_name', data.name)
-      if (!data.passwordChanged) {
-        setPendingUser({ id: data.id, name: data.name })
-      } else {
-        onLogin(data.id, data.name)
-      }
+      onLogin(data.id, data.name)
     } catch {
       setError('오류가 발생했어요. 다시 시도해주세요.')
     } finally {
       setLoading(false)
     }
-  }
-
-  if (pendingUser) {
-    return (
-      <ChangePasswordForm
-        participantId={pendingUser.id}
-        participantName={pendingUser.name}
-        isFirstTime={true}
-        onDone={() => onLogin(pendingUser.id, pendingUser.name)}
-        onSkip={() => onLogin(pendingUser.id, pendingUser.name)}
-      />
-    )
   }
 
   return (
@@ -289,16 +133,15 @@ function LoginForm({ onLogin }: { onLogin: (id: string, name: string) => void })
           <div className="bg-white rounded-3xl shadow-[0_2px_16px_rgba(0,0,0,0.07)] p-7 pt-16">
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
-                <label className="block text-sm font-semibold text-[#111] mb-1.5">이메일</label>
+                <label className="block text-sm font-semibold text-[#111] mb-1.5">아이디</label>
                 <input
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="example@gmail.com"
+                  type="text"
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
+                  placeholder="아이디를 입력하세요"
                   className="w-full h-13 px-4 rounded-xl border border-[#E8E8E8] bg-[#F7F7F8] text-[#111] text-base placeholder-[#B0B0B0] focus:outline-none focus:border-[#111] focus:bg-white transition-colors"
                   style={{ height: '52px' }}
-                  autoComplete="email"
-                  inputMode="email"
+                  autoComplete="username"
                   autoFocus
                   disabled={loading}
                 />
@@ -309,7 +152,7 @@ function LoginForm({ onLogin }: { onLogin: (id: string, name: string) => void })
                   type="password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  placeholder="초기 비밀번호: 1234"
+                  placeholder="비밀번호를 입력하세요"
                   className="w-full h-13 px-4 rounded-xl border border-[#E8E8E8] bg-[#F7F7F8] text-[#111] text-base placeholder-[#B0B0B0] focus:outline-none focus:border-[#111] focus:bg-white transition-colors"
                   style={{ height: '52px' }}
                   autoComplete="current-password"
@@ -337,10 +180,208 @@ function LoginForm({ onLogin }: { onLogin: (id: string, name: string) => void })
                 )}
               </button>
             </form>
+            <div className="mt-5 text-center">
+              <button
+                type="button"
+                onClick={onRegister}
+                className="text-sm text-[#8A8A8A] active:text-[#111] transition-colors"
+                disabled={loading}
+              >
+                계정이 없으신가요?{' '}
+                <span className="font-semibold text-[#111]">회원가입</span>
+              </button>
+            </div>
           </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// ── 회원가입 폼 ───────────────────────────────────────────────────────────────
+
+function RegisterForm({ onLogin, onBack }: { onLogin: (id: string, name: string) => void; onBack: () => void }) {
+  const [username, setUsername] = useState('')
+  const [name, setName] = useState('')
+  const [department, setDepartment] = useState('')
+  const [cohort, setCohort] = useState<number | ''>('')
+  const [password, setPassword] = useState('')
+  const [confirm, setConfirm] = useState('')
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState('')
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setError('')
+    const trimmedUsername = username.trim()
+    const trimmedName = name.trim()
+    if (!trimmedUsername) { setError('아이디를 입력해주세요.'); return }
+    if (!/^[a-zA-Z0-9]{4,20}$/.test(trimmedUsername)) {
+      setError('아이디는 영문/숫자 4~20자로 입력해주세요.')
+      return
+    }
+    if (!trimmedName) { setError('성함을 입력해주세요.'); return }
+    if (!department.trim()) { setError('소속을 입력해주세요.'); return }
+    if (!cohort) { setError('차수를 선택해주세요.'); return }
+    if (!password) { setError('비밀번호를 입력해주세요.'); return }
+    if (password.length < 6) { setError('비밀번호는 6자 이상이어야 합니다.'); return }
+    if (password !== confirm) { setError('비밀번호가 일치하지 않습니다.'); return }
+    setLoading(true)
+    try {
+      const res = await fetch('/api/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username: trimmedUsername, name: trimmedName, department: department.trim(), cohort, password }),
+      })
+      const data = await res.json()
+      if (!res.ok) { setError(data.error ?? '오류가 발생했어요.'); return }
+      localStorage.setItem('participant_id', data.id)
+      localStorage.setItem('participant_name', data.name)
+      onLogin(data.id, data.name)
+    } catch {
+      setError('오류가 발생했어요. 다시 시도해주세요.')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  return (
+    <div className="relative min-h-screen flex flex-col overflow-hidden" style={{ minHeight: '100dvh', background: '#F7F7F8' }}>
+      <div className="absolute inset-0 pointer-events-none" aria-hidden="true">
+        <div className="animate-float1 absolute rounded-full" style={{ width: '80vw', height: '80vw', top: '-20vw', left: '-20vw', background: 'rgba(2, 133, 91, 0.35)', filter: 'blur(40px)' }} />
+        <div className="animate-float2 absolute rounded-full" style={{ width: '70vw', height: '70vw', bottom: '-15vw', right: '-15vw', background: 'rgba(37, 99, 235, 0.30)', filter: 'blur(45px)' }} />
+        <div className="animate-float3 absolute rounded-full" style={{ width: '60vw', height: '60vw', top: '28%', left: '15%', background: 'rgba(234, 179, 8, 0.30)', filter: 'blur(38px)' }} />
+      </div>
+
+      <div className="relative z-10 flex-1 flex flex-col items-center justify-center px-5 pt-12 pb-8">
+        <div className="w-full max-w-md">
+          <div className="mb-6 text-center">
+            <img src="/main-logo.png" alt="리더스러닝랩 xClass" className="h-10 mx-auto object-contain mb-3" />
+            <h1 className="text-xl font-bold text-[#111]">회원가입</h1>
+            <p className="text-xs text-[#8A8A8A] mt-1">리더스러닝랩 xClass 조직관리 과정</p>
           </div>
 
-          <p className="mt-4 text-center text-xs">사전 등록된 교육생만 접속할 수 있습니다.</p>
+          <div className="bg-white rounded-3xl shadow-[0_2px_16px_rgba(0,0,0,0.07)] p-7">
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div>
+                <label className="block text-sm font-semibold text-[#111] mb-1.5">
+                  아이디 <span className="text-red-500">*</span> <span className="text-xs font-normal text-[#8A8A8A]">(영문/숫자 4~20자)</span>
+                </label>
+                <input
+                  type="text"
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
+                  placeholder="아이디를 입력하세요"
+                  className="w-full px-4 rounded-xl border border-[#E8E8E8] bg-[#F7F7F8] text-[#111] text-base placeholder-[#B0B0B0] focus:outline-none focus:border-[#111] focus:bg-white transition-colors"
+                  style={{ height: '52px' }}
+                  autoComplete="username"
+                  autoFocus
+                  disabled={loading}
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-semibold text-[#111] mb-1.5">성함 <span className="text-red-500">*</span></label>
+                <input
+                  type="text"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  placeholder="실명을 입력하세요"
+                  className="w-full px-4 rounded-xl border border-[#E8E8E8] bg-[#F7F7F8] text-[#111] text-base placeholder-[#B0B0B0] focus:outline-none focus:border-[#111] focus:bg-white transition-colors"
+                  style={{ height: '52px' }}
+                  autoComplete="name"
+                  disabled={loading}
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-semibold text-[#111] mb-1.5">소속 <span className="text-red-500">*</span></label>
+                <input
+                  type="text"
+                  value={department}
+                  onChange={(e) => setDepartment(e.target.value)}
+                  placeholder="소속 부서/실을 입력하세요"
+                  className="w-full px-4 rounded-xl border border-[#E8E8E8] bg-[#F7F7F8] text-[#111] text-base placeholder-[#B0B0B0] focus:outline-none focus:border-[#111] focus:bg-white transition-colors"
+                  style={{ height: '52px' }}
+                  autoComplete="organization"
+                  disabled={loading}
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-semibold text-[#111] mb-1.5">차수 <span className="text-red-500">*</span></label>
+                <select
+                  value={cohort}
+                  onChange={(e) => setCohort(e.target.value ? Number(e.target.value) : '')}
+                  className="w-full px-4 rounded-xl border border-[#E8E8E8] bg-[#F7F7F8] text-[#111] text-base focus:outline-none focus:border-[#111] focus:bg-white transition-colors"
+                  style={{ height: '52px' }}
+                  disabled={loading}
+                >
+                  <option value="">차수 선택</option>
+                  <option value={1}>1차수</option>
+                  <option value={2}>2차수</option>
+                  <option value={3}>3차수</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-semibold text-[#111] mb-1.5">
+                  비밀번호 <span className="text-red-500">*</span> <span className="text-xs font-normal text-[#8A8A8A]">(6자 이상)</span>
+                </label>
+                <input
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="비밀번호를 입력하세요"
+                  className="w-full px-4 rounded-xl border border-[#E8E8E8] bg-[#F7F7F8] text-[#111] text-base placeholder-[#B0B0B0] focus:outline-none focus:border-[#111] focus:bg-white transition-colors"
+                  style={{ height: '52px' }}
+                  autoComplete="new-password"
+                  disabled={loading}
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-semibold text-[#111] mb-1.5">비밀번호 확인 <span className="text-red-500">*</span></label>
+                <input
+                  type="password"
+                  value={confirm}
+                  onChange={(e) => setConfirm(e.target.value)}
+                  placeholder="비밀번호를 다시 입력하세요"
+                  className="w-full px-4 rounded-xl border border-[#E8E8E8] bg-[#F7F7F8] text-[#111] text-base placeholder-[#B0B0B0] focus:outline-none focus:border-[#111] focus:bg-white transition-colors"
+                  style={{ height: '52px' }}
+                  autoComplete="new-password"
+                  disabled={loading}
+                />
+              </div>
+              {error && (
+                <div className="bg-red-50 rounded-xl px-4 py-2.5">
+                  <p className="text-sm text-red-500 text-center">{error}</p>
+                </div>
+              )}
+              <button
+                type="submit"
+                disabled={loading}
+                className="w-full rounded-2xl bg-[#111] text-white text-base font-semibold disabled:opacity-60 active:scale-[0.98] transition-all flex items-center justify-center gap-2"
+                style={{ height: '54px' }}
+              >
+                {loading ? (
+                  <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                ) : (
+                  <>
+                    가입하기
+                    <ArrowRight size={18} />
+                  </>
+                )}
+              </button>
+            </form>
+            <div className="mt-5 text-center">
+              <button
+                type="button"
+                onClick={onBack}
+                className="text-sm text-[#8A8A8A] active:text-[#111] transition-colors"
+                disabled={loading}
+              >
+                이미 계정이 있으신가요?{' '}
+                <span className="font-semibold text-[#111]">로그인</span>
+              </button>
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -361,7 +402,6 @@ function HomePage({
   const router = useRouter()
   const [progress, setProgress] = useState<ProgressData | null>(null)
   const [loading, setLoading] = useState(true)
-  const [showChangePassword, setShowChangePassword] = useState(false)
 
   useEffect(() => {
     fetch(`/api/progress?participantId=${participantId}`)
@@ -397,18 +437,6 @@ function HomePage({
     if (!progress.masterPlan?.is_confirmed) return '/masterplan'
     if (!progress.actionPlan?.is_confirmed) return '/actionplan'
     return '/tracking'
-  }
-
-  if (showChangePassword) {
-    return (
-      <ChangePasswordForm
-        participantId={participantId}
-        participantName={participantName}
-        isFirstTime={false}
-        onDone={() => setShowChangePassword(false)}
-        onBack={() => setShowChangePassword(false)}
-      />
-    )
   }
 
   const allDone =
@@ -815,13 +843,6 @@ function HomePage({
           {/* 하단 메뉴 */}
           <div className="flex gap-2 pt-1">
             <button
-              onClick={() => setShowChangePassword(true)}
-              className="flex-1 flex items-center justify-center gap-1.5 py-3 rounded-2xl active:bg-[#F7F7F8] transition-colors" style={{ backgroundColor: '#ffffff', boxShadow: '0 2px 10px rgba(0,0,0,0.09)', isolation: 'isolate', position: 'relative', zIndex: 1 }}
-            >
-              <KeyRound size={14} color="#8A8A8A" />
-              <span className="text-xs font-semibold text-[#8A8A8A]">비밀번호 변경</span>
-            </button>
-            <button
               onClick={onLogout}
               className="flex-1 flex items-center justify-center gap-1.5 py-3 rounded-2xl active:bg-[#F7F7F8] transition-colors" style={{ backgroundColor: '#ffffff', boxShadow: '0 2px 10px rgba(0,0,0,0.09)', isolation: 'isolate', position: 'relative', zIndex: 1 }}
             >
@@ -842,6 +863,7 @@ export default function RootPage() {
   const [participantId, setParticipantId] = useState<string | null>(null)
   const [participantName, setParticipantName] = useState('')
   const [checked, setChecked] = useState(false)
+  const [view, setView] = useState<'login' | 'register'>('login')
 
   useEffect(() => {
     const id = localStorage.getItem('participant_id')
@@ -861,6 +883,7 @@ export default function RootPage() {
     localStorage.removeItem('participant_name')
     setParticipantId(null)
     setParticipantName('')
+    setView('login')
   }
 
   if (!checked) return null
@@ -875,5 +898,9 @@ export default function RootPage() {
     )
   }
 
-  return <LoginForm onLogin={handleLogin} />
+  if (view === 'register') {
+    return <RegisterForm onLogin={handleLogin} onBack={() => setView('login')} />
+  }
+
+  return <LoginForm onLogin={handleLogin} onRegister={() => setView('register')} />
 }

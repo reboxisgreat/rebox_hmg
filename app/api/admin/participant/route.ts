@@ -73,10 +73,10 @@ export async function POST(req: NextRequest) {
     }
 
     const supabase = createSupabaseServiceClient()
-    const rows = participants.map((p: { name: string; department: string; email: string; cohort: number | null }) => ({
+    const rows = participants.map((p: { name: string; department: string; username: string; cohort: number | null }) => ({
       name: p.name?.trim() || '',
       department: p.department?.trim() || '',
-      email: p.email?.trim() || '',
+      username: p.username?.trim() || '',
       cohort: p.cohort ?? null,
       password: '1234',
       password_changed: false,
@@ -84,7 +84,7 @@ export async function POST(req: NextRequest) {
 
     const { data, error } = await supabase
       .from('participants')
-      .upsert(rows, { onConflict: 'email', ignoreDuplicates: false })
+      .upsert(rows, { onConflict: 'username', ignoreDuplicates: false })
       .select('id, name')
 
     if (error) throw error

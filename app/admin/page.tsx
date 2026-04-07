@@ -134,7 +134,7 @@ function buildCoverHtml(p: Participant): string {
       <h1 style="font-size:32px;font-weight:700;color:#ffffff;margin:0 0 6px;">${p.name}</h1>
       <p style="font-size:16px;color:rgba(255,255,255,0.65);margin:0 0 32px;">${p.department ?? ''}</p>
       <div style="border-top:1px solid rgba(255,255,255,0.12);padding-top:20px;display:flex;flex-direction:column;gap:6px;">
-        ${p.email ? `<p style="font-size:12px;color:rgba(255,255,255,0.55);margin:0;">이메일: ${p.email}</p>` : ''}
+        ${p.username ? `<p style="font-size:12px;color:rgba(255,255,255,0.55);margin:0;">아이디: ${p.username}</p>` : ''}
         <p style="font-size:12px;color:rgba(255,255,255,0.55);margin:0;">출력일: ${date}</p>
       </div>
     </div>`
@@ -438,7 +438,7 @@ function DetailModal({
             {detail && (
               <>
                 <h2 className="text-lg font-bold text-[#111111]">{detail.participant.name}</h2>
-                <p className="text-sm text-[#8A8A8A]">{detail.participant.department} · {detail.participant.email}</p>
+                <p className="text-sm text-[#8A8A8A]">{detail.participant.department} · {detail.participant.username}</p>
               </>
             )}
             {loading && <div className="h-10 bg-[#F5F5F5] rounded-xl w-48 animate-pulse" />}
@@ -848,24 +848,24 @@ function MasterPlanGallery({ onSelectParticipant }: { onSelectParticipant: (id: 
 // ─────────────────────────────────────────────
 function CsvUploadModal({ onClose, onDone }: { onClose: () => void; onDone: () => void }) {
   const [text, setText] = useState('')
-  const [preview, setPreview] = useState<Array<{ name: string; department: string; email: string; cohort: number | null }>>([])
+  const [preview, setPreview] = useState<Array<{ name: string; department: string; username: string; cohort: number | null }>>([])
   const [uploading, setUploading] = useState(false)
   const [result, setResult] = useState<{ type: 'ok' | 'err'; msg: string } | null>(null)
   const fileRef = useRef<HTMLInputElement>(null)
 
   const parseCSV = (raw: string) => {
     const lines = raw.trim().split('\n').filter(Boolean)
-    const parsed: Array<{ name: string; department: string; email: string; cohort: number | null }> = []
+    const parsed: Array<{ name: string; department: string; username: string; cohort: number | null }> = []
     for (const line of lines) {
       const cols = line.split(',').map((c) => c.trim().replace(/^"|"$/g, ''))
       if (cols.length < 2) continue
-      const [name, department, email, cohortStr] = cols
+      const [name, department, username, cohortStr] = cols
       if (!name || name === '이름') continue // 헤더 건너뜀
       const cohortNum = parseInt(cohortStr ?? '', 10)
       parsed.push({
         name,
         department: department ?? '',
-        email: email ?? '',
+        username: username ?? '',
         cohort: [1, 2, 3].includes(cohortNum) ? cohortNum : null,
       })
     }
@@ -922,7 +922,7 @@ function CsvUploadModal({ onClose, onDone }: { onClose: () => void; onDone: () =
         <div className="flex items-center justify-between px-6 py-4 border-b border-[#EBEBEB] shrink-0">
           <div>
             <h2 className="text-base font-bold text-[#111111]">교육생 일괄 등록</h2>
-            <p className="text-xs text-[#8A8A8A] mt-0.5">CSV 파일 또는 직접 붙여넣기 — 컬럼: 이름, 소속, 이메일, 차수</p>
+            <p className="text-xs text-[#8A8A8A] mt-0.5">CSV 파일 또는 직접 붙여넣기 — 컬럼: 이름, 소속, 아이디, 차수</p>
           </div>
           <button onClick={onClose} className="w-9 h-9 rounded-xl bg-[#F5F5F5] flex items-center justify-center text-[#8A8A8A]">✕</button>
         </div>
@@ -942,7 +942,7 @@ function CsvUploadModal({ onClose, onDone }: { onClose: () => void; onDone: () =
           <textarea
             value={text}
             onChange={handleTextChange}
-            placeholder={`이름,소속,이메일,차수\n홍길동,마케팅실,hong@hmg.com,1\n김영희,전략실,kim@hmg.com,2`}
+            placeholder={`이름,소속,아이디,차수\n홍길동,마케팅실,gildong123,1\n김영희,전략실,younghee456,2`}
             rows={6}
             className="w-full rounded-xl border border-[#EBEBEB] bg-[#F5F5F5] px-4 py-3 text-sm font-mono text-[#3A3A3A] focus:outline-none focus:border-[#111111] resize-none"
           />
@@ -954,7 +954,7 @@ function CsvUploadModal({ onClose, onDone }: { onClose: () => void; onDone: () =
                 <table className="w-full text-xs">
                   <thead>
                     <tr className="bg-[#F5F5F5] border-b border-[#EBEBEB]">
-                      {['이름', '소속', '이메일', '차수'].map((h) => (
+                      {['이름', '소속', '아이디', '차수'].map((h) => (
                         <th key={h} className="text-left px-3 py-2 font-semibold text-[#8A8A8A]">{h}</th>
                       ))}
                     </tr>
@@ -964,7 +964,7 @@ function CsvUploadModal({ onClose, onDone }: { onClose: () => void; onDone: () =
                       <tr key={i} className="border-b border-[#F5F5F5]">
                         <td className="px-3 py-2 font-medium text-[#111111]">{p.name}</td>
                         <td className="px-3 py-2 text-[#8A8A8A]">{p.department}</td>
-                        <td className="px-3 py-2 text-[#8A8A8A]">{p.email}</td>
+                        <td className="px-3 py-2 text-[#8A8A8A]">{p.username}</td>
                         <td className="px-3 py-2">
                           {p.cohort ? (
                             <CohortBadge cohort={p.cohort} />
@@ -1054,11 +1054,11 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
   const filteredRows = cohortFilter === 'all' ? rows : rows.filter((r) => r.cohort === cohortFilter)
 
   const downloadCSV = () => {
-    const headers = ['이름', '소속', '이메일', '차수', '진짜문제정의', '카드완료', '마스터플랜', '액션플랜', '트래킹완료율', '마지막접속']
+    const headers = ['이름', '소속', '아이디', '차수', '진짜문제정의', '카드완료', '마스터플랜', '액션플랜', '트래킹완료율', '마지막접속']
     const csvRows = filteredRows.map((r) => [
       r.name,
       r.department,
-      r.email,
+      r.username,
       r.cohort ? `${r.cohort}차수` : '-',
       r.problem_definition_status,
       `${r.cards_completed}/3`,
