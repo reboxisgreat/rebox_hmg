@@ -509,8 +509,7 @@ export default function ProblemDefinitionPage() {
                 className="w-full rounded-2xl bg-[#111111] text-white text-base font-semibold active:scale-[0.98] transition-all flex items-center justify-center gap-2"
                 style={{ height: '45px' }}
               >
-                다음 카드로 이동(고객가치 관리)
-                <ArrowRight size={18} />
+                저장하기
               </button>
               <button
                 onClick={() => router.push('/')}

@@ -69,10 +69,13 @@ export async function POST(req: NextRequest) {
         {
           participant_id: participantId,
           slogan: result.slogan,
+          customer_strategy: result.customer.strategy,
           customer_what: result.customer.what,
           customer_why: result.customer.why,
+          process_strategy: result.process.strategy,
           process_what: result.process.what,
           process_why: result.process.why,
+          people_strategy: result.people.strategy,
           people_what: result.people.what,
           people_why: result.people.why,
           is_confirmed: false,
@@ -108,10 +111,13 @@ export async function PATCH(req: NextRequest) {
       .from('master_plans')
       .update({
         slogan: masterPlan.slogan,
+        customer_strategy: masterPlan.customer_strategy,
         customer_what: masterPlan.customer_what,
         customer_why: masterPlan.customer_why,
+        process_strategy: masterPlan.process_strategy,
         process_what: masterPlan.process_what,
         process_why: masterPlan.process_why,
+        people_strategy: masterPlan.people_strategy,
         people_what: masterPlan.people_what,
         people_why: masterPlan.people_why,
         ...(isConfirmed !== undefined && { is_confirmed: isConfirmed }),

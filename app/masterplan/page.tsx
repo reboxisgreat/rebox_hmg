@@ -24,10 +24,13 @@ interface CardRow {
 
 interface MasterPlanState {
   slogan: string
+  customer_strategy: string
   customer_what: string
   customer_why: string
+  process_strategy: string
   process_what: string
   process_why: string
+  people_strategy: string
   people_what: string
   people_why: string
 }
@@ -38,10 +41,10 @@ const STEP5_INITIAL: Record<CardNumber, string> = {
   3: '마지막입니다! 프로세스 관리 영역의 성공지표를 함께 도출해볼게요.\n회의, 보고, 업무 흐름에서 어떤 변화가 생기면 성공이라고 할 수 있을까요?',
 }
 
-const PLAN_ROWS: { label: string; whatKey: keyof MasterPlanState; whyKey: keyof MasterPlanState; headerBg: string; headerText: string; accentBorder: string }[] = [
-  { label: '고객가치', whatKey: 'customer_what', whyKey: 'customer_why', headerBg: 'bg-[#FFF1F2]', headerText: 'text-[#DC2626]', accentBorder: 'border-l-[#DC2626]' },
-  { label: '사람',    whatKey: 'people_what',   whyKey: 'people_why',   headerBg: 'bg-[#FFFBEB]', headerText: 'text-[#D97706]', accentBorder: 'border-l-[#D97706]' },
-  { label: '프로세스', whatKey: 'process_what',  whyKey: 'process_why',  headerBg: 'bg-[#F0FDF4]', headerText: 'text-[#16A34A]', accentBorder: 'border-l-[#16A34A]' },
+const PLAN_ROWS: { label: string; strategyKey: keyof MasterPlanState; whatKey: keyof MasterPlanState; whyKey: keyof MasterPlanState; headerBg: string; headerText: string; accentBorder: string }[] = [
+  { label: '고객가치', strategyKey: 'customer_strategy', whatKey: 'customer_what', whyKey: 'customer_why', headerBg: 'bg-[#FFF1F2]', headerText: 'text-[#DC2626]', accentBorder: 'border-l-[#DC2626]' },
+  { label: '사람',    strategyKey: 'people_strategy',   whatKey: 'people_what',   whyKey: 'people_why',   headerBg: 'bg-[#FFFBEB]', headerText: 'text-[#D97706]', accentBorder: 'border-l-[#D97706]' },
+  { label: '프로세스', strategyKey: 'process_strategy',  whatKey: 'process_what',  whyKey: 'process_why',  headerBg: 'bg-[#F0FDF4]', headerText: 'text-[#16A34A]', accentBorder: 'border-l-[#16A34A]' },
 ]
 
 export default function MasterPlanPage() {
@@ -54,8 +57,10 @@ export default function MasterPlanPage() {
   const [currentStep5Card, setCurrentStep5Card] = useState<CardNumber>(1)
   const [chatKey, setChatKey] = useState(0)
   const [masterPlan, setMasterPlan] = useState<MasterPlanState>({
-    slogan: '', customer_what: '', customer_why: '',
-    process_what: '', process_why: '', people_what: '', people_why: '',
+    slogan: '',
+    customer_strategy: '', customer_what: '', customer_why: '',
+    process_strategy: '', process_what: '', process_why: '',
+    people_strategy: '', people_what: '', people_why: '',
   })
   const [generateError, setGenerateError] = useState('')
   const [isPostCompletion, setIsPostCompletion] = useState(false)
@@ -107,7 +112,19 @@ export default function MasterPlanPage() {
 
         // 마스터플랜이 이미 있으면 편집 화면으로
         if (data.masterPlan) {
-          setMasterPlan(data.masterPlan)
+          const mp = data.masterPlan
+          setMasterPlan({
+            slogan: mp.slogan ?? '',
+            customer_strategy: mp.customer_strategy ?? '',
+            customer_what: mp.customer_what ?? '',
+            customer_why: mp.customer_why ?? '',
+            process_strategy: mp.process_strategy ?? '',
+            process_what: mp.process_what ?? '',
+            process_why: mp.process_why ?? '',
+            people_strategy: mp.people_strategy ?? '',
+            people_what: mp.people_what ?? '',
+            people_why: mp.people_why ?? '',
+          })
           setPhase('editing')
           return
         }
@@ -195,10 +212,13 @@ export default function MasterPlanPage() {
       const mp = data.masterPlan
       setMasterPlan({
         slogan: mp.slogan,
+        customer_strategy: mp.customer.strategy,
         customer_what: mp.customer.what,
         customer_why: mp.customer.why,
+        process_strategy: mp.process.strategy,
         process_what: mp.process.what,
         process_why: mp.process.why,
+        people_strategy: mp.people.strategy,
         people_what: mp.people.what,
         people_why: mp.people.why,
       })
@@ -447,19 +467,29 @@ export default function MasterPlanPage() {
         </div>
 
         {/* 영역별 카드 */}
-        {PLAN_ROWS.map(({ label, whatKey, whyKey, headerBg, headerText, accentBorder }) => (
+        {PLAN_ROWS.map(({ label, strategyKey, whatKey, whyKey, headerBg, headerText, accentBorder }) => (
           <div key={label} className={`bg-white border border-[#EBEBEB] border-l-4 ${accentBorder} rounded-2xl overflow-hidden shadow-[0_1px_3px_rgba(0,0,0,0.06)]`}>
             <div className={`px-4 py-2.5 ${headerBg}`}>
               <p className={`text-sm font-bold ${headerText}`}>{label}</p>
             </div>
             <div className="divide-y divide-[#EBEBEB]">
               <div className="px-4 py-3">
-                <p className="text-xs font-semibold text-[#8A8A8A] mb-1.5">What — 핵심 액션 · 성공지표</p>
+                <p className="text-xs font-semibold text-[#8A8A8A] mb-1.5">조직관리 전략 — 성공지표</p>
+                <textarea
+                  ref={setTextareaRef(strategyKey)}
+                  value={masterPlan[strategyKey]}
+                  onChange={(e) => handleFieldChange(strategyKey, e.target.value)}
+                  placeholder="성공지표를 입력하세요"
+                  className="w-full text-sm text-[#111111] bg-transparent resize-none focus:outline-none leading-relaxed placeholder-[#D4D4D4] py-0 h-auto"
+                />
+              </div>
+              <div className="px-4 py-3">
+                <p className="text-xs font-semibold text-[#8A8A8A] mb-1.5">What — 핵심 액션</p>
                 <textarea
                   ref={setTextareaRef(whatKey)}
                   value={masterPlan[whatKey]}
                   onChange={(e) => handleFieldChange(whatKey, e.target.value)}
-                  placeholder="핵심 액션과 성공지표를 입력하세요"
+                  placeholder="성공지표를 달성하기 위한 핵심 액션을 입력하세요"
                   className="w-full text-sm text-[#111111] bg-transparent resize-none focus:outline-none leading-relaxed placeholder-[#D4D4D4] py-0 h-auto"
                 />
               </div>

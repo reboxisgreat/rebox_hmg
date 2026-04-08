@@ -43,10 +43,13 @@ export interface MasterPlan {
   id: string
   participant_id: string
   slogan: string | null
+  customer_strategy: string | null
   customer_what: string | null
   customer_why: string | null
+  process_strategy: string | null
   process_what: string | null
   process_why: string | null
+  people_strategy: string | null
   people_what: string | null
   people_why: string | null
   is_confirmed: boolean
@@ -54,12 +57,30 @@ export interface MasterPlan {
   updated_at: string
 }
 
+// 마스터플랜 갤러리 카드 (참가자 정보 포함)
+export interface MasterPlanCard {
+  id: string
+  participant_id: string
+  slogan: string | null
+  customer_strategy: string | null
+  customer_what: string | null
+  customer_why: string | null
+  process_strategy: string | null
+  process_what: string | null
+  process_why: string | null
+  people_strategy: string | null
+  people_what: string | null
+  people_why: string | null
+  is_confirmed: boolean
+  participants: { name: string; department: string | null } | null
+}
+
 // 마스터플랜 AI 도출 결과 (JSON 파싱용)
 export interface MasterPlanResult {
   slogan: string
-  customer: { what: string; why: string }
-  process: { what: string; why: string }
-  people: { what: string; why: string }
+  customer: { strategy: string; what: string; why: string }
+  process: { strategy: string; what: string; why: string }
+  people: { strategy: string; what: string; why: string }
 }
 
 // 1년 액션플랜 분기별 항목
