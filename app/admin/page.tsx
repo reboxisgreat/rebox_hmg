@@ -672,10 +672,13 @@ interface MasterPlanCard {
   id: string
   participant_id: string
   slogan: string | null
+  customer_strategy: string | null
   customer_what: string | null
   customer_why: string | null
+  process_strategy: string | null
   process_what: string | null
   process_why: string | null
+  people_strategy: string | null
   people_what: string | null
   people_why: string | null
   is_confirmed: boolean

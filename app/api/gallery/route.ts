@@ -28,7 +28,7 @@ export async function GET(request: NextRequest) {
     // 같은 차수의 확정된 마스터플랜 조회
     const { data: plans, error } = await supabase
       .from('master_plans')
-      .select('id, participant_id, slogan, customer_what, customer_why, process_what, process_why, people_what, people_why, is_confirmed, participants!inner(name, department, cohort)')
+      .select('id, participant_id, slogan, customer_strategy, customer_what, customer_why, process_strategy, process_what, process_why, people_strategy, people_what, people_why, is_confirmed, participants!inner(name, department, cohort)')
       .eq('is_confirmed', true)
       .eq('participants.cohort', participant.cohort)
       .order('created_at', { ascending: true })

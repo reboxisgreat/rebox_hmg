@@ -11,9 +11,9 @@ interface GalleryCard extends MasterPlanCard {
 }
 
 const AREAS = [
-  { whatKey: 'customer_what' as const, whyKey: 'customer_why' as const, label: '고객가치', color: '#DC2626', bg: '#FFF1F2', border: '#FECDD3' },
-  { whatKey: 'process_what' as const, whyKey: 'process_why' as const, label: '프로세스', color: '#16A34A', bg: '#F0FDF4', border: '#BBF7D0' },
-  { whatKey: 'people_what' as const, whyKey: 'people_why' as const, label: '사람', color: '#D97706', bg: '#FFFBEB', border: '#FDE68A' },
+  { strategyKey: 'customer_strategy' as const, whatKey: 'customer_what' as const, whyKey: 'customer_why' as const, label: '고객가치', color: '#DC2626', bg: '#FFF1F2', border: '#FECDD3' },
+  { strategyKey: 'process_strategy' as const, whatKey: 'process_what' as const, whyKey: 'process_why' as const, label: '프로세스', color: '#16A34A', bg: '#F0FDF4', border: '#BBF7D0' },
+  { strategyKey: 'people_strategy' as const, whatKey: 'people_what' as const, whyKey: 'people_why' as const, label: '사람', color: '#D97706', bg: '#FFFBEB', border: '#FDE68A' },
 ]
 
 export default function GalleryPage() {
@@ -173,10 +173,16 @@ export default function GalleryPage() {
                           {card.slogan ?? <span className="text-white/30 italic font-normal">미작성</span>}
                         </p>
                       </div>
-                      {AREAS.map(({ whatKey, whyKey, label, color, bg, border }) => (
+                      {AREAS.map(({ strategyKey, whatKey, whyKey, label, color, bg, border }) => (
                         <div key={whatKey} className="rounded-xl border p-3" style={{ backgroundColor: bg, borderColor: border }}>
                           <p className="text-[11px] font-bold mb-2" style={{ color }}>{label}</p>
                           <div className="space-y-1.5">
+                            {card[strategyKey] && (
+                              <div>
+                                <p className="text-[10px] font-semibold text-[#8A8A8A] mb-0.5">조직관리 전략</p>
+                                <p className="text-[12px] text-[#1A1A1A] leading-relaxed">{card[strategyKey]}</p>
+                              </div>
+                            )}
                             <div>
                               <p className="text-[10px] font-semibold text-[#8A8A8A] mb-0.5">What</p>
                               <p className="text-[12px] text-[#1A1A1A] leading-relaxed">
