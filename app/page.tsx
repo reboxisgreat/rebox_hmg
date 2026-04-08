@@ -579,16 +579,16 @@ function HomePage({
           ) : (
             <button
               onClick={() => router.push(getNextStep())}
-              className="w-full bg-[#111] rounded-3xl px-5 py-5 text-left active:scale-[0.98] transition-all"
+              className="w-full bg-[#002C5F] rounded-3xl px-5 py-5 text-left active:bg-[#003a7a] transition-all"
             >
               <div className="flex items-center justify-between mb-3">
-                <p className="text-xs font-semibold text-white/50 uppercase tracking-[0.1em]">다음 단계로</p>
-                <div className="flex items-center gap-1.5 bg-white/10 rounded-full px-3 py-1">
+                <p className="text-xs font-semibold text-white/70 uppercase tracking-[0.1em]">다음 단계로</p>
+                <div className="flex items-center gap-1.5 bg-white/20 rounded-full px-3 py-1">
                   <span className="text-xs font-bold text-white">{completedSteps}/{totalSteps}</span>
                 </div>
               </div>
               {/* 진행 바 */}
-              <div className="h-1.5 bg-white/10 rounded-full mb-3 overflow-hidden">
+              <div className="h-1.5 bg-white/20 rounded-full mb-3 overflow-hidden">
                 <div
                   className="h-full bg-white rounded-full transition-all"
                   style={{ width: `${(completedSteps / totalSteps) * 100}%` }}
@@ -596,7 +596,7 @@ function HomePage({
               </div>
               <div className="flex items-center justify-between">
                 <p className="text-base font-semibold text-white">이어서 계속하기</p>
-                <div className="w-8 h-8 bg-white/10 rounded-full flex items-center justify-center">
+                <div className="w-8 h-8 bg-white/20 rounded-full flex items-center justify-center">
                   <ArrowRight size={16} color="white" />
                 </div>
               </div>
