@@ -583,15 +583,23 @@ function DetailModal({
                   <p className="text-base font-bold text-white">{mp.slogan}</p>
                 </div>
                 {([
-                  ['고객가치', 'customer_what', 'customer_why', 'bg-[#EFF6FF]', 'text-[#2563EB]', 'border-l-[#2563EB]'],
-                  ['프로세스', 'process_what',  'process_why',  'bg-[#FFF7ED]', 'text-[#EA580C]', 'border-l-[#EA580C]'],
-                  ['사람',    'people_what',   'people_why',   'bg-[#FFFBEB]', 'text-[#D97706]', 'border-l-[#D97706]'],
-                ] as const).map(([label, whatKey, whyKey, hBg, hText, lBorder]) => (
+                  ['고객가치', 'customer_strategy', 'customer_what', 'customer_why', 'bg-[#EFF6FF]', 'text-[#2563EB]', 'border-l-[#2563EB]'],
+                  ['프로세스', 'process_strategy',  'process_what',  'process_why',  'bg-[#FFF7ED]', 'text-[#EA580C]', 'border-l-[#EA580C]'],
+                  ['사람',    'people_strategy',   'people_what',   'people_why',   'bg-[#FFFBEB]', 'text-[#D97706]', 'border-l-[#D97706]'],
+                ] as const).map(([label, strategyKey, whatKey, whyKey, hBg, hText, lBorder]) => (
                   <div key={label} className={`border border-[#EBEBEB] border-l-4 ${lBorder} rounded-2xl overflow-hidden`}>
                     <div className={`px-4 py-2.5 ${hBg}`}>
                       <p className={`text-sm font-bold ${hText}`}>{label}</p>
                     </div>
                     <div className="px-4 py-3 space-y-3">
+                      {(mp[strategyKey as keyof MasterPlan] as string) && (
+                        <div>
+                          <p className="text-xs font-semibold text-[#8A8A8A] mb-1">조직관리 전략</p>
+                          <p className="text-sm text-[#111111] leading-relaxed">
+                            {(mp[strategyKey as keyof MasterPlan] as string)}
+                          </p>
+                        </div>
+                      )}
                       <div>
                         <p className="text-xs font-semibold text-[#8A8A8A] mb-1">What</p>
                         <p className="text-sm text-[#111111] leading-relaxed">
@@ -716,9 +724,9 @@ function MasterPlanGallery({ onSelectParticipant }: { onSelectParticipant: (id: 
   })
 
   const AREAS = [
-    { whatKey: 'customer_what' as const, whyKey: 'customer_why' as const, label: '고객가치', color: '#DC2626', bg: '#FFF1F2', border: '#FECDD3' },
-    { whatKey: 'process_what' as const, whyKey: 'process_why' as const, label: '프로세스', color: '#16A34A', bg: '#F0FDF4', border: '#BBF7D0' },
-    { whatKey: 'people_what' as const, whyKey: 'people_why' as const, label: '사람', color: '#D97706', bg: '#FFFBEB', border: '#FDE68A' },
+    { strategyKey: 'customer_strategy' as const, whatKey: 'customer_what' as const, whyKey: 'customer_why' as const, label: '고객가치', color: '#DC2626', bg: '#FFF1F2', border: '#FECDD3' },
+    { strategyKey: 'process_strategy' as const, whatKey: 'process_what' as const, whyKey: 'process_why' as const, label: '프로세스', color: '#16A34A', bg: '#F0FDF4', border: '#BBF7D0' },
+    { strategyKey: 'people_strategy' as const, whatKey: 'people_what' as const, whyKey: 'people_why' as const, label: '사람', color: '#D97706', bg: '#FFFBEB', border: '#FDE68A' },
   ]
 
   if (loading) {
@@ -815,10 +823,16 @@ function MasterPlanGallery({ onSelectParticipant }: { onSelectParticipant: (id: 
                 onClick={() => onSelectParticipant(card.participant_id)}
                 className="w-full p-3 space-y-2 text-left"
               >
-                {AREAS.map(({ whatKey, whyKey, label, color, bg, border }) => (
+                {AREAS.map(({ strategyKey, whatKey, whyKey, label, color, bg, border }) => (
                   <div key={whatKey} className="rounded-xl border p-3" style={{ backgroundColor: bg, borderColor: border }}>
                     <p className="text-[11px] font-bold mb-2" style={{ color }}>{label}</p>
                     <div className="space-y-1.5">
+                      {card[strategyKey] && (
+                        <div>
+                          <p className="text-[10px] font-semibold text-[#8A8A8A] mb-0.5">조직관리 전략</p>
+                          <p className="text-[12px] text-[#1A1A1A] leading-relaxed">{card[strategyKey]}</p>
+                        </div>
+                      )}
                       <div>
                         <p className="text-[10px] font-semibold text-[#8A8A8A] mb-0.5">What</p>
                         <p className="text-[12px] text-[#1A1A1A] leading-relaxed">

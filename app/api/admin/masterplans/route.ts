@@ -6,7 +6,7 @@ export async function GET() {
     const supabase = createSupabaseServiceClient()
     const { data, error } = await supabase
       .from('master_plans')
-      .select('id, participant_id, slogan, customer_what, customer_why, process_what, process_why, people_what, people_why, is_confirmed, participants(name, department)')
+      .select('id, participant_id, slogan, customer_strategy, customer_what, customer_why, process_strategy, process_what, process_why, people_strategy, people_what, people_why, is_confirmed, participants(name, department)')
       .order('created_at', { ascending: true })
 
     if (error) throw error
