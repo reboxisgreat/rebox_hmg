@@ -438,7 +438,7 @@ export default function TrackingPage() {
           <div className="grid grid-cols-2 gap-2 mb-3">
             {/* 차수 내 순위 */}
             {myScore.cohort_total > 0 && myScore.cohort !== null ? (
-              <div className="bg-[#F0FDF4] border border-[#BBF7D0] rounded-2xl px-3 py-2.5">
+              <div onClick={() => router.push('/ranking')} className="bg-[#F0FDF4] border border-[#BBF7D0] rounded-2xl px-3 py-2.5 cursor-pointer active:opacity-70">
                 <p className="text-[10px] font-bold text-[#16A34A] tracking-wide uppercase mb-1">{myScore.cohort}차수 내 순위</p>
                 <p className="text-xl font-bold text-[#111111] leading-none">
                   {myScore.cohort_rank}위
@@ -453,7 +453,7 @@ export default function TrackingPage() {
               </div>
             )}
             {/* 전체 순위 */}
-            <div className="bg-[#EFF6FF] border border-[#BFDBFE] rounded-2xl px-3 py-2.5">
+            <div onClick={() => router.push('/ranking')} className="bg-[#EFF6FF] border border-[#BFDBFE] rounded-2xl px-3 py-2.5 cursor-pointer active:opacity-70">
               <p className="text-[10px] font-bold text-[#2563EB] tracking-wide uppercase mb-1">전체 순위(차수별 교육 이후 반영)</p>
               <p className="text-xl font-bold text-[#111111] leading-none">
                 {myScore.rank}위
@@ -488,6 +488,9 @@ export default function TrackingPage() {
 
         {/* 점수 안내 */}
         <div className="mt-3 flex gap-2 flex-wrap">
+          <span className="flex items-center gap-1 text-[10px] bg-[#F5F5F5] rounded-lg px-2 py-1 text-[#8A8A8A]">
+            과제 완료 <span className="font-bold text-[#111111]">+10점</span>
+          </span>
           <span className="flex items-center gap-1 text-[10px] bg-[#F5F5F5] rounded-lg px-2 py-1 text-[#8A8A8A]">
             항목 완료 <span className="font-bold text-[#111111]">+10점</span>
           </span>
