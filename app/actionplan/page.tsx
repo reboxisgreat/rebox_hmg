@@ -11,10 +11,13 @@ type Phase = 'loading' | 'no-masterplan' | 'generating' | 'editing' | 'saving' |
 
 interface MasterPlanData {
   slogan: string
+  customer_strategy: string | null
   customer_what: string
   customer_why: string
+  process_strategy: string | null
   process_what: string
   process_why: string
+  people_strategy: string | null
   people_what: string
   people_why: string
   is_confirmed: boolean

@@ -666,9 +666,9 @@ __SUMMARY_END__
 export function getChecklistSupplementPrompt(
   masterPlan: {
     slogan: string
-    customer: { what: string; why: string }
-    process: { what: string; why: string }
-    people: { what: string; why: string }
+    customer: { strategy: string; what: string; why: string }
+    process: { strategy: string; what: string; why: string }
+    people: { strategy: string; what: string; why: string }
   },
   yearlyPlan: Array<{
     quarter: string
@@ -692,12 +692,15 @@ ${BASE_PROMPT}
 슬로건: ${masterPlan.slogan}
 마스터플랜:
 ■ 고객가치
+  전략: ${masterPlan.customer.strategy}
   What: ${masterPlan.customer.what}
   Why: ${masterPlan.customer.why}
 ■ 프로세스
+  전략: ${masterPlan.process.strategy}
   What: ${masterPlan.process.what}
   Why: ${masterPlan.process.why}
 ■ 사람
+  전략: ${masterPlan.people.strategy}
   What: ${masterPlan.people.what}
   Why: ${masterPlan.people.why}
 
@@ -705,7 +708,7 @@ ${BASE_PROMPT}
 ${yearlyPlan.map(q => `${q.quarter} (${q.focus}): ${q.actions.join(', ')}`).join('\n')}
 
 30일 체크리스트:
-${monthlyChecklist.map(w => `${w.week}주차 (${w.theme}): ${w.items.join(', ')}`).join('\n')}
+${checklistSummary}
 
 [코칭 가이드]
 - 교육생의 마스터플랜과 1년 플랜 전체 맥락을 파악하고 답변하세요.
