@@ -121,10 +121,9 @@ export default function CardGalleryPage() {
         </button>
         <div className="flex-1">
           <p className="text-[16px] font-bold text-[#111]">카드 갤러리</p>
-          <p className="text-[11px] text-[#8A8A8A]">우리 차수 확정 카드</p>
         </div>
         {!loading && cards.length > 0 && (
-          <span className="text-[12px] font-semibold text-[#8A8A8A]">{filtered.length}개</span>
+          <span className="text-[12px] font-semibold text-[#8A8A8A]">{filtered.length}명</span>
         )}
       </div>
 
