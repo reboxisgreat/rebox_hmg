@@ -143,21 +143,21 @@ export async function PATCH(req: NextRequest) {
 
     const supabase = createSupabaseServiceClient()
 
-    // 1. 액션플랜 확정 저장
+    // 1. 액션플랜 데이터 저장 (is_confirmed는 아직 false)
     const { error: updateError } = await supabase
       .from('action_plans')
       .update({
         yearly_plan: yearlyPlan,
         monthly_checklist: monthlyChecklist,
-        is_confirmed: true,
       })
       .eq('participant_id', participantId)
 
     if (updateError) throw updateError
 
-    // 2. 기존 tracking_logs 삭제 후 재생성
+    // 2. 기존 tracking_logs 삭제
     await supabase.from('tracking_logs').delete().eq('participant_id', participantId)
 
+    // 3. 주차별 tracking_logs 생성 (실패 시 500 반환)
     const trackingLogs = (monthlyChecklist as WeeklyChecklist[]).flatMap((week) =>
       week.items.map((item: ChecklistItem) => ({
         participant_id: participantId,
@@ -169,6 +169,12 @@ export async function PATCH(req: NextRequest) {
       }))
     )
 
+    if (trackingLogs.length > 0) {
+      const { error: insertError } = await supabase.from('tracking_logs').insert(trackingLogs)
+      if (insertError) throw insertError
+    }
+
+    // 4. 과제 logs 생성 (week_number=0, DB 제약 실패 시 경고만)
     const homeworkLogs = HOMEWORK_ITEMS.map((content, index) => ({
       participant_id: participantId,
       week_number: 0,
@@ -178,11 +184,18 @@ export async function PATCH(req: NextRequest) {
       memo: null,
     }))
 
-    const allLogs = [...trackingLogs, ...homeworkLogs]
-    if (allLogs.length > 0) {
-      const { error: insertError } = await supabase.from('tracking_logs').insert(allLogs)
-      if (insertError) throw insertError
+    const { error: homeworkError } = await supabase.from('tracking_logs').insert(homeworkLogs)
+    if (homeworkError) {
+      console.warn('과제 logs insert 실패 (무시):', homeworkError)
     }
+
+    // 5. 모든 insert 완료 후 is_confirmed = true
+    const { error: confirmError } = await supabase
+      .from('action_plans')
+      .update({ is_confirmed: true })
+      .eq('participant_id', participantId)
+
+    if (confirmError) throw confirmError
 
     return NextResponse.json({ success: true })
   } catch (error) {

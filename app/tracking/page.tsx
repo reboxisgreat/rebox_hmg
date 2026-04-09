@@ -322,7 +322,7 @@ export default function TrackingPage() {
     )
   }
 
-  if (logs.length === 0) {
+  if (weeklyLogs.length === 0) {
     return (
       <div className="relative flex items-center justify-center px-6 text-center" style={{ height: '100dvh' }}>
         <div className="absolute top-0 left-0 right-0 flex items-center justify-between px-3 pt-3">
