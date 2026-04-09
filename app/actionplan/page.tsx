@@ -265,11 +265,13 @@ export default function ActionPlanPage() {
         body: JSON.stringify({ participantId, yearlyPlan, monthlyChecklist }),
       })
       if (!res.ok) throw new Error()
-      setPhase('confirmed')
       if (wasConfirmed) {
+        setPhase('confirmed')
         if (savedToastTimer.current) clearTimeout(savedToastTimer.current)
         setSavedToast(true)
         savedToastTimer.current = setTimeout(() => setSavedToast(false), 2000)
+      } else {
+        router.push('/tracking')
       }
     } catch {
       setPhase(wasConfirmed ? 'confirmed' : 'editing')
@@ -653,7 +655,7 @@ export default function ActionPlanPage() {
             disabled={phase === 'saving'}
             className="w-full h-12 rounded-2xl bg-[#111111] active:scale-[0.98] active:bg-[#2A2A2A] text-white font-semibold text-sm disabled:opacity-50 transition-all shadow-[0_2px_12px_rgba(0,0,0,0.09)]"
           >
-            최종 확정하기
+            저장하기
           </button>
         ) : (
           <p className="text-center text-xs text-[#8A8A8A]">1년 플랜을 검토한 후 체크리스트를 도출하세요</p>
