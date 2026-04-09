@@ -96,6 +96,12 @@ export async function POST(req: NextRequest) {
 
     if (error) throw error
 
+    // 마스터플랜이 있으면 is_stale = true (내용이 바뀌었음을 알림)
+    await supabase
+      .from('master_plans')
+      .update({ is_stale: true })
+      .eq('participant_id', participantId)
+
     return NextResponse.json({ success: true })
   } catch (error) {
     console.error('Card save error:', error)

@@ -112,6 +112,7 @@ export async function POST(req: NextRequest) {
         monthly_checklist: monthlyChecklist,
         ai_supplement_chat: [],
         is_confirmed: false,
+        is_stale: false,
       }, { onConflict: 'participant_id' })
       .select()
       .single()

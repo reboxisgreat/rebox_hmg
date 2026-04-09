@@ -79,6 +79,7 @@ export async function POST(req: NextRequest) {
           people_what: result.people.what,
           people_why: result.people.why,
           is_confirmed: false,
+          is_stale: false,
         },
         { onConflict: 'participant_id' }
       )
@@ -86,6 +87,12 @@ export async function POST(req: NextRequest) {
       .single()
 
     if (dbError) throw dbError
+
+    // 액션플랜이 있으면 is_stale = true (마스터플랜이 바뀌었음을 알림)
+    await supabase
+      .from('action_plans')
+      .update({ is_stale: true })
+      .eq('participant_id', participantId)
 
     return NextResponse.json({ masterPlan: result, id: data.id })
   } catch (error) {

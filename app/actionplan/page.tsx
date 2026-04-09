@@ -40,6 +40,7 @@ export default function ActionPlanPage() {
   const [generateError, setGenerateError] = useState('')
   const [savedToast, setSavedToast] = useState(false)
   const [showRegenerateConfirm, setShowRegenerateConfirm] = useState(false)
+  const [isStale, setIsStale] = useState(false)
   const checklistRef = useRef<HTMLDivElement>(null)
   const savedToastTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const autoSaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -69,6 +70,7 @@ export default function ActionPlanPage() {
 
       setYearlyPlan(data.yearlyPlan)
       setMonthlyChecklist(data.monthlyChecklist)
+      setIsStale(false)
       setPhase('editing')
     } catch {
       setGenerateError('액션플랜 도출 중 오류가 발생했어요. 다시 시도해주세요.')
@@ -88,7 +90,7 @@ export default function ActionPlanPage() {
       .then((r) => r.json())
       .then((data: {
         masterPlan: MasterPlanData | null
-        actionPlan: { yearly_plan: QuarterlyPlan[]; monthly_checklist: WeeklyChecklist[]; is_confirmed: boolean } | null
+        actionPlan: { yearly_plan: QuarterlyPlan[]; monthly_checklist: WeeklyChecklist[]; is_confirmed: boolean; is_stale: boolean } | null
         error?: string
       }) => {
         if (data.error) { setErrorMsg(data.error); setPhase('error'); return }
@@ -102,6 +104,7 @@ export default function ActionPlanPage() {
         if (ap) {
           setYearlyPlan(ap.yearly_plan ?? [])
           setMonthlyChecklist(ap.monthly_checklist ?? [])
+          setIsStale(ap.is_stale ?? false)
           if (ap.is_confirmed) {
             setShowChecklist(true)
             setPhase('confirmed')
@@ -429,6 +432,18 @@ export default function ActionPlanPage() {
 
       {/* 본문 */}
       <div className="flex-1 overflow-y-auto px-4 py-4 space-y-5 bg-[#F5F5F5]">
+        {/* 마스터플랜 변경 경고 배너 */}
+        {isStale && (
+          <div className="flex items-center justify-between gap-3 rounded-xl border border-[#FDE68A] bg-[#FFFBEB] px-4 py-3">
+            <p className="text-[12px] text-[#92400E] leading-snug">⚠️ 마스터플랜이 변경되었어요. 액션플랜 다시 생성을 권장합니다.</p>
+            <button
+              onClick={() => setShowRegenerateConfirm(true)}
+              className="shrink-0 text-[11px] font-semibold text-[#B45309] underline underline-offset-2 active:opacity-60"
+            >
+              다시 생성
+            </button>
+          </div>
+        )}
         <div id="pdf-content">
         {/* 1년 액션플랜 섹션 */}
         {(() => {

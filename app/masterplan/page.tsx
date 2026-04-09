@@ -65,6 +65,8 @@ export default function MasterPlanPage() {
   })
   const [generateError, setGenerateError] = useState('')
   const [isPostCompletion, setIsPostCompletion] = useState(false)
+  const [showRegenerateConfirm, setShowRegenerateConfirm] = useState(false)
+  const [isStale, setIsStale] = useState(false)
   const autosaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const textareaRefs = useRef<Map<string, HTMLTextAreaElement>>(new Map())
   const setTextareaRef = useCallback((key: string) => (el: HTMLTextAreaElement | null) => {
@@ -94,7 +96,7 @@ export default function MasterPlanPage() {
       fetch(`/api/masterplan?participantId=${id}`).then((r) => r.json()),
       fetch(`/api/actionplan?participantId=${id}`).then((r) => r.json()),
     ]).then(([data, actionData]: [
-      { cards: CardRow[]; masterPlan: (MasterPlanState & { id: string }) | null; error?: string },
+      { cards: CardRow[]; masterPlan: (MasterPlanState & { id: string; is_stale: boolean }) | null; error?: string },
       { actionPlan: { is_confirmed: boolean } | null }
     ]) => {
       if (actionData.actionPlan?.is_confirmed) setIsPostCompletion(true)
@@ -126,6 +128,7 @@ export default function MasterPlanPage() {
             people_what: mp.people_what ?? '',
             people_why: mp.people_why ?? '',
           })
+          setIsStale(mp.is_stale ?? false)
           setPhase('editing')
           return
         }
@@ -223,6 +226,7 @@ export default function MasterPlanPage() {
         people_what: mp.people.what,
         people_why: mp.people.why,
       })
+      setIsStale(false)
       setPhase('editing')
     } catch {
       setGenerateError('마스터플랜 도출 중 오류가 발생했어요. 다시 시도해주세요.')
@@ -443,12 +447,34 @@ export default function MasterPlanPage() {
             </button>
           )}
         </div>
-        <h1 className="text-base font-bold text-[#111111] tracking-tight">나의 조직관리 마스터플랜</h1>
-        <p className="text-xs text-[#8A8A8A] mt-0.5">내용을 수정하면 자동 저장됩니다</p>
+        <div className="flex items-end justify-between">
+          <div>
+            <h1 className="text-base font-bold text-[#111111] tracking-tight">나의 조직관리 마스터플랜</h1>
+            <p className="text-xs text-[#8A8A8A] mt-0.5">내용을 수정하면 자동 저장됩니다</p>
+          </div>
+          <button
+            onClick={() => setShowRegenerateConfirm(true)}
+            className="text-[11px] font-medium text-[#8A8A8A] underline underline-offset-2 active:text-[#3A3A3A] shrink-0 mb-0.5"
+          >
+            다시 생성하기
+          </button>
+        </div>
       </header>
 
       {/* 본문 */}
       <div className="flex-1 overflow-y-auto px-4 py-4 space-y-3 bg-[#F5F5F5]">
+        {/* 카드 변경 경고 배너 */}
+        {isStale && (
+          <div className="flex items-center justify-between gap-3 rounded-xl border border-[#FDE68A] bg-[#FFFBEB] px-4 py-3">
+            <p className="text-[12px] text-[#92400E] leading-snug">⚠️ 카드 내용이 변경되었어요. 마스터플랜 다시 생성을 권장합니다.</p>
+            <button
+              onClick={() => setShowRegenerateConfirm(true)}
+              className="shrink-0 text-[11px] font-semibold text-[#B45309] underline underline-offset-2 active:opacity-60"
+            >
+              다시 생성
+            </button>
+          </div>
+        )}
         {/* 슬로건 — dark featured card */}
         <div className="relative rounded-2xl overflow-hidden text-center bg-[#111111]">
           {/* Lottie 배경 — 절대 배치, 높이는 콘텐츠가 결정 */}
@@ -539,6 +565,33 @@ export default function MasterPlanPage() {
           </button>
         )}
       </div>
+
+      {/* 재생성 확인 다이얼로그 */}
+      {showRegenerateConfirm && (
+        <div className="absolute inset-0 bg-black/40 flex items-end justify-center z-50 pb-8 px-4">
+          <div className="w-full bg-white rounded-2xl p-5 shadow-xl">
+            <p className="text-[15px] font-bold text-[#111111] mb-1">마스터플랜을 다시 생성할까요?</p>
+            <p className="text-xs text-[#8A8A8A] mb-5">AI가 새로운 마스터플랜을 도출합니다. 기존 내용은 덮어씌워집니다.</p>
+            <div className="flex gap-2">
+              <button
+                onClick={() => setShowRegenerateConfirm(false)}
+                className="flex-1 h-11 rounded-xl border border-[#EBEBEB] text-[#3A3A3A] font-semibold text-sm active:bg-[#F5F5F5]"
+              >
+                취소
+              </button>
+              <button
+                onClick={() => {
+                  setShowRegenerateConfirm(false)
+                  handleGeneratePlan()
+                }}
+                className="flex-1 h-11 rounded-xl bg-[#111111] text-white font-semibold text-sm active:bg-[#3A3A3A]"
+              >
+                다시 생성
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* 저장 중 오버레이 */}
       {phase === 'saving' && (
