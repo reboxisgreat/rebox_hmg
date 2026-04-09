@@ -122,7 +122,7 @@ export interface ActionPlan {
 export interface TrackingLog {
   id: string
   participant_id: string
-  week_number: 1 | 2 | 3 | 4
+  week_number: 0 | 1 | 2 | 3 | 4
   item_index: number
   item_content: string
   status: '미착수' | '진행중' | '완료'

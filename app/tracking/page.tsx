@@ -422,7 +422,7 @@ export default function TrackingPage() {
             )}
             {/* 전체 순위 */}
             <div className="bg-[#EFF6FF] border border-[#BFDBFE] rounded-2xl px-3 py-2.5">
-              <p className="text-[10px] font-bold text-[#2563EB] tracking-wide uppercase mb-1">전체 순위</p>
+              <p className="text-[10px] font-bold text-[#2563EB] tracking-wide uppercase mb-1">전체 순위(차수별 교육 이후 반영)</p>
               <p className="text-xl font-bold text-[#111111] leading-none">
                 {myScore.rank}위
                 <span className="text-xs font-normal text-[#8A8A8A] ml-1">/ {myScore.total_participants}명</span>
