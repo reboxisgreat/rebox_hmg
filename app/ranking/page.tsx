@@ -106,9 +106,9 @@ export default function RankingPage() {
           </button>
         </div>
 
-        <p className="text-[11px] font-bold text-[#8A8A8A] tracking-[0.15em] uppercase mb-1">리더스러닝랩 xClass 조직관리 과정</p>
+        <p className="text-[11px] font-bold tracking-[0.15em] uppercase mb-1">리더스러닝랩 xClass 조직관리 과정</p>
         <h1 className="text-[1.75rem] font-bold text-[#111111] tracking-tight leading-tight">실행력 랭킹 🏆</h1>
-        <p className="text-sm text-[#8A8A8A] mt-1">30일 체크리스트 완료 점수 기준<br/>전체 교육생 대상(1,2,3차수)</p>
+        <p className="text-sm mt-1">30일 체크리스트 완료 점수 기준<br/>전체 교육생 대상(1,2,3차수)</p>
 
         {/* 내 점수 배너 — 홈의 랭킹 칩 스타일 */}
         {myEntry && (
