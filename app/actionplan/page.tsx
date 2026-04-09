@@ -227,6 +227,7 @@ export default function ActionPlanPage() {
   const [showChecklist, setShowChecklist] = useState(false)
   const [generateError, setGenerateError] = useState('')
   const [savedToast, setSavedToast] = useState(false)
+  const [showRegenerateConfirm, setShowRegenerateConfirm] = useState(false)
   const checklistRef = useRef<HTMLDivElement>(null)
   const savedToastTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const autoSaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -236,6 +237,7 @@ export default function ActionPlanPage() {
   const generateActionPlan = useCallback(async (id: string, name: string, mp: MasterPlanData) => {
     setPhase('generating')
     setGenerateError('')
+    setShowChecklist(false)
 
     const masterPlanForApi = {
       slogan: mp.slogan,
@@ -587,10 +589,28 @@ export default function ActionPlanPage() {
             </svg>
           </button>
         </div>
-        <h1 className="text-base font-bold text-[#111111] tracking-tight">1년 액션플랜 &amp; 30일 체크리스트</h1>
-        <p className="text-xs text-[#8A8A8A] mt-0.5">
-          {phase === 'confirmed' ? '내용을 수정하고 저장하면 트래킹에 반영됩니다' : '내용을 자유롭게 수정하세요'}
-        </p>
+        <div className="flex items-end justify-between">
+          <div>
+            <h1 className="text-base font-bold text-[#111111] tracking-tight">1년 액션플랜 &amp; 30일 체크리스트</h1>
+            <p className="text-xs text-[#8A8A8A] mt-0.5">
+              {phase === 'confirmed' ? '내용을 수정하고 저장하면 트래킹에 반영됩니다' : '내용을 자유롭게 수정하세요'}
+            </p>
+          </div>
+          {masterPlan && participantId && (phase === 'editing' || phase === 'confirmed') && (
+            <button
+              onClick={() => {
+                if (phase === 'confirmed') {
+                  setShowRegenerateConfirm(true)
+                } else {
+                  generateActionPlan(participantId, participantName, masterPlan)
+                }
+              }}
+              className="text-[11px] font-medium text-[#8A8A8A] underline underline-offset-2 active:text-[#3A3A3A] shrink-0 mb-0.5"
+            >
+              다시 생성하기
+            </button>
+          )}
+        </div>
       </header>
 
       {/* 본문 */}
@@ -797,6 +817,33 @@ export default function ActionPlanPage() {
           <p className="text-center text-xs text-[#8A8A8A]">1년 플랜을 검토한 후 체크리스트를 도출하세요</p>
         )}
       </div>
+
+      {/* 재생성 확인 다이얼로그 */}
+      {showRegenerateConfirm && (
+        <div className="absolute inset-0 bg-black/40 flex items-end justify-center z-50 pb-8 px-4">
+          <div className="w-full bg-white rounded-2xl p-5 shadow-xl">
+            <p className="text-[15px] font-bold text-[#111111] mb-1">액션플랜을 다시 생성할까요?</p>
+            <p className="text-xs text-[#8A8A8A] mb-5">AI가 새로운 액션플랜을 도출합니다. 기존 내용은 덮어씌워지며, 트래킹 기록도 초기화됩니다.</p>
+            <div className="flex gap-2">
+              <button
+                onClick={() => setShowRegenerateConfirm(false)}
+                className="flex-1 h-11 rounded-xl border border-[#EBEBEB] text-[#3A3A3A] font-semibold text-sm active:bg-[#F5F5F5]"
+              >
+                취소
+              </button>
+              <button
+                onClick={() => {
+                  setShowRegenerateConfirm(false)
+                  if (participantId && masterPlan) generateActionPlan(participantId, participantName, masterPlan)
+                }}
+                className="flex-1 h-11 rounded-xl bg-[#111111] text-white font-semibold text-sm active:bg-[#3A3A3A]"
+              >
+                다시 생성
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* 저장 중 오버레이 */}
       {(phase as string) === 'saving' && (

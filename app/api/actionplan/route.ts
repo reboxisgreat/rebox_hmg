@@ -54,7 +54,31 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: '필수 데이터가 없습니다.' }, { status: 400 })
     }
 
-    const prompt = getActionPlanPrompt(masterPlan, participantName ?? '리더')
+    const supabase = createSupabaseServiceClient()
+
+    // 카드별 코칭 내용 조회 (confirmed된 것만)
+    const { data: cards } = await supabase
+      .from('card_responses')
+      .select('card_topic, step1_keywords, step2_asis, step3_tobe, step4_action, step5_indicator')
+      .eq('participant_id', participantId)
+      .eq('is_confirmed', true)
+
+    type CardRow = { card_topic: string; step1_keywords: string | null; step2_asis: string | null; step3_tobe: string | null; step4_action: string | null; step5_indicator: string | null }
+    const toSummary = (card: CardRow | undefined) => ({
+      keywords: card?.step1_keywords ?? null,
+      asIs: card?.step2_asis ?? null,
+      toBe: card?.step3_tobe ?? null,
+      action: card?.step4_action ?? null,
+      indicator: card?.step5_indicator ?? null,
+    })
+
+    const cardSummaries = cards && cards.length > 0 ? {
+      고객가치: toSummary(cards.find((c) => c.card_topic === '고객가치')),
+      사람관리: toSummary(cards.find((c) => c.card_topic === '사람관리')),
+      프로세스: toSummary(cards.find((c) => c.card_topic === '프로세스')),
+    } : undefined
+
+    const prompt = getActionPlanPrompt(masterPlan, participantName ?? '리더', cardSummaries)
     const raw = await generateSingleResponse(prompt, '액션플랜을 도출해주세요.')
 
     // 마크다운 코드블록 제거 후 JSON 추출
@@ -94,7 +118,6 @@ export async function POST(req: NextRequest) {
     })
 
     // Supabase에 저장
-    const supabase = createSupabaseServiceClient()
     const { data, error: dbError } = await supabase
       .from('action_plans')
       .upsert({
