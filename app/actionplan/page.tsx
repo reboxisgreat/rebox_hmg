@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import Image from 'next/image'
-import type { QuarterlyPlan, WeeklyChecklist, ChecklistItem, ChatMessage } from '@/lib/types'
+import type { QuarterlyPlan, WeeklyChecklist, ChecklistItem } from '@/lib/types'
 import { toPng } from 'html-to-image'
 import jsPDF from 'jspdf'
 
@@ -28,196 +28,6 @@ interface MasterPlanData {
   people_what: string
   people_why: string
   is_confirmed: boolean
-}
-
-// ─── AI 보완 챗봇 컴포넌트 ────────────────────────────────────────────────────
-
-function SupplementChat({
-  masterPlan,
-  yearlyPlan,
-  monthlyChecklist,
-}: {
-  masterPlan: MasterPlanData
-  yearlyPlan: QuarterlyPlan[]
-  monthlyChecklist: WeeklyChecklist[]
-}) {
-  const INIT_MSG = '30일 실행 로드맵을 함께 점검해볼게요! 실행이 막히거나 더 구체화하고 싶은 항목이 있으신가요?'
-  const [messages, setMessages] = useState<ChatMessage[]>([
-    { role: 'model', content: INIT_MSG, timestamp: new Date().toISOString() },
-  ])
-  const [input, setInput] = useState('')
-  const [streaming, setStreaming] = useState(false)
-  const [error, setError] = useState('')
-  const textareaRef = useRef<HTMLTextAreaElement>(null)
-  const bottomRef = useRef<HTMLDivElement>(null)
-
-  useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
-  }, [messages])
-
-  const send = useCallback(
-    async (text: string) => {
-      if (!text.trim() || streaming) return
-      setError('')
-
-      const userMsg: ChatMessage = { role: 'user', content: text.trim(), timestamp: new Date().toISOString() }
-      const aiMsg: ChatMessage = { role: 'model', content: '', timestamp: new Date().toISOString() }
-      const next = [...messages, userMsg]
-      setMessages([...next, aiMsg])
-      setInput('')
-      setStreaming(true)
-      if (textareaRef.current) textareaRef.current.style.height = 'auto'
-
-      const masterPlanForApi = {
-        slogan: masterPlan.slogan,
-        customer: { strategy: masterPlan.customer_strategy, what: masterPlan.customer_what, why: masterPlan.customer_why },
-        process: { strategy: masterPlan.process_strategy, what: masterPlan.process_what, why: masterPlan.process_why },
-        people: { strategy: masterPlan.people_strategy, what: masterPlan.people_what, why: masterPlan.people_why },
-      }
-      const yearlyPlanForApi = yearlyPlan.map((q) => ({
-        quarter: q.quarter,
-        focus: q.focus,
-        actions: q.actions,
-      }))
-      const clForPrompt = monthlyChecklist.map((w) => ({
-        week: w.week,
-        theme: w.theme,
-        items: w.items.map((i) => i.content),
-      }))
-
-      try {
-        const res = await fetch('/api/chat', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            mode: 'supplement',
-            masterPlan: masterPlanForApi,
-            yearlyPlan: yearlyPlanForApi,
-            monthlyChecklist: clForPrompt,
-            messages: next.map((m) => ({ role: m.role, content: m.content })),
-          }),
-        })
-
-        if (!res.ok) {
-          setError('AI 응답을 가져오는 데 실패했어요. 다시 시도해주세요.')
-          setStreaming(false)
-          setMessages((p) => p.slice(0, -1))
-          return
-        }
-
-        const reader = res.body?.getReader()
-        const decoder = new TextDecoder()
-        if (!reader) { setError('스트림을 읽을 수 없어요.'); setStreaming(false); return }
-
-        while (true) {
-          const { done, value } = await reader.read()
-          if (done) break
-          for (const line of decoder.decode(value, { stream: true }).split('\n')) {
-            if (!line.startsWith('data: ')) continue
-            const d = line.slice(6)
-            if (d === '[DONE]') { setStreaming(false); return }
-            try {
-              const parsed = JSON.parse(d)
-              if (parsed.text) {
-                setMessages((prev) => {
-                  const last = prev[prev.length - 1]
-                  if (last?.role !== 'model') return prev
-                  return [...prev.slice(0, -1), { ...last, content: last.content + parsed.text }]
-                })
-              }
-            } catch { /* 파싱 오류 무시 */ }
-          }
-        }
-        setStreaming(false)
-      } catch {
-        setError('네트워크 오류가 발생했어요. 연결을 확인해주세요.')
-        setStreaming(false)
-      }
-    },
-    [messages, streaming, masterPlan, yearlyPlan, monthlyChecklist]
-  )
-
-  const adjustHeight = () => {
-    const el = textareaRef.current
-    if (!el) return
-    el.style.height = 'auto'
-    el.style.height = `${Math.min(el.scrollHeight, 100)}px`
-  }
-
-  return (
-    <div className="rounded-2xl overflow-hidden border border-[#EBEBEB] bg-white shadow-[0_1px_3px_rgba(0,0,0,0.06)]">
-      <div className="bg-[#F5F5F5] border-b border-[#EBEBEB] px-4 py-2.5">
-        <p className="text-[10px] font-bold tracking-[0.12em] uppercase text-[#111111]">AI 코치와 함께 보완하기</p>
-        <p className="text-xs text-[#8A8A8A] mt-0.5">체크리스트를 더 구체적으로 만들어 보세요</p>
-      </div>
-
-      {/* 메시지 목록 */}
-      <div className="h-64 overflow-y-auto px-4 py-3 space-y-2 bg-[#F5F5F5]">
-        {messages.map((msg, i) => (
-          <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-            <div
-              className={`max-w-[85%] rounded-2xl px-3 py-2.5 text-sm leading-relaxed ${
-                msg.role === 'user'
-                  ? 'bg-[#111111] text-white rounded-br-sm'
-                  : 'bg-white border border-[#EBEBEB] text-[#111111] rounded-bl-sm'
-              }`}
-            >
-              {msg.content}
-              {streaming && i === messages.length - 1 && msg.role === 'model' && msg.content === '' && (
-                <span className="inline-block w-1.5 h-4 bg-[#8A8A8A] rounded-full animate-pulse" />
-              )}
-            </div>
-          </div>
-        ))}
-        {error && (
-          <div className="text-center py-1">
-            <p className="text-xs text-red-500">{error}</p>
-            <button
-              onClick={() => {
-                setError('')
-                const last = [...messages].reverse().find((m) => m.role === 'user')
-                if (last) send(last.content)
-              }}
-              className="text-xs text-[#111111] font-medium mt-1"
-            >
-              다시 시도
-            </button>
-          </div>
-        )}
-        <div ref={bottomRef} />
-      </div>
-
-      {/* 입력창 */}
-      <div className="px-4 py-3 border-t border-[#EBEBEB] bg-white flex gap-2 items-end">
-        <textarea
-          ref={textareaRef}
-          value={input}
-          onChange={(e) => { setInput(e.target.value); adjustHeight() }}
-          onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(input) } }}
-          placeholder="질문을 입력하세요..."
-          rows={1}
-          disabled={streaming}
-          className="flex-1 resize-none px-3 py-2.5 rounded-2xl border border-[#EBEBEB] bg-[#F5F5F5] text-sm text-[#111111] placeholder-[#8A8A8A] focus:outline-none focus:border-[#111111] focus:bg-white disabled:opacity-50 transition-colors"
-          style={{ minHeight: '44px', maxHeight: '100px' }}
-        />
-        <button
-          onClick={() => send(input)}
-          disabled={!input.trim() || streaming}
-          className="w-11 h-11 rounded-2xl bg-[#02855B] active:bg-[#026644] text-white flex items-center justify-center disabled:opacity-40 shrink-0 transition-colors"
-          aria-label="전송"
-        >
-          {streaming ? (
-            <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-          ) : (
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-              <line x1="22" y1="2" x2="11" y2="13" />
-              <polygon points="22 2 15 22 11 13 2 9 22 2" />
-            </svg>
-          )}
-        </button>
-      </div>
-    </div>
-  )
 }
 
 // ─── 메인 페이지 ──────────────────────────────────────────────────────────────
@@ -736,10 +546,25 @@ export default function ActionPlanPage() {
             {/* 과제 섹션 — 고정 */}
             <div className="bg-white border border-[#FDE68A] rounded-2xl overflow-hidden shadow-[0_1px_3px_rgba(217,119,6,0.08)]">
               <div className="bg-[#FFFBEB] border-b border-[#FDE68A] px-4 py-3">
-                <span className="inline-block text-[10px] font-bold tracking-[0.12em] uppercase px-2 py-0.5 rounded-full bg-white border border-[#FDE68A] text-[#D97706] mb-1.5">
-                  과제
-                </span>
-                <p className="text-base font-bold text-[#111111] leading-snug">구성원 공유 세션</p>
+                <div className="flex items-start justify-between">
+                  <div>
+                    <span className="inline-block text-[10px] font-bold tracking-[0.12em] uppercase px-2 py-0.5 rounded-full bg-white border border-[#FDE68A] text-[#D97706] mb-1.5">
+                      과제
+                    </span>
+                    <p className="text-base font-bold text-[#111111] leading-snug">구성원 공유 세션</p>
+                  </div>
+                  <a
+                    href="https://gemini.google.com/gem/10BK5kltDFbsSG1clOT1WV23dLA85QC33?usp=sharing"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-white border border-[#FDE68A] text-[#D97706] text-[11px] font-semibold shrink-0 active:opacity-70"
+                  >
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/>
+                    </svg>
+                    AI 정직이
+                  </a>
+                </div>
               </div>
               <div className="px-4 py-3 space-y-2">
                 {HOMEWORK_ITEMS.map((content, i) => (
@@ -803,12 +628,6 @@ export default function ActionPlanPage() {
               </div>
             ))}
 
-            {/* AI 보완 챗봇 */}
-            {masterPlan && (
-              <div className="mt-3">
-                <SupplementChat masterPlan={masterPlan} yearlyPlan={yearlyPlan} monthlyChecklist={monthlyChecklist} />
-              </div>
-            )}
           </div>
         )}
 
