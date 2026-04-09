@@ -7,12 +7,18 @@ const POINTS_PER_WEEK_BONUS = 20
 const POINTS_ALL_COMPLETE_BONUS = 50
 
 function calcScore(logs: { week_number: number; status: string }[]) {
-  const totalItems = logs.length
-  const completedItems = logs.filter((l) => l.status === '완료').length
-  const baseScore = completedItems * POINTS_PER_ITEM
+  const weeklyLogs = logs.filter((l) => l.week_number > 0)
+  const homeworkLogs = logs.filter((l) => l.week_number === 0)
 
+  // 완료 점수: 주차 + 과제 모두 포함 (완료당 10점)
+  const completedCount =
+    weeklyLogs.filter((l) => l.status === '완료').length +
+    homeworkLogs.filter((l) => l.status === '완료').length
+  const baseScore = completedCount * POINTS_PER_ITEM
+
+  // 주 완주 보너스: 주차 항목만
   const weekMap = new Map<number, { total: number; completed: number }>()
-  for (const log of logs) {
+  for (const log of weeklyLogs) {
     if (!weekMap.has(log.week_number)) weekMap.set(log.week_number, { total: 0, completed: 0 })
     const e = weekMap.get(log.week_number)!
     e.total++
@@ -22,8 +28,11 @@ function calcScore(logs: { week_number: number; status: string }[]) {
   for (const { total, completed } of weekMap.values()) {
     if (total > 0 && total === completed) weekBonus += POINTS_PER_WEEK_BONUS
   }
+
+  // 전체 완주 보너스: 주차 항목만
+  const weeklyCompleted = weeklyLogs.filter((l) => l.status === '완료').length
   const completionBonus =
-    totalItems > 0 && totalItems === completedItems ? POINTS_ALL_COMPLETE_BONUS : 0
+    weeklyLogs.length > 0 && weeklyLogs.length === weeklyCompleted ? POINTS_ALL_COMPLETE_BONUS : 0
 
   return baseScore + weekBonus + completionBonus
 }
@@ -113,7 +122,7 @@ export async function GET(req: NextRequest) {
         cohort_total: cohortTotal,
         cohort: myCohort,
         completed_items: myLogs.filter((l) => l.status === '완료').length,
-        total_items: myLogs.length,
+        total_items: myLogs.filter((l) => l.week_number > 0).length,
       },
     })
   } catch (error) {

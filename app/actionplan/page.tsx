@@ -4,15 +4,10 @@ import { useState, useEffect, useCallback, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import Image from 'next/image'
 import type { QuarterlyPlan, WeeklyChecklist, ChecklistItem } from '@/lib/types'
+import { HOMEWORK_ITEMS } from '@/lib/types'
 import { toPng } from 'html-to-image'
 import jsPDF from 'jspdf'
 
-const HOMEWORK_ITEMS = [
-  '[모집] 구성원을 한자리에 모아 교육 내용 공유 세션을 엽니다',
-  '[공유] 실습카드 이미지를 보여주며 #해시태그 중심으로 핵심 내용을 설명합니다',
-  '[실습] 구성원들이 직접 실습카드를 작성하고 서로 공유합니다',
-  '[질문] 내용이 기억이 나지 않는다면, AI 정직이 코치에게 질문하여 해결합니다',
-]
 
 type Phase = 'loading' | 'no-masterplan' | 'generating' | 'editing' | 'saving' | 'confirmed' | 'error'
 

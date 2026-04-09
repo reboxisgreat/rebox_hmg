@@ -69,6 +69,41 @@ function Toast({ message }: { message: string }) {
   )
 }
 
+// ─── 과제 항목 컴포넌트 ──────────────────────────────────────────────────────
+
+function HomeworkItem({
+  item,
+  onStatusChange,
+}: {
+  item: TrackingLog
+  onStatusChange: (logId: string, status: Status) => void
+}) {
+  const isDone = item.status === '완료'
+  return (
+    <div className={`rounded-2xl border px-4 py-3 transition-colors ${isDone ? 'bg-[#FFFBEB] border-[#FDE68A]' : 'bg-white border-[#EBEBEB]'}`}>
+      <p className="text-sm text-[#111111] leading-snug mb-3">{item.item_content}</p>
+      <div className="flex gap-2">
+        <button
+          onClick={() => onStatusChange(item.id, '미착수')}
+          className={`flex-1 h-10 rounded-xl text-sm font-semibold transition-colors ${
+            !isDone ? 'bg-[#FDE68A] text-[#92400E]' : 'bg-[#F3F4F6] text-[#8A8A8A]'
+          }`}
+        >
+          아직이예요🥹
+        </button>
+        <button
+          onClick={() => onStatusChange(item.id, '완료')}
+          className={`flex-1 h-10 rounded-xl text-sm font-semibold transition-colors ${
+            isDone ? 'bg-[#D97706] text-white' : 'bg-[#F3F4F6] text-[#8A8A8A]'
+          }`}
+        >
+          과제 완료했어요!
+        </button>
+      </div>
+    </div>
+  )
+}
+
 // ─── 개별 항목 컴포넌트 ──────────────────────────────────────────────────────
 
 function TrackingItem({
@@ -181,14 +216,18 @@ export default function TrackingPage() {
     toastTimer.current = setTimeout(() => setToast(null), 2200)
   }, [])
 
-  // ── 점수 재계산 (로컬)
+  // ── 점수 재계산 (로컬) — 과제 완료 10점 포함, 주/전체 완주 보너스는 주차만
   const recalcScore = useCallback((updatedLogs: TrackingLog[]) => {
-    const totalItems = updatedLogs.length
-    const completedItems = updatedLogs.filter((l) => l.status === '완료').length
-    const baseScore = completedItems * 10
+    const wLogs = updatedLogs.filter((l) => l.week_number > 0)
+    const hLogs = updatedLogs.filter((l) => l.week_number === 0)
+
+    const completedCount =
+      wLogs.filter((l) => l.status === '완료').length +
+      hLogs.filter((l) => l.status === '완료').length
+    const baseScore = completedCount * 10
 
     const weekMap = new Map<number, { total: number; done: number }>()
-    for (const log of updatedLogs) {
+    for (const log of wLogs) {
       if (!weekMap.has(log.week_number)) weekMap.set(log.week_number, { total: 0, done: 0 })
       const e = weekMap.get(log.week_number)!
       e.total++
@@ -198,10 +237,11 @@ export default function TrackingPage() {
     for (const { total, done } of weekMap.values()) {
       if (total > 0 && total === done) weekBonus += 20
     }
-    const completionBonus = totalItems > 0 && totalItems === completedItems ? 50 : 0
+    const weeklyCompleted = wLogs.filter((l) => l.status === '완료').length
+    const completionBonus = wLogs.length > 0 && wLogs.length === weeklyCompleted ? 50 : 0
     const totalScore = baseScore + weekBonus + completionBonus
 
-    setMyScore((prev) => prev ? { ...prev, total_score: totalScore, completed_items: completedItems } : prev)
+    setMyScore((prev) => prev ? { ...prev, total_score: totalScore, completed_items: completedCount } : prev)
   }, [])
 
   // ── 상태 변경 (즉시 저장)
@@ -244,14 +284,17 @@ export default function TrackingPage() {
     }, 800)
   }, [])
 
-  // ── 통계 계산
-  const totalItems = logs.length
-  const completedItems = logs.filter((l) => l.status === '완료').length
-  const inProgressItems = logs.filter((l) => l.status === '진행중').length
+  // ── 통계 계산 (진행률은 주차 항목만, 과제 제외)
+  const homeworkLogs = logs.filter((l) => l.week_number === 0).sort((a, b) => a.item_index - b.item_index)
+  const weeklyLogs = logs.filter((l) => l.week_number > 0)
+
+  const totalItems = weeklyLogs.length
+  const completedItems = weeklyLogs.filter((l) => l.status === '완료').length
+  const inProgressItems = weeklyLogs.filter((l) => l.status === '진행중').length
   const progressPct = totalItems > 0 ? Math.round((completedItems / totalItems) * 100) : 0
   const allCompleted = totalItems > 0 && completedItems === totalItems
 
-  const weekGroups = groupByWeek(logs, weekThemes)
+  const weekGroups = groupByWeek(weeklyLogs, weekThemes)
 
   // ── 렌더 ─────────────────────────────────────────────────────────────────────
 
@@ -420,6 +463,23 @@ export default function TrackingPage() {
             <div className="text-4xl mb-2">🎉</div>
             <p className="text-base font-bold text-white mb-1">30일 여정 완주!</p>
             <p className="text-sm text-white/60">모든 실행 항목을 완료했습니다. 정말 대단해요!</p>
+          </div>
+        )}
+
+        {/* 과제 섹션 */}
+        {homeworkLogs.length > 0 && (
+          <div>
+            <div className="flex items-center gap-2 mb-2">
+              <span className="inline-block text-[10px] font-bold tracking-[0.12em] uppercase px-2 py-0.5 rounded-full bg-[#FFFBEB] border border-[#FDE68A] text-[#D97706]">
+                과제
+              </span>
+              <p className="text-sm font-bold text-[#111111]">구성원 공유 세션</p>
+            </div>
+            <div className="space-y-2">
+              {homeworkLogs.map((item) => (
+                <HomeworkItem key={item.id} item={item} onStatusChange={handleStatusChange} />
+              ))}
+            </div>
           </div>
         )}
 

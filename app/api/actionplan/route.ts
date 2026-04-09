@@ -3,6 +3,7 @@ import { generateSingleResponse } from '@/lib/gemini'
 import { getActionPlanPrompt } from '@/lib/prompts'
 import { createSupabaseServiceClient } from '@/lib/supabase'
 import type { QuarterlyPlan, WeeklyChecklist, ChecklistItem } from '@/lib/types'
+import { HOMEWORK_ITEMS } from '@/lib/types'
 
 interface ActionPlanResult {
   yearlyPlan: QuarterlyPlan[]
@@ -168,8 +169,18 @@ export async function PATCH(req: NextRequest) {
       }))
     )
 
-    if (trackingLogs.length > 0) {
-      const { error: insertError } = await supabase.from('tracking_logs').insert(trackingLogs)
+    const homeworkLogs = HOMEWORK_ITEMS.map((content, index) => ({
+      participant_id: participantId,
+      week_number: 0,
+      item_index: index,
+      item_content: content,
+      status: '미착수' as const,
+      memo: null,
+    }))
+
+    const allLogs = [...trackingLogs, ...homeworkLogs]
+    if (allLogs.length > 0) {
+      const { error: insertError } = await supabase.from('tracking_logs').insert(allLogs)
       if (insertError) throw insertError
     }
 
