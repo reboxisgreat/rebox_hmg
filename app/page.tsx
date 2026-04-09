@@ -6,6 +6,8 @@ import dynamic from 'next/dynamic'
 import { CARD_TITLES } from '@/lib/types'
 import confettiData from '@/public/confetti.json'
 import gradientBg from '@/public/gradient-bg.json'
+import groupData from '@/public/group.json'
+import groupCommunicatingData from '@/public/group-communicating.json'
 
 const Lottie = dynamic(() => import('lottie-react'), { ssr: false })
 import {
@@ -560,7 +562,7 @@ function HomePage({
 
           {/* 전체 진행 카드 */}
           {allDone ? (
-            <div className="rounded-3xl px-5 py-3 relative overflow-hidden flex items-center justify-between" style={{ backgroundImage: 'linear-gradient(60deg, #29323c 0%, #485563 100%)' }}>
+            <div className="rounded-3xl px-5 py-3 relative overflow-hidden flex items-center justify-between" style={{ backgroundImage: 'linear-gradient(60deg,rgb(0, 0, 0) 0%, #485563 100%)' }}>
               {/* 폭죽 애니메이션 — 좌측 */}
               <Lottie
                 animationData={confettiData}
@@ -735,7 +737,9 @@ function HomePage({
                 <p className="text-[15px] font-bold text-[#111]">카드 갤러리</p>
               </div>
             </div>
-            <ChevronRight size={14} color="#CCCCCC" />
+            <div className="flex items-center gap-1">
+              <Lottie animationData={groupData} loop style={{ width: 48, height: 48 }} />
+            </div>
           </button>
 
           {/* 슬로건 */}
@@ -874,7 +878,9 @@ function HomePage({
                 <p className="text-[15px] font-bold text-[#111]">마스터플랜 갤러리</p>
               </div>
             </div>
-            <ChevronRight size={14} color="#CCCCCC" />
+            <div className="flex items-center gap-1">
+              <Lottie animationData={groupCommunicatingData} loop style={{ width: 48, height: 48 }} />
+            </div>
           </button>
 
           {/* 하단 메뉴 */}

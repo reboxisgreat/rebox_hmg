@@ -26,8 +26,7 @@ const CARD_CONFIG: Record<1 | 2 | 3, { label: string; color: string; bg: string;
   3: { label: '프로세스 관리', color: '#16A34A', bg: '#F0FDF4', border: '#BBF7D0', leftBar: '#22C55E' },
 }
 
-const FILTER_TABS: { key: 0 | 1 | 2 | 3; label: string }[] = [
-  { key: 0, label: '전체' },
+const FILTER_TABS: { key: 1 | 2 | 3; label: string }[] = [
   { key: 1, label: '고객가치' },
   { key: 2, label: '사람관리' },
   { key: 3, label: '프로세스' },
@@ -50,7 +49,7 @@ export default function CardGalleryPage() {
   const [error, setError] = useState('')
   const [openId, setOpenId] = useState<string | null>(null)
   const [likingId, setLikingId] = useState<string | null>(null)
-  const [filter, setFilter] = useState<0 | 1 | 2 | 3>(0)
+  const [filter, setFilter] = useState<1 | 2 | 3>(1)
 
   useEffect(() => {
     const id = localStorage.getItem('participant_id')
@@ -107,7 +106,7 @@ export default function CardGalleryPage() {
     }
   }
 
-  const filtered = filter === 0 ? cards : cards.filter((c) => c.card_number === filter)
+  const filtered = cards.filter((c) => c.card_number === filter)
 
   return (
     <div className="min-h-screen bg-[#F5F5F5]">
@@ -138,7 +137,7 @@ export default function CardGalleryPage() {
               filter === key
                 ? {
                     backgroundColor:
-                      key === 0 ? '#111' : key === 1 ? '#DC2626' : key === 2 ? '#D97706' : '#16A34A',
+                      key === 1 ? '#DC2626' : key === 2 ? '#D97706' : '#16A34A',
                     color: '#fff',
                   }
                 : { backgroundColor: '#F5F5F5', color: '#8A8A8A' }
