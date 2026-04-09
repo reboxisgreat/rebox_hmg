@@ -40,6 +40,59 @@ function pick(arr: string[]) {
   return arr[Math.floor(Math.random() * arr.length)]
 }
 
+function calcLocalScore(logs: TrackingLog[]): number {
+  const wLogs = logs.filter((l) => l.week_number > 0)
+  const hLogs = logs.filter((l) => l.week_number === 0)
+  const completedCount =
+    wLogs.filter((l) => l.status === '완료').length +
+    hLogs.filter((l) => l.status === '완료').length
+  const baseScore = completedCount * 10
+  const weekMap = new Map<number, { total: number; done: number }>()
+  for (const log of wLogs) {
+    if (!weekMap.has(log.week_number)) weekMap.set(log.week_number, { total: 0, done: 0 })
+    const e = weekMap.get(log.week_number)!
+    e.total++
+    if (log.status === '완료') e.done++
+  }
+  let weekBonus = 0
+  for (const { total, done } of weekMap.values()) {
+    if (total > 0 && total === done) weekBonus += 20
+  }
+  const weeklyCompleted = wLogs.filter((l) => l.status === '완료').length
+  const completionBonus = wLogs.length > 0 && wLogs.length === weeklyCompleted ? 50 : 0
+  return baseScore + weekBonus + completionBonus
+}
+
+function buildScoreToast(prevLogs: TrackingLog[], nextLogs: TrackingLog[], status: Status): string | null {
+  const delta = calcLocalScore(nextLogs) - calcLocalScore(prevLogs)
+  if (status === '진행중') return pick(IN_PROGRESS_MESSAGES)
+  if (delta === 0) return null
+
+  if (delta > 0) {
+    const parts: string[] = [`+${delta}점 획득!`]
+    // 주 완주 보너스 발생 여부 감지
+    const prevWeekBonuses = new Set<number>()
+    const nextWeekBonuses = new Set<number>()
+    for (const week of [1, 2, 3, 4]) {
+      const pw = prevLogs.filter((l) => l.week_number === week)
+      const nw = nextLogs.filter((l) => l.week_number === week)
+      if (pw.length > 0 && pw.every((l) => l.status === '완료')) prevWeekBonuses.add(week)
+      if (nw.length > 0 && nw.every((l) => l.status === '완료')) nextWeekBonuses.add(week)
+    }
+    const newWeekBonus = [...nextWeekBonuses].filter((w) => !prevWeekBonuses.has(w))
+    if (newWeekBonus.length > 0) parts.push(`${newWeekBonus[0]}주차 완주 보너스 포함 🏆`)
+    // 전체 완주 보너스
+    const prevWLogs = prevLogs.filter((l) => l.week_number > 0)
+    const nextWLogs = nextLogs.filter((l) => l.week_number > 0)
+    const wasAllDone = prevWLogs.length > 0 && prevWLogs.every((l) => l.status === '완료')
+    const isAllDone = nextWLogs.length > 0 && nextWLogs.every((l) => l.status === '완료')
+    if (!wasAllDone && isAllDone) parts.push('전체 완주 🎊')
+    return `${parts.join(' ')}  ${pick(DONE_MESSAGES)}`
+  }
+
+  return `${delta}점`
+}
+
 function groupByWeek(logs: TrackingLog[], weekThemes: Record<number, string>): WeekGroup[] {
   const map = new Map<number, TrackingLog[]>()
   for (const log of logs) {
@@ -216,31 +269,10 @@ export default function TrackingPage() {
     toastTimer.current = setTimeout(() => setToast(null), 2200)
   }, [])
 
-  // ── 점수 재계산 (로컬) — 과제 완료 10점 포함, 주/전체 완주 보너스는 주차만
+  // ── 점수 재계산 (로컬)
   const recalcScore = useCallback((updatedLogs: TrackingLog[]) => {
-    const wLogs = updatedLogs.filter((l) => l.week_number > 0)
-    const hLogs = updatedLogs.filter((l) => l.week_number === 0)
-
-    const completedCount =
-      wLogs.filter((l) => l.status === '완료').length +
-      hLogs.filter((l) => l.status === '완료').length
-    const baseScore = completedCount * 10
-
-    const weekMap = new Map<number, { total: number; done: number }>()
-    for (const log of wLogs) {
-      if (!weekMap.has(log.week_number)) weekMap.set(log.week_number, { total: 0, done: 0 })
-      const e = weekMap.get(log.week_number)!
-      e.total++
-      if (log.status === '완료') e.done++
-    }
-    let weekBonus = 0
-    for (const { total, done } of weekMap.values()) {
-      if (total > 0 && total === done) weekBonus += 20
-    }
-    const weeklyCompleted = wLogs.filter((l) => l.status === '완료').length
-    const completionBonus = wLogs.length > 0 && wLogs.length === weeklyCompleted ? 50 : 0
-    const totalScore = baseScore + weekBonus + completionBonus
-
+    const totalScore = calcLocalScore(updatedLogs)
+    const completedCount = updatedLogs.filter((l) => l.status === '완료').length
     setMyScore((prev) => prev ? { ...prev, total_score: totalScore, completed_items: completedCount } : prev)
   }, [])
 
@@ -248,13 +280,13 @@ export default function TrackingPage() {
   const handleStatusChange = useCallback((logId: string, status: Status) => {
     setLogs((prev) => {
       const next = prev.map((l) => l.id === logId ? { ...l, status } : l)
+      const msg = buildScoreToast(prev, next, status)
+      if (msg) showToast(msg)
       recalcScore(next)
       return next
     })
 
-    if (status === '진행중') showToast(pick(IN_PROGRESS_MESSAGES))
-    else if (status === '완료') {
-      showToast(pick(DONE_MESSAGES))
+    if (status === '완료') {
       confetti({
         particleCount: 120,
         spread: 70,
