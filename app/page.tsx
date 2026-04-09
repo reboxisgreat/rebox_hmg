@@ -731,7 +731,7 @@ function HomePage({
                 <LayoutGrid size={20} color="#3B82F6" />
               </div>
               <div>
-                <p className="text-[11px] text-[#AAAAAA] font-medium">우리 차수</p>
+                <p className="text-[11px] text-[#AAAAAA] font-medium">{progress?.score?.cohort ? `${progress.score.cohort}차수` : '우리 차수'}</p>
                 <p className="text-[15px] font-bold text-[#111]">카드 갤러리</p>
               </div>
             </div>
@@ -870,7 +870,7 @@ function HomePage({
                 <LayoutGrid size={20} color="#3B82F6" />
               </div>
               <div>
-                <p className="text-[11px] text-[#AAAAAA] font-medium">우리 차수</p>
+                <p className="text-[11px] text-[#AAAAAA] font-medium">{progress?.score?.cohort ? `${progress.score.cohort}차수` : '우리 차수'}</p>
                 <p className="text-[15px] font-bold text-[#111]">마스터플랜 갤러리</p>
               </div>
             </div>
