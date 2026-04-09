@@ -7,6 +7,13 @@ import type { QuarterlyPlan, WeeklyChecklist, ChecklistItem, ChatMessage } from 
 import { toPng } from 'html-to-image'
 import jsPDF from 'jspdf'
 
+const HOMEWORK_ITEMS = [
+  '[모집] 구성원을 한자리에 모아 교육 내용 공유 세션을 엽니다',
+  '[공유] 실습카드 이미지를 보여주며 #해시태그 중심으로 핵심 내용을 설명합니다',
+  '[실습] 구성원들이 직접 실습카드를 작성하고 서로 공유합니다',
+  '[질문] 내용이 기억이 나지 않는다면, AI 정직이 코치에게 질문하여 해결합니다',
+]
+
 type Phase = 'loading' | 'no-masterplan' | 'generating' | 'editing' | 'saving' | 'confirmed' | 'error'
 
 interface MasterPlanData {
@@ -726,6 +733,27 @@ export default function ActionPlanPage() {
                 <p className="text-xs text-[#8A8A8A] mt-0.5">4주간 실행 체크리스트</p>
               </div>
             </div>
+            {/* 과제 섹션 — 고정 */}
+            <div className="bg-white border border-[#FDE68A] rounded-2xl overflow-hidden shadow-[0_1px_3px_rgba(217,119,6,0.08)]">
+              <div className="bg-[#FFFBEB] border-b border-[#FDE68A] px-4 py-3">
+                <span className="inline-block text-[10px] font-bold tracking-[0.12em] uppercase px-2 py-0.5 rounded-full bg-white border border-[#FDE68A] text-[#D97706] mb-1.5">
+                  과제
+                </span>
+                <p className="text-base font-bold text-[#111111] leading-snug">구성원 공유 세션</p>
+              </div>
+              <div className="px-4 py-3 space-y-2">
+                {HOMEWORK_ITEMS.map((content, i) => (
+                  <div
+                    key={i}
+                    className="text-sm text-[#555] bg-[#FFFBEB] rounded-xl px-3 py-2 border border-[#FDE68A] leading-snug"
+                    style={{ minHeight: '44px', display: 'flex', alignItems: 'center' }}
+                  >
+                    {content}
+                  </div>
+                ))}
+              </div>
+            </div>
+
             {monthlyChecklist.map((week, wi) => (
               <div key={wi} className="bg-white border border-[#D1FAE5] rounded-2xl overflow-hidden shadow-[0_1px_3px_rgba(2,133,91,0.08)]">
                 <div className="bg-[#F0FDF4] border-b border-[#D1FAE5] px-4 py-3">

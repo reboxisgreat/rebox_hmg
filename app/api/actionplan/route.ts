@@ -90,32 +90,17 @@ export async function POST(req: NextRequest) {
     }
     const result: ActionPlanResult = JSON.parse(jsonMatch[0])
 
-    // 1주차 고정 항목 (교육 직후 실행 필수 액션)
-    const WEEK1_FIXED: WeeklyChecklist = {
-      week: 1,
-      theme: '마스터플랜 선포 및 조직 정렬',
-      items: [
-        { index: 0, content: '[선포] 마스터플랜 & 슬로건 공유 타운홀 개최', status: '미착수', memo: '', isFixed: true },
-        { index: 1, content: '[공감] 전략 내재화를 위한 반대 의견 청취 및 간극(Gap) 확인', status: '미착수', memo: '', isFixed: true },
-        { index: 2, content: '[정렬] 부서별 RACI 템플릿 배포 및 역할(R&R) 가이드', status: '미착수', memo: '', isFixed: true },
-        { index: 3, content: '[확정] 전략 기반 최종 실(본부) KPI 승인', status: '미착수', memo: '', isFixed: true },
-      ],
-    }
-
-    // 30일 체크리스트 구조 변환 (1주차는 고정값 사용)
-    const monthlyChecklist: WeeklyChecklist[] = result.monthlyChecklist.map((week) => {
-      if (week.week === 1) return WEEK1_FIXED
-      return {
-        week: week.week,
-        theme: week.theme,
-        items: week.items.map((content, index): ChecklistItem => ({
-          index,
-          content,
-          status: '미착수',
-          memo: '',
-        })),
-      }
-    })
+    // 30일 체크리스트 구조 변환
+    const monthlyChecklist: WeeklyChecklist[] = result.monthlyChecklist.map((week) => ({
+      week: week.week,
+      theme: week.theme,
+      items: week.items.map((content, index): ChecklistItem => ({
+        index,
+        content,
+        status: '미착수',
+        memo: '',
+      })),
+    }))
 
     // Supabase에 저장
     const { data, error: dbError } = await supabase
