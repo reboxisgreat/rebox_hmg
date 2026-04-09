@@ -485,6 +485,19 @@ export default function TrackingPage() {
             미착수 {totalItems - completedItems - inProgressItems}
           </span>
         </div>
+
+        {/* 점수 안내 */}
+        <div className="mt-3 flex gap-2 flex-wrap">
+          <span className="flex items-center gap-1 text-[10px] bg-[#F5F5F5] rounded-lg px-2 py-1 text-[#8A8A8A]">
+            항목 완료 <span className="font-bold text-[#111111]">+10점</span>
+          </span>
+          <span className="flex items-center gap-1 text-[10px] bg-[#F5F5F5] rounded-lg px-2 py-1 text-[#8A8A8A]">
+            주차 완주 <span className="font-bold text-[#111111]">+20점</span>
+          </span>
+          <span className="flex items-center gap-1 text-[10px] bg-[#F5F5F5] rounded-lg px-2 py-1 text-[#8A8A8A]">
+            전체 완주 <span className="font-bold text-[#111111]">+50점</span>
+          </span>
+        </div>
       </div>
 
       {/* 본문 */}
