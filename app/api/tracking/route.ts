@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createSupabaseServiceClient } from '@/lib/supabase'
 import type { WeeklyChecklist } from '@/lib/types'
+import { HOMEWORK_ITEMS } from '@/lib/types'
 
 const POINTS_PER_ITEM = 10
 const POINTS_PER_WEEK_BONUS = 20
@@ -76,6 +77,30 @@ export async function GET(req: NextRequest) {
 
     if (logsResult.error) throw logsResult.error
 
+    // 과제 logs 누락 시 자동 삽입 (이전 저장 데이터 호환)
+    const existingLogs = logsResult.data ?? []
+    const hasWeeklyLogs = existingLogs.some((l) => l.week_number > 0)
+    const hasHomeworkLogs = existingLogs.some((l) => l.week_number === 0)
+    if (hasWeeklyLogs && !hasHomeworkLogs) {
+      const homeworkLogs = HOMEWORK_ITEMS.map((content, index) => ({
+        participant_id: participantId,
+        week_number: 0,
+        item_index: index,
+        item_content: content,
+        status: '미착수' as const,
+        memo: null,
+      }))
+      const { data: inserted, error: hwError } = await supabase
+        .from('tracking_logs')
+        .insert(homeworkLogs)
+        .select()
+      if (!hwError && inserted) {
+        existingLogs.push(...inserted)
+      } else if (hwError) {
+        console.warn('과제 logs 자동 삽입 실패:', hwError)
+      }
+    }
+
     // 주차별 테마 추출
     const weekThemes: Record<number, string> = {}
     const checklist = planResult.data?.monthly_checklist as WeeklyChecklist[] | null
@@ -86,7 +111,7 @@ export async function GET(req: NextRequest) {
     }
 
     // 내 점수 계산
-    const myLogs = logsResult.data ?? []
+    const myLogs = existingLogs
     const myScore = calcScore(myLogs)
     const myCohort = participantResult.data?.cohort ?? null
 
