@@ -60,9 +60,9 @@ function SupplementChat({
 
       const masterPlanForApi = {
         slogan: masterPlan.slogan,
-        customer: { what: masterPlan.customer_what, why: masterPlan.customer_why },
-        process: { what: masterPlan.process_what, why: masterPlan.process_why },
-        people: { what: masterPlan.people_what, why: masterPlan.people_why },
+        customer: { strategy: masterPlan.customer_strategy, what: masterPlan.customer_what, why: masterPlan.customer_why },
+        process: { strategy: masterPlan.process_strategy, what: masterPlan.process_what, why: masterPlan.process_why },
+        people: { strategy: masterPlan.people_strategy, what: masterPlan.people_what, why: masterPlan.people_why },
       }
       const yearlyPlanForApi = yearlyPlan.map((q) => ({
         quarter: q.quarter,
@@ -236,9 +236,9 @@ export default function ActionPlanPage() {
 
     const masterPlanForApi = {
       slogan: mp.slogan,
-      customer: { what: mp.customer_what, why: mp.customer_why },
-      process: { what: mp.process_what, why: mp.process_why },
-      people: { what: mp.people_what, why: mp.people_why },
+      customer: { strategy: mp.customer_strategy, what: mp.customer_what, why: mp.customer_why },
+      process: { strategy: mp.process_strategy, what: mp.process_what, why: mp.process_why },
+      people: { strategy: mp.people_strategy, what: mp.people_what, why: mp.people_why },
     }
 
     try {
