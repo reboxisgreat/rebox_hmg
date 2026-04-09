@@ -26,13 +26,18 @@ export async function GET() {
     // 참가자별 점수 계산
     const scores: Omit<ScoreEntry, 'rank' | 'cohort_rank'>[] = participants.map((p) => {
       const logs = allLogs.filter((l) => l.participant_id === p.id)
-      const totalItems = logs.length
-      const completedItems = logs.filter((l) => l.status === '완료').length
+      const weeklyLogs = logs.filter((l) => l.week_number > 0)
+      const homeworkLogs = logs.filter((l) => l.week_number === 0)
+
+      const totalItems = weeklyLogs.length
+      const completedItems =
+        weeklyLogs.filter((l) => l.status === '완료').length +
+        homeworkLogs.filter((l) => l.status === '완료').length
       const baseScore = completedItems * POINTS_PER_ITEM
 
-      // 주차별 완주 보너스
+      // 주차별 완주 보너스 (주차 항목만, 과제 제외)
       const weekMap = new Map<number, { total: number; completed: number }>()
-      for (const log of logs) {
+      for (const log of weeklyLogs) {
         const w = log.week_number
         if (!weekMap.has(w)) weekMap.set(w, { total: 0, completed: 0 })
         const entry = weekMap.get(w)!
@@ -44,9 +49,10 @@ export async function GET() {
         if (total > 0 && total === completed) weekBonus += POINTS_PER_WEEK_BONUS
       }
 
-      // 전체 완주 보너스
+      // 전체 완주 보너스 (주차 항목만)
+      const weeklyCompleted = weeklyLogs.filter((l) => l.status === '완료').length
       const completionBonus =
-        totalItems > 0 && totalItems === completedItems ? POINTS_ALL_COMPLETE_BONUS : 0
+        totalItems > 0 && totalItems === weeklyCompleted ? POINTS_ALL_COMPLETE_BONUS : 0
 
       const totalScore = baseScore + weekBonus + completionBonus
 
