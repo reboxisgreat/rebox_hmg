@@ -720,6 +720,24 @@ function HomePage({
             )}
           </button>
 
+          {/* 카드 갤러리 */}
+          <button
+            onClick={() => router.push('/card-gallery')}
+            className="w-full flex items-center justify-between px-4 py-3.5 rounded-2xl active:opacity-80 transition-opacity text-left"
+            style={{ backgroundColor: '#ffffff', boxShadow: '0 2px 12px rgba(0,0,0,0.09)', isolation: 'isolate', position: 'relative', zIndex: 1 }}
+          >
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-[#EFF6FF] rounded-xl flex items-center justify-center shrink-0">
+                <LayoutGrid size={20} color="#3B82F6" />
+              </div>
+              <div>
+                <p className="text-[11px] text-[#AAAAAA] font-medium">우리 차수</p>
+                <p className="text-[15px] font-bold text-[#111]">카드 갤러리</p>
+              </div>
+            </div>
+            <ChevronRight size={14} color="#CCCCCC" />
+          </button>
+
           {/* 슬로건 */}
           {progress?.masterPlan?.is_confirmed && progress.masterPlan.slogan && (
             <button
