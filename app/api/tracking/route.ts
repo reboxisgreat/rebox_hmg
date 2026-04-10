@@ -146,7 +146,7 @@ export async function GET(req: NextRequest) {
         cohort_rank: cohortRank,
         cohort_total: cohortTotal,
         cohort: myCohort,
-        completed_items: myLogs.filter((l) => l.status === '완료').length,
+        completed_items: myLogs.filter((l) => l.week_number > 0 && l.status === '완료').length,
         total_items: myLogs.filter((l) => l.week_number > 0).length,
       },
     })

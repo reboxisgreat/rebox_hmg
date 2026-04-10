@@ -112,10 +112,8 @@ function groupByWeek(logs: TrackingLog[], weekThemes: Record<number, string>): W
 
 function Toast({ message }: { message: string }) {
   return (
-    <div className="fixed bottom-8 left-1/2 z-50 animate-[toastPop_0.45s_cubic-bezier(0.34,1.56,0.64,1)_both]"
-      style={{ transform: 'translateX(-50%)' }}
-    >
-      <div className="px-7 py-4 rounded-3xl shadow-[0_8px_32px_rgba(0,0,0,0.28)] text-base font-bold whitespace-nowrap bg-[#111111] text-white">
+    <div className="fixed bottom-8 left-4 right-4 z-50 flex justify-center animate-[toastPop_0.45s_cubic-bezier(0.34,1.56,0.64,1)_both]">
+      <div className="px-7 py-4 rounded-3xl shadow-[0_8px_32px_rgba(0,0,0,0.28)] text-base font-bold text-center bg-[#111111] text-white max-w-sm w-full">
         {message}
       </div>
     </div>
@@ -272,7 +270,7 @@ export default function TrackingPage() {
   // ── 점수 재계산 (로컬)
   const recalcScore = useCallback((updatedLogs: TrackingLog[]) => {
     const totalScore = calcLocalScore(updatedLogs)
-    const completedCount = updatedLogs.filter((l) => l.status === '완료').length
+    const completedCount = updatedLogs.filter((l) => l.week_number > 0 && l.status === '완료').length
     setMyScore((prev) => prev ? { ...prev, total_score: totalScore, completed_items: completedCount } : prev)
   }, [])
 

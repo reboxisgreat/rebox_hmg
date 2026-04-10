@@ -30,10 +30,10 @@ export async function GET() {
       const homeworkLogs = logs.filter((l) => l.week_number === 0)
 
       const totalItems = weeklyLogs.length
-      const completedItems =
-        weeklyLogs.filter((l) => l.status === '완료').length +
-        homeworkLogs.filter((l) => l.status === '완료').length
-      const baseScore = completedItems * POINTS_PER_ITEM
+      const completedItems = weeklyLogs.filter((l) => l.status === '완료').length
+      const allCompletedCount =
+        completedItems + homeworkLogs.filter((l) => l.status === '완료').length
+      const baseScore = allCompletedCount * POINTS_PER_ITEM
 
       // 주차별 완주 보너스 (주차 항목만, 과제 제외)
       const weekMap = new Map<number, { total: number; completed: number }>()
