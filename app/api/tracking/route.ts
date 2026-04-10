@@ -7,14 +7,11 @@ const POINTS_PER_ITEM = 10
 const POINTS_PER_WEEK_BONUS = 20
 const POINTS_ALL_COMPLETE_BONUS = 50
 
-function calcScore(logs: { week_number: number; status: string }[]) {
+function calcScore(logs: { week_number: number; status: string }[], homeworkApproved = false, weeklyProofApprovedCount = 0) {
   const weeklyLogs = logs.filter((l) => l.week_number > 0)
-  const homeworkLogs = logs.filter((l) => l.week_number === 0)
 
-  // 완료 점수: 주차 + 과제 모두 포함 (완료당 10점)
-  const completedCount =
-    weeklyLogs.filter((l) => l.status === '완료').length +
-    homeworkLogs.filter((l) => l.status === '완료').length
+  // 완료 점수: 주차 항목만 (과제는 인증샷 승인 시 별도 보너스)
+  const completedCount = weeklyLogs.filter((l) => l.status === '완료').length
   const baseScore = completedCount * POINTS_PER_ITEM
 
   // 주 완주 보너스: 주차 항목만
@@ -35,7 +32,13 @@ function calcScore(logs: { week_number: number; status: string }[]) {
   const completionBonus =
     weeklyLogs.length > 0 && weeklyLogs.length === weeklyCompleted ? POINTS_ALL_COMPLETE_BONUS : 0
 
-  return baseScore + weekBonus + completionBonus
+  // 과제 인증샷 승인 보너스
+  const homeworkBonus = homeworkApproved ? 50 : 0
+
+  // 주차별 인증샷 승인 보너스 (주당 +50)
+  const weeklyProofBonus = weeklyProofApprovedCount * 50
+
+  return baseScore + weekBonus + completionBonus + homeworkBonus + weeklyProofBonus
 }
 
 // GET: tracking_logs + 주차별 테마 조회
@@ -50,7 +53,7 @@ export async function GET(req: NextRequest) {
 
     const supabase = createSupabaseServiceClient()
 
-    const [logsResult, planResult, allLogsResult, participantResult, allParticipantsResult] = await Promise.all([
+    const [logsResult, planResult, allLogsResult, participantResult, allParticipantsResult, submissionResult, allSubmissionsResult, weeklyProofResult, allWeeklyProofResult] = await Promise.all([
       supabase
         .from('tracking_logs')
         .select('*')
@@ -73,6 +76,22 @@ export async function GET(req: NextRequest) {
       supabase
         .from('participants')
         .select('id, cohort'),
+      supabase
+        .from('homework_submissions')
+        .select('id, status, image_urls, submitted_at, reviewed_at')
+        .eq('participant_id', participantId)
+        .maybeSingle(),
+      supabase
+        .from('homework_submissions')
+        .select('participant_id, status'),
+      supabase
+        .from('weekly_proof_submissions')
+        .select('id, week_number, status, image_urls, submitted_at, reviewed_at')
+        .eq('participant_id', participantId)
+        .order('week_number'),
+      supabase
+        .from('weekly_proof_submissions')
+        .select('participant_id, week_number, status'),
     ])
 
     if (logsResult.error) throw logsResult.error
@@ -112,15 +131,23 @@ export async function GET(req: NextRequest) {
 
     // 내 점수 계산
     const myLogs = existingLogs
-    const myScore = calcScore(myLogs)
+    const mySubmission = submissionResult.data ?? null
+    const myHomeworkApproved = mySubmission?.status === 'approved'
+    const myWeeklyProofs = weeklyProofResult.data ?? []
+    const myWeeklyProofApprovedCount = myWeeklyProofs.filter((s) => s.status === 'approved').length
+    const myScore = calcScore(myLogs, myHomeworkApproved, myWeeklyProofApprovedCount)
     const myCohort = participantResult.data?.cohort ?? null
 
     // 전체 참가자 목록 기반으로 순위 계산 (트래킹 미시작자 포함)
     const allLogs = allLogsResult.data ?? []
     const allParticipants = allParticipantsResult.data ?? []
-    const allScores = allParticipants.map((p) =>
-      calcScore(allLogs.filter((l) => l.participant_id === p.id))
-    )
+    const allSubmissions = allSubmissionsResult.data ?? []
+    const allWeeklyProofs = allWeeklyProofResult.data ?? []
+    const allScores = allParticipants.map((p) => {
+      const approved = allSubmissions.some((s) => s.participant_id === p.id && s.status === 'approved')
+      const weeklyApprovedCount = allWeeklyProofs.filter((s) => s.participant_id === p.id && s.status === 'approved').length
+      return calcScore(allLogs.filter((l) => l.participant_id === p.id), approved, weeklyApprovedCount)
+    })
     const myRank = allScores.filter((s) => s > myScore).length + 1
     const totalParticipants = allParticipants.length
 
@@ -129,9 +156,11 @@ export async function GET(req: NextRequest) {
     let cohortTotal = 0
     if (myCohort) {
       const cohortParticipants = allParticipants.filter((p) => p.cohort === myCohort)
-      const cohortScores = cohortParticipants.map((p) =>
-        calcScore(allLogs.filter((l) => l.participant_id === p.id))
-      )
+      const cohortScores = cohortParticipants.map((p) => {
+        const approved = allSubmissions.some((s) => s.participant_id === p.id && s.status === 'approved')
+        const weeklyApprovedCount = allWeeklyProofs.filter((s) => s.participant_id === p.id && s.status === 'approved').length
+        return calcScore(allLogs.filter((l) => l.participant_id === p.id), approved, weeklyApprovedCount)
+      })
       cohortRank = cohortScores.filter((s) => s > myScore).length + 1
       cohortTotal = cohortParticipants.length
     }
@@ -139,6 +168,8 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({
       logs: myLogs,
       weekThemes,
+      homeworkSubmission: mySubmission,
+      weeklyProofSubmissions: myWeeklyProofs,
       myScore: {
         total_score: myScore,
         rank: myRank,
@@ -148,6 +179,8 @@ export async function GET(req: NextRequest) {
         cohort: myCohort,
         completed_items: myLogs.filter((l) => l.week_number > 0 && l.status === '완료').length,
         total_items: myLogs.filter((l) => l.week_number > 0).length,
+        homework_bonus: myHomeworkApproved ? 50 : 0,
+        weekly_proof_bonus: myWeeklyProofApprovedCount * 50,
       },
     })
   } catch (error) {

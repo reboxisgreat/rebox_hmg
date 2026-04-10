@@ -28,6 +28,7 @@ function AdminLogin({ onSuccess }: { onSuccess: () => void }) {
       const data = await res.json()
       if (data.success) {
         sessionStorage.setItem('isAdmin', 'true')
+        sessionStorage.setItem('adminPassword', password)
         onSuccess()
       } else {
         setError('비밀번호가 올바르지 않습니다.')
@@ -1023,8 +1024,29 @@ function CsvUploadModal({ onClose, onDone }: { onClose: () => void; onDone: () =
   )
 }
 
+interface HomeworkSubmissionAdmin {
+  id: string
+  participant_id: string
+  image_urls: string[]
+  status: 'pending' | 'approved' | 'rejected'
+  submitted_at: string
+  reviewed_at: string | null
+  participants: { name: string; department: string; cohort: number | null } | null
+}
+
+interface WeeklyProofSubmissionAdmin {
+  id: string
+  participant_id: string
+  week_number: number
+  image_urls: string[]
+  status: 'pending' | 'approved' | 'rejected'
+  submitted_at: string
+  reviewed_at: string | null
+  participants: { name: string; department: string; cohort: number | null } | null
+}
+
 function AdminDashboard({ onLogout }: { onLogout: () => void }) {
-  const [activeTab, setActiveTab] = useState<'progress' | 'ranking' | 'gallery'>('progress')
+  const [activeTab, setActiveTab] = useState<'progress' | 'ranking' | 'gallery' | 'homework' | 'weekly'>('progress')
   const [rows, setRows] = useState<AdminProgressRow[]>([])
   const [scores, setScores] = useState<ScoreEntry[]>([])
   const [loading, setLoading] = useState(true)
@@ -1036,14 +1058,43 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
   const [cohortFilter, setCohortFilter] = useState<'all' | 1 | 2 | 3>('all')
   const [rankingSubTab, setRankingSubTab] = useState<'cohort' | 'total'>('cohort')
   const [showCsvUpload, setShowCsvUpload] = useState(false)
+  const [homeworkSubmissions, setHomeworkSubmissions] = useState<HomeworkSubmissionAdmin[]>([])
+  const [weeklySubmissions, setWeeklySubmissions] = useState<WeeklyProofSubmissionAdmin[]>([])
+  const [reviewingId, setReviewingId] = useState<string | null>(null)
+  const [lightboxUrl, setLightboxUrl] = useState<string | null>(null)
+  const [bulkDownloadingId, setBulkDownloadingId] = useState<string | null>(null)
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null)
+
+  const handleBulkDownload = useCallback(async (urls: string[], prefix: string) => {
+    const id = prefix
+    setBulkDownloadingId(id)
+    try {
+      const zip = new JSZip()
+      await Promise.all(urls.map(async (url, i) => {
+        const res = await fetch(`/api/homework/image?path=${encodeURIComponent(url)}`)
+        const blob = await res.blob()
+        const ext = url.split('.').pop() ?? 'jpg'
+        zip.file(`${prefix}_${i + 1}.${ext}`, blob)
+      }))
+      const content = await zip.generateAsync({ type: 'blob' })
+      const a = document.createElement('a')
+      a.href = URL.createObjectURL(content)
+      a.download = `${prefix}.zip`
+      a.click()
+      URL.revokeObjectURL(a.href)
+    } finally {
+      setBulkDownloadingId(null)
+    }
+  }, [])
 
   const fetchData = useCallback(async () => {
     setFetchError('')
     try {
-      const [progressRes, leaderboardRes] = await Promise.all([
+      const [progressRes, leaderboardRes, hwRes, weeklyRes] = await Promise.all([
         fetch('/api/admin/progress'),
         fetch('/api/leaderboard'),
+        fetch('/api/admin/homework'),
+        fetch('/api/admin/weekly'),
       ])
       if (!progressRes.ok || !leaderboardRes.ok) throw new Error('fetch failed')
       const [progressJson, leaderboardJson] = await Promise.all([
@@ -1052,6 +1103,14 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
       ])
       setRows(progressJson.data ?? [])
       setScores(leaderboardJson.scores ?? [])
+      if (hwRes.ok) {
+        const hwJson = await hwRes.json()
+        setHomeworkSubmissions(hwJson.submissions ?? [])
+      }
+      if (weeklyRes.ok) {
+        const weeklyJson = await weeklyRes.json()
+        setWeeklySubmissions(weeklyJson.submissions ?? [])
+      }
       setLastRefreshed(new Date())
     } catch {
       setFetchError('데이터를 불러오는 중 오류가 발생했습니다.')
@@ -1140,43 +1199,23 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
   return (
     <div className="min-h-screen bg-[#F5F5F5]">
       {/* 헤더 */}
-      <header className="bg-white border-b border-[#EBEBEB] px-6 py-4">
-        <div className="max-w-7xl mx-auto flex items-center justify-between">
-          <div className="flex items-center gap-6">
-            <div>
-              <img src="/main-logo.png" alt="리더스러닝랩 xClass" className="h-7 object-contain mb-0.5" />
-              <h1 className="text-lg font-bold text-[#111111]">관리자 대시보드</h1>
-            </div>
-            <div className="flex gap-1 bg-[#F5F5F5] rounded-xl p-1">
-              {([
-                { id: 'progress', label: '진행 현황' },
-                { id: 'ranking', label: '랭킹' },
-                { id: 'gallery', label: '마스터플랜 갤러리' },
-              ] as const).map(({ id, label }) => (
-                <button
-                  key={id}
-                  onClick={() => setActiveTab(id)}
-                  className={`px-4 py-1.5 rounded-lg text-sm font-medium transition-colors ${
-                    activeTab === id
-                      ? 'bg-white text-[#111111] shadow-sm'
-                      : 'text-[#8A8A8A] hover:text-[#111111]'
-                  }`}
-                >
-                  {label}
-                </button>
-              ))}
-            </div>
-          </div>
+      <header className="bg-white border-b border-[#EBEBEB]">
+        {/* 1행: 로고 + 액션 버튼 */}
+        <div className="max-w-7xl mx-auto px-6 py-3 flex items-center justify-between">
           <div className="flex items-center gap-3">
+            <img src="/main-logo.png" alt="리더스러닝랩 xClass" className="h-7 object-contain" />
+            <h1 className="text-base font-bold text-[#111111]">관리자 대시보드</h1>
+          </div>
+          <div className="flex items-center gap-2">
             <span className="text-xs text-[#8A8A8A]">
               {lastRefreshed.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit', second: '2-digit' })} 기준
             </span>
             <button
               onClick={fetchData}
               disabled={loading}
-              className="h-9 px-4 rounded-xl border border-[#EBEBEB] bg-white text-sm font-medium text-[#3A3A3A] hover:bg-[#F5F5F5] disabled:opacity-50 flex items-center gap-1.5"
+              className="h-8 px-3 rounded-lg border border-[#EBEBEB] bg-white text-sm font-medium text-[#3A3A3A] hover:bg-[#F5F5F5] disabled:opacity-50 flex items-center gap-1.5"
             >
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M21 2v6h-6" /><path d="M3 12a9 9 0 0 1 15-6.7L21 8" />
                 <path d="M3 22v-6h6" /><path d="M21 12a9 9 0 0 1-15 6.7L3 16" />
               </svg>
@@ -1186,9 +1225,9 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
               <>
                 <button
                   onClick={() => setShowCsvUpload(true)}
-                  className="h-9 px-4 rounded-xl border border-[#EBEBEB] bg-white text-sm font-medium text-[#3A3A3A] hover:bg-[#F5F5F5] flex items-center gap-1.5"
+                  className="h-8 px-3 rounded-lg border border-[#EBEBEB] bg-white text-sm font-medium text-[#3A3A3A] hover:bg-[#F5F5F5] flex items-center gap-1.5"
                 >
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                     <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
                     <polyline points="17 8 12 3 7 8" /><line x1="12" y1="3" x2="12" y2="15" />
                   </svg>
@@ -1197,21 +1236,21 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
                 <button
                   onClick={downloadAllPDF}
                   disabled={bulkPdfLoading || rows.length === 0}
-                  className="h-9 px-4 rounded-xl border border-[#EBEBEB] bg-white text-sm font-medium text-[#3A3A3A] hover:bg-[#F5F5F5] disabled:opacity-50 flex items-center gap-1.5"
+                  className="h-8 px-3 rounded-lg border border-[#EBEBEB] bg-white text-sm font-medium text-[#3A3A3A] hover:bg-[#F5F5F5] disabled:opacity-50 flex items-center gap-1.5"
                 >
                   {bulkPdfLoading ? (
-                    <svg className="animate-spin" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg>
+                    <svg className="animate-spin" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg>
                   ) : (
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
                   )}
                   {bulkPdfLoading ? 'PDF 생성 중...' : '전체 PDF 다운로드'}
                 </button>
                 <button
                   onClick={downloadCSV}
                   disabled={rows.length === 0}
-                  className="h-9 px-4 rounded-xl bg-[#111111] active:bg-[#3A3A3A] text-white text-sm font-medium disabled:opacity-50 flex items-center gap-1.5"
+                  className="h-8 px-3 rounded-lg bg-[#111111] active:bg-[#3A3A3A] text-white text-sm font-medium disabled:opacity-50 flex items-center gap-1.5"
                 >
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                     <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
                     <polyline points="7 10 12 15 17 10" /><line x1="12" y1="15" x2="12" y2="3" />
                   </svg>
@@ -1221,11 +1260,33 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
             )}
             <button
               onClick={onLogout}
-              className="h-9 px-4 rounded-xl border border-[#EBEBEB] text-sm font-medium text-[#8A8A8A] hover:bg-[#F5F5F5]"
+              className="h-8 px-3 rounded-lg border border-[#EBEBEB] text-sm font-medium text-[#8A8A8A] hover:bg-[#F5F5F5]"
             >
               로그아웃
             </button>
           </div>
+        </div>
+        {/* 2행: 탭 네비게이션 */}
+        <div className="max-w-7xl mx-auto px-6 pb-0 flex gap-1 border-t border-[#F5F5F5]">
+          {([
+            { id: 'progress', label: '진행 현황' },
+            { id: 'ranking', label: '랭킹' },
+            { id: 'gallery', label: '마스터플랜 갤러리' },
+            { id: 'homework', label: `과제 인증${homeworkSubmissions.filter((s) => s.status === 'pending').length > 0 ? ` (${homeworkSubmissions.filter((s) => s.status === 'pending').length})` : ''}` },
+            { id: 'weekly', label: `주차 인증${weeklySubmissions.filter((s) => s.status === 'pending').length > 0 ? ` (${weeklySubmissions.filter((s) => s.status === 'pending').length})` : ''}` },
+          ] as const).map(({ id, label }) => (
+            <button
+              key={id}
+              onClick={() => setActiveTab(id)}
+              className={`px-4 py-2.5 text-sm font-medium border-b-2 transition-colors ${
+                activeTab === id
+                  ? 'border-[#111111] text-[#111111]'
+                  : 'border-transparent text-[#8A8A8A] hover:text-[#3A3A3A]'
+              }`}
+            >
+              {label}
+            </button>
+          ))}
         </div>
       </header>
 
@@ -1269,7 +1330,7 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
                           <table className="w-full text-sm">
                             <thead>
                               <tr className="border-b border-[#EBEBEB] bg-[#F5F5F5]">
-                                {['차수 내 순위', '이름', '소속', '완료 항목', '기본 점수', '주차 보너스', '완주 보너스', '총점'].map((h) => (
+                                {['차수 내 순위', '이름', '소속', '완료 항목', '기본 점수', '주차 보너스', '완주 보너스', '과제 보너스', '주차 인증', '총점'].map((h) => (
                                   <th key={h} className="text-left px-4 py-3 text-xs font-semibold text-[#8A8A8A] whitespace-nowrap">{h}</th>
                                 ))}
                               </tr>
@@ -1299,6 +1360,8 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
                                     <td className="px-4 py-3 text-[#111111] font-medium">{s.base_score}점</td>
                                     <td className="px-4 py-3">{s.week_bonus > 0 ? <span className="text-[#2563EB] font-medium">+{s.week_bonus}점</span> : <span className="text-[#D4D4D4]">-</span>}</td>
                                     <td className="px-4 py-3">{s.completion_bonus > 0 ? <span className="text-[#16A34A] font-medium">+{s.completion_bonus}점</span> : <span className="text-[#D4D4D4]">-</span>}</td>
+                                    <td className="px-4 py-3">{s.homework_bonus > 0 ? <span className="text-[#D97706] font-medium">+{s.homework_bonus}점</span> : <span className="text-[#D4D4D4]">-</span>}</td>
+                                    <td className="px-4 py-3">{s.weekly_proof_bonus > 0 ? <span className="text-[#7C3AED] font-medium">+{s.weekly_proof_bonus}점</span> : <span className="text-[#D4D4D4]">-</span>}</td>
                                     <td className="px-4 py-3"><span className={`font-bold text-base ${isTop3 ? 'text-[#02855B]' : 'text-[#111111]'}`}>{s.total_score}점</span></td>
                                   </tr>
                                 )
@@ -1325,7 +1388,7 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
                           <table className="w-full text-sm">
                             <thead>
                               <tr className="border-b border-[#EBEBEB] bg-[#F5F5F5]">
-                                {['순위', '이름', '소속', '완료 항목', '기본 점수', '주차 보너스', '완주 보너스', '총점'].map((h) => (
+                                {['순위', '이름', '소속', '완료 항목', '기본 점수', '주차 보너스', '완주 보너스', '과제 보너스', '총점'].map((h) => (
                                   <th key={h} className="text-left px-4 py-3 text-xs font-semibold text-[#8A8A8A] whitespace-nowrap">{h}</th>
                                 ))}
                               </tr>
@@ -1384,7 +1447,7 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
                     <table className="w-full text-sm">
                       <thead>
                         <tr className="border-b border-[#EBEBEB] bg-[#F5F5F5]">
-                          {['전체 순위', '이름', '소속', '차수', '완료 항목', '기본 점수', '주차 보너스', '완주 보너스', '총점'].map((h) => (
+                          {['전체 순위', '이름', '소속', '차수', '완료 항목', '기본 점수', '주차 보너스', '완주 보너스', '과제 보너스', '주차 인증', '총점'].map((h) => (
                             <th key={h} className="text-left px-4 py-3 text-xs font-semibold text-[#8A8A8A] whitespace-nowrap">{h}</th>
                           ))}
                         </tr>
@@ -1429,6 +1492,8 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
                               <td className="px-4 py-3 text-[#111111] font-medium">{s.base_score}점</td>
                               <td className="px-4 py-3">{s.week_bonus > 0 ? <span className="text-[#2563EB] font-medium">+{s.week_bonus}점</span> : <span className="text-[#D4D4D4]">-</span>}</td>
                               <td className="px-4 py-3">{s.completion_bonus > 0 ? <span className="text-[#16A34A] font-medium">+{s.completion_bonus}점</span> : <span className="text-[#D4D4D4]">-</span>}</td>
+                              <td className="px-4 py-3">{s.homework_bonus > 0 ? <span className="text-[#D97706] font-medium">+{s.homework_bonus}점</span> : <span className="text-[#D4D4D4]">-</span>}</td>
+                              <td className="px-4 py-3">{s.weekly_proof_bonus > 0 ? <span className="text-[#7C3AED] font-medium">+{s.weekly_proof_bonus}점</span> : <span className="text-[#D4D4D4]">-</span>}</td>
                               <td className="px-4 py-3"><span className={`font-bold text-base ${isTop3 ? 'text-[#02855B]' : 'text-[#111111]'}`}>{s.total_score}점</span></td>
                             </tr>
                           )
@@ -1620,7 +1685,249 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
             }}
           />
         )}
+
+        {/* 과제 인증 탭 */}
+        {activeTab === 'homework' && (
+          <div className="p-6 max-w-3xl mx-auto space-y-4">
+            <h2 className="text-base font-bold text-[#111111]">과제 인증샷 심사</h2>
+            {homeworkSubmissions.length === 0 ? (
+              <p className="text-sm text-[#8A8A8A]">제출된 인증샷이 없습니다.</p>
+            ) : (
+              homeworkSubmissions
+                .sort((a, b) => {
+                  const order = { pending: 0, rejected: 1, approved: 2 }
+                  return order[a.status] - order[b.status]
+                })
+                .map((sub) => (
+                  <div key={sub.id} className={`rounded-2xl border p-4 ${sub.status === 'pending' ? 'border-[#FDE68A] bg-[#FFFBEB]' : sub.status === 'approved' ? 'border-[#BBF7D0] bg-[#F0FDF4]' : 'border-[#FECDD3] bg-[#FFF1F2]'}`}>
+                    <div className="flex items-center justify-between mb-3">
+                      <div>
+                        <p className="text-sm font-bold text-[#111111]">
+                          {sub.participants?.name ?? '-'}
+                          {sub.participants?.cohort && <span className="ml-1 text-xs font-normal text-[#8A8A8A]">{sub.participants.cohort}차수</span>}
+                        </p>
+                        <p className="text-xs text-[#8A8A8A]">{sub.participants?.department ?? '-'} · 제출: {new Date(sub.submitted_at).toLocaleString('ko-KR')}</p>
+                      </div>
+                      <span className={`text-xs font-bold px-2 py-1 rounded-full ${sub.status === 'pending' ? 'bg-[#FDE68A] text-[#92400E]' : sub.status === 'approved' ? 'bg-[#DCFCE7] text-[#15803D]' : 'bg-[#FECDD3] text-[#991B1B]'}`}>
+                        {sub.status === 'pending' ? '심사 중' : sub.status === 'approved' ? '승인됨' : '반려됨'}
+                      </span>
+                    </div>
+
+                    {/* 인증샷 이미지 */}
+                    <div className="flex gap-2 mb-1 overflow-x-auto pb-1">
+                      {sub.image_urls.map((url, i) => {
+                        const proxyUrl = `/api/homework/image?path=${encodeURIComponent(url)}`
+                        const name = sub.participants?.name ?? 'unknown'
+                        return (
+                          <div key={i} className="shrink-0 flex flex-col gap-1">
+                            <button onClick={() => setLightboxUrl(proxyUrl)} className="block">
+                              <img
+                                src={proxyUrl}
+                                alt={`인증샷 ${i + 1}`}
+                                className="h-28 w-auto rounded-xl object-cover border border-[#EBEBEB] hover:opacity-90 transition-opacity"
+                              />
+                            </button>
+                            <a
+                              href={proxyUrl}
+                              download={`과제인증_${name}_${i + 1}.jpg`}
+                              className="text-center text-[10px] text-[#2563EB] font-medium hover:underline"
+                            >
+                              다운로드
+                            </a>
+                          </div>
+                        )
+                      })}
+                    </div>
+                    {sub.image_urls.length > 1 && (
+                      <button
+                        onClick={() => handleBulkDownload(sub.image_urls, `과제인증_${sub.participants?.name ?? 'unknown'}`)}
+                        disabled={bulkDownloadingId === `과제인증_${sub.participants?.name ?? 'unknown'}`}
+                        className="mb-3 text-xs text-[#8A8A8A] hover:text-[#111111] underline"
+                      >
+                        {bulkDownloadingId === `과제인증_${sub.participants?.name ?? 'unknown'}` ? '다운로드 중...' : `전체 ${sub.image_urls.length}장 일괄 다운로드`}
+                      </button>
+                    )}
+
+                    {/* 승인/반려 버튼 */}
+                    <div className="flex gap-2">
+                      <button
+                        disabled={reviewingId === sub.id || sub.status === 'approved'}
+                        onClick={async () => {
+                          setReviewingId(sub.id)
+                          const pw = sessionStorage.getItem('adminPassword') ?? ''
+                          await fetch('/api/homework/review', {
+                            method: 'PATCH',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ submissionId: sub.id, action: 'approve', adminPassword: pw }),
+                          })
+                          await fetchData()
+                          setReviewingId(null)
+                        }}
+                        className={`flex-1 h-10 rounded-xl text-sm font-semibold transition-colors ${sub.status === 'approved' ? 'bg-[#DCFCE7] text-[#15803D] cursor-default' : 'bg-[#16A34A] text-white active:opacity-80'}`}
+                      >
+                        {reviewingId === sub.id ? '처리 중...' : sub.status === 'approved' ? '✓ 승인 완료' : '승인 (+50점)'}
+                      </button>
+                      <button
+                        disabled={reviewingId === sub.id || sub.status === 'rejected'}
+                        onClick={async () => {
+                          setReviewingId(sub.id)
+                          const pw = sessionStorage.getItem('adminPassword') ?? ''
+                          await fetch('/api/homework/review', {
+                            method: 'PATCH',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ submissionId: sub.id, action: 'reject', adminPassword: pw }),
+                          })
+                          await fetchData()
+                          setReviewingId(null)
+                        }}
+                        className={`flex-1 h-10 rounded-xl text-sm font-semibold transition-colors ${sub.status === 'rejected' ? 'bg-[#FECDD3] text-[#991B1B] cursor-default' : 'bg-[#F3F4F6] text-[#3A3A3A] active:opacity-80'}`}
+                      >
+                        {sub.status === 'rejected' ? '✗ 반려됨' : '반려'}
+                      </button>
+                    </div>
+                  </div>
+                ))
+            )}
+          </div>
+        )}
+        {/* 주차 인증 탭 */}
+        {activeTab === 'weekly' && (
+          <div className="p-6 max-w-3xl mx-auto space-y-4">
+            <h2 className="text-base font-bold text-[#111111]">주차별 인증샷 심사</h2>
+            {weeklySubmissions.length === 0 ? (
+              <p className="text-sm text-[#8A8A8A]">제출된 인증샷이 없습니다.</p>
+            ) : (
+              weeklySubmissions
+                .sort((a, b) => {
+                  const order = { pending: 0, rejected: 1, approved: 2 }
+                  return order[a.status] - order[b.status] || a.week_number - b.week_number
+                })
+                .map((sub) => (
+                  <div key={sub.id} className={`rounded-2xl border p-4 ${sub.status === 'pending' ? 'border-[#FDE68A] bg-[#FFFBEB]' : sub.status === 'approved' ? 'border-[#BBF7D0] bg-[#F0FDF4]' : 'border-[#FECDD3] bg-[#FFF1F2]'}`}>
+                    <div className="flex items-center justify-between mb-3">
+                      <div>
+                        <div className="flex items-center gap-2 mb-0.5">
+                          <span className="text-base font-bold text-[#111111]">{sub.week_number}주차 인증</span>
+                        </div>
+                        <p className="text-sm font-semibold text-[#111111]">
+                          {sub.participants?.name ?? '-'}
+                          {sub.participants?.cohort && <span className="ml-1 text-xs font-normal text-[#8A8A8A]">{sub.participants.cohort}차수</span>}
+                        </p>
+                        <p className="text-xs text-[#8A8A8A]">{sub.participants?.department ?? '-'} · 제출: {new Date(sub.submitted_at).toLocaleString('ko-KR')}</p>
+                      </div>
+                      <span className={`text-xs font-bold px-2 py-1 rounded-full ${sub.status === 'pending' ? 'bg-[#FDE68A] text-[#92400E]' : sub.status === 'approved' ? 'bg-[#DCFCE7] text-[#15803D]' : 'bg-[#FECDD3] text-[#991B1B]'}`}>
+                        {sub.status === 'pending' ? '심사 중' : sub.status === 'approved' ? '승인됨' : '반려됨'}
+                      </span>
+                    </div>
+
+                    {/* 인증샷 이미지 */}
+                    <div className="flex gap-2 mb-1 overflow-x-auto pb-1">
+                      {sub.image_urls.map((url, i) => {
+                        const proxyUrl = `/api/homework/image?path=${encodeURIComponent(url)}`
+                        const name = sub.participants?.name ?? 'unknown'
+                        return (
+                          <div key={i} className="shrink-0 flex flex-col gap-1">
+                            <button onClick={() => setLightboxUrl(proxyUrl)} className="block">
+                              <img
+                                src={proxyUrl}
+                                alt={`인증샷 ${i + 1}`}
+                                className="h-28 w-auto rounded-xl object-cover border border-[#EBEBEB] hover:opacity-90 transition-opacity"
+                              />
+                            </button>
+                            <a
+                              href={proxyUrl}
+                              download={`인증샷_${name}_${sub.week_number}주차_${i + 1}.jpg`}
+                              className="text-center text-[10px] text-[#2563EB] font-medium hover:underline"
+                            >
+                              다운로드
+                            </a>
+                          </div>
+                        )
+                      })}
+                    </div>
+                    {sub.image_urls.length > 1 && (
+                      <button
+                        onClick={() => handleBulkDownload(sub.image_urls, `인증샷_${sub.participants?.name ?? 'unknown'}_${sub.week_number}주차`)}
+                        disabled={bulkDownloadingId === `인증샷_${sub.participants?.name ?? 'unknown'}_${sub.week_number}주차`}
+                        className="mb-3 text-xs text-[#8A8A8A] hover:text-[#111111] underline"
+                      >
+                        {bulkDownloadingId === `인증샷_${sub.participants?.name ?? 'unknown'}_${sub.week_number}주차` ? '다운로드 중...' : `전체 ${sub.image_urls.length}장 일괄 다운로드`}
+                      </button>
+                    )}
+
+
+                    {/* 승인/반려 버튼 */}
+                    <div className="flex gap-2">
+                      <button
+                        disabled={reviewingId === sub.id || sub.status === 'approved'}
+                        onClick={async () => {
+                          setReviewingId(sub.id)
+                          const pw = sessionStorage.getItem('adminPassword') ?? ''
+                          await fetch('/api/weekly/review', {
+                            method: 'PATCH',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ submissionId: sub.id, action: 'approve', adminPassword: pw }),
+                          })
+                          await fetchData()
+                          setReviewingId(null)
+                        }}
+                        className={`flex-1 h-10 rounded-xl text-sm font-semibold transition-colors ${sub.status === 'approved' ? 'bg-[#DCFCE7] text-[#15803D] cursor-default' : 'bg-[#16A34A] text-white active:opacity-80'}`}
+                      >
+                        {reviewingId === sub.id ? '처리 중...' : sub.status === 'approved' ? '✓ 승인 완료' : '승인 (+50점)'}
+                      </button>
+                      <button
+                        disabled={reviewingId === sub.id || sub.status === 'rejected'}
+                        onClick={async () => {
+                          setReviewingId(sub.id)
+                          const pw = sessionStorage.getItem('adminPassword') ?? ''
+                          await fetch('/api/weekly/review', {
+                            method: 'PATCH',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ submissionId: sub.id, action: 'reject', adminPassword: pw }),
+                          })
+                          await fetchData()
+                          setReviewingId(null)
+                        }}
+                        className={`flex-1 h-10 rounded-xl text-sm font-semibold transition-colors ${sub.status === 'rejected' ? 'bg-[#FECDD3] text-[#991B1B] cursor-default' : 'bg-[#F3F4F6] text-[#3A3A3A] active:opacity-80'}`}
+                      >
+                        {sub.status === 'rejected' ? '✗ 반려됨' : '반려'}
+                      </button>
+                    </div>
+                  </div>
+                ))
+            )}
+          </div>
+        )}
       </main>
+
+      {/* 이미지 라이트박스 */}
+      {lightboxUrl && (
+        <div
+          className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4"
+          onClick={() => setLightboxUrl(null)}
+        >
+          <button
+            className="absolute top-4 right-4 text-white text-2xl font-bold leading-none"
+            onClick={() => setLightboxUrl(null)}
+          >
+            ✕
+          </button>
+          <img
+            src={lightboxUrl}
+            alt="인증샷 확대"
+            className="max-w-full max-h-[85vh] rounded-2xl object-contain"
+            onClick={(e) => e.stopPropagation()}
+          />
+          <a
+            href={lightboxUrl}
+            download="인증샷.jpg"
+            className="absolute bottom-6 left-1/2 -translate-x-1/2 px-5 py-2.5 bg-white rounded-xl text-sm font-semibold text-[#111111] shadow-lg"
+            onClick={(e) => e.stopPropagation()}
+          >
+            다운로드
+          </a>
+        </div>
+      )}
 
       {/* 상세 모달 */}
       {selectedId && (

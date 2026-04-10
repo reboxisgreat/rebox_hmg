@@ -11,10 +11,12 @@ export async function GET() {
   try {
     const supabase = createSupabaseServiceClient()
 
-    // 모든 참가자 + 트래킹 로그 조회
-    const [participantsResult, logsResult] = await Promise.all([
+    // 모든 참가자 + 트래킹 로그 + 과제 승인 현황 조회
+    const [participantsResult, logsResult, submissionsResult, weeklyProofResult] = await Promise.all([
       supabase.from('participants').select('id, name, department, cohort'),
       supabase.from('tracking_logs').select('participant_id, week_number, status'),
+      supabase.from('homework_submissions').select('participant_id, status'),
+      supabase.from('weekly_proof_submissions').select('participant_id, week_number, status'),
     ])
 
     if (participantsResult.error) throw participantsResult.error
@@ -22,20 +24,19 @@ export async function GET() {
 
     const participants = participantsResult.data ?? []
     const allLogs = logsResult.data ?? []
+    const allSubmissions = submissionsResult.data ?? []
+    const allWeeklyProofs = weeklyProofResult.data ?? []
 
     // 참가자별 점수 계산
     const scores: Omit<ScoreEntry, 'rank' | 'cohort_rank'>[] = participants.map((p) => {
       const logs = allLogs.filter((l) => l.participant_id === p.id)
       const weeklyLogs = logs.filter((l) => l.week_number > 0)
-      const homeworkLogs = logs.filter((l) => l.week_number === 0)
 
       const totalItems = weeklyLogs.length
       const completedItems = weeklyLogs.filter((l) => l.status === '완료').length
-      const allCompletedCount =
-        completedItems + homeworkLogs.filter((l) => l.status === '완료').length
-      const baseScore = allCompletedCount * POINTS_PER_ITEM
+      const baseScore = completedItems * POINTS_PER_ITEM
 
-      // 주차별 완주 보너스 (주차 항목만, 과제 제외)
+      // 주차별 완주 보너스 (주차 항목만)
       const weekMap = new Map<number, { total: number; completed: number }>()
       for (const log of weeklyLogs) {
         const w = log.week_number
@@ -54,7 +55,15 @@ export async function GET() {
       const completionBonus =
         totalItems > 0 && totalItems === weeklyCompleted ? POINTS_ALL_COMPLETE_BONUS : 0
 
-      const totalScore = baseScore + weekBonus + completionBonus
+      // 과제 인증샷 승인 보너스
+      const homeworkApproved = allSubmissions.some((s) => s.participant_id === p.id && s.status === 'approved')
+      const homeworkBonus = homeworkApproved ? 50 : 0
+
+      // 주차별 인증샷 승인 보너스 (주당 +50)
+      const weeklyProofApprovedCount = allWeeklyProofs.filter((s) => s.participant_id === p.id && s.status === 'approved').length
+      const weeklyProofBonus = weeklyProofApprovedCount * 50
+
+      const totalScore = baseScore + weekBonus + completionBonus + homeworkBonus + weeklyProofBonus
 
       return {
         participant_id: p.id,
@@ -64,6 +73,8 @@ export async function GET() {
         base_score: baseScore,
         week_bonus: weekBonus,
         completion_bonus: completionBonus,
+        homework_bonus: homeworkBonus,
+        weekly_proof_bonus: weeklyProofBonus,
         total_score: totalScore,
         completed_items: completedItems,
         total_items: totalItems,

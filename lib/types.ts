@@ -147,15 +147,38 @@ export interface AdminProgressRow {
   tracking_total: number
 }
 
+// 과제 인증샷 제출
+export interface HomeworkSubmission {
+  id: string
+  participant_id: string
+  image_urls: string[]
+  status: 'pending' | 'approved' | 'rejected'
+  submitted_at: string
+  reviewed_at: string | null
+}
+
+// 주차별 인증샷 제출
+export interface WeeklyProofSubmission {
+  id: string
+  participant_id: string
+  week_number: 1 | 2 | 3 | 4
+  image_urls: string[]
+  status: 'pending' | 'approved' | 'rejected'
+  submitted_at: string
+  reviewed_at: string | null
+}
+
 // 리더보드 점수 항목
 export interface ScoreEntry {
   participant_id: string
   name: string
   department: string
   cohort: number | null
-  base_score: number      // 완료 항목 × 10
+  base_score: number      // 주차 완료 항목 × 10
   week_bonus: number      // 주차 완주 보너스 × 20
   completion_bonus: number // 전체 완주 보너스 50
+  homework_bonus: number  // 과제 인증샷 승인 시 50
+  weekly_proof_bonus: number // 주차 인증샷 승인 시 주당 +50
   total_score: number
   completed_items: number
   total_items: number
@@ -173,6 +196,8 @@ export interface MyScore {
   cohort: number | null
   completed_items: number
   total_items: number
+  homework_bonus: number
+  weekly_proof_bonus: number
 }
 
 // 카드 번호 → 주제 매핑

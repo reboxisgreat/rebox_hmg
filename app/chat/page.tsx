@@ -165,6 +165,8 @@ function ChatPageContent() {
   const [showResetModal, setShowResetModal] = useState(false)
   const [showConfirmModal, setShowConfirmModal] = useState(false)
   const [resetting, setResetting] = useState(false)
+  const [showReviewResetModal, setShowReviewResetModal] = useState(false)
+  const [reviewResetting, setReviewResetting] = useState(false)
 
   // 리뷰 모드
   const [savedCards, setSavedCards] = useState<SavedCard[]>([])
@@ -442,6 +444,30 @@ function ChatPageContent() {
   }, [savedCards, currentCard, saveAndNavigate])
 
   // 리뷰 모드 핸들러
+  const handleReviewReset = async () => {
+    if (!participantId) return
+    setReviewResetting(true)
+    try {
+      await fetch('/api/card', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ participantId, cardNumber: reviewCard, isConfirmed: false }),
+      })
+      setSavedCards(prev => prev.filter(c => c.card_number !== reviewCard))
+      setCurrentCard(reviewCard)
+      setMessages([])
+      setSummary(null)
+      setShowSummary(false)
+      setSummaryCollapsed(false)
+      setShowReviewResetModal(false)
+      chatInitiatedRef.current = false
+      setShouldAutoStart(true)
+      setPhase('chatting')
+    } catch { /* ignore */ } finally {
+      setReviewResetting(false)
+    }
+  }
+
   const handleStartEdit = useCallback((cardNum: CardNumber) => {
     const card = savedCards.find(c => c.card_number === cardNum)
     setEditFields({
@@ -581,18 +607,26 @@ function ChatPageContent() {
 
         {/* 카드 내용 */}
         <div className="flex-1 overflow-y-auto px-4 py-2">
-          <div className="flex items-center justify-end mb-3">
+          <div className="flex items-center justify-end gap-2 mb-3">
             {editingCard !== reviewCard && (
-              <button
-                onClick={() => handleStartEdit(reviewCard)}
-                className="flex items-center gap-1 h-8 px-3 rounded-xl bg-white border border-[#EBEBEB] text-xs font-medium text-[#3A3A3A] active:bg-[#F5F5F5] shadow-[0_1px_2px_rgba(0,0,0,0.06)]"
-              >
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
-                  <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
-                </svg>
-                수정하기
-              </button>
+              <>
+                <button
+                  onClick={() => setShowReviewResetModal(true)}
+                  className="flex items-center gap-1 h-8 px-3 rounded-xl bg-white border border-[#EBEBEB] text-xs font-medium active:bg-[#F5F5F5] shadow-[0_1px_2px_rgba(0,0,0,0.06)]"
+                >
+                  ↺ 선택 카드 초기화
+                </button>
+                <button
+                  onClick={() => handleStartEdit(reviewCard)}
+                  className="flex items-center gap-1 h-8 px-3 rounded-xl bg-white border border-[#EBEBEB] text-xs font-medium text-[#3A3A3A] active:bg-[#F5F5F5] shadow-[0_1px_2px_rgba(0,0,0,0.06)]"
+                >
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+                    <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                  </svg>
+                  수정하기
+                </button>
+              </>
             )}
           </div>
 
@@ -723,6 +757,44 @@ function ChatPageContent() {
             <ArrowRight size={16} />
           </button>
         </div>
+
+        {/* 다시 시작 모달 */}
+        {showReviewResetModal && (
+          <div
+            className="fixed inset-0 bg-black/50 z-50 flex items-end justify-center"
+            onClick={(e) => { if (e.target === e.currentTarget) setShowReviewResetModal(false) }}
+          >
+            <div className="bg-white rounded-t-3xl w-full max-w-lg px-6 pt-6 pb-10">
+              <div className="flex items-start justify-between mb-3">
+                <h2 className="text-lg font-bold text-[#111]">챗봇으로 처음부터 다시 시작할까요?</h2>
+                <button onClick={() => setShowReviewResetModal(false)} className="p-1 -mr-1 -mt-1">
+                  <X size={20} color="#8A8A8A" />
+                </button>
+              </div>
+              <p className="text-sm text-[#8A8A8A] mb-6 leading-relaxed">
+                카드 {reviewCard} ({CARD_TITLES[reviewCard]}) 내용과 대화 기록이 초기화됩니다.<br />
+                AI 코치와 다시 대화를 시작할 수 있어요.
+              </p>
+              <div className="space-y-2">
+                <button
+                  onClick={handleReviewReset}
+                  disabled={reviewResetting}
+                  className="w-full rounded-2xl bg-[#111111] text-white text-base font-semibold disabled:opacity-60 active:scale-[0.98] transition-all"
+                  style={{ height: '54px' }}
+                >
+                  {reviewResetting ? '초기화 중...' : '다시 시작'}
+                </button>
+                <button
+                  onClick={() => setShowReviewResetModal(false)}
+                  className="w-full rounded-2xl text-[#8A8A8A] text-sm font-medium"
+                  style={{ height: '48px' }}
+                >
+                  취소
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     )
   }

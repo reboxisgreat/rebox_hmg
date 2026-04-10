@@ -146,11 +146,11 @@ export async function PUT(req: NextRequest) {
   }
 }
 
-// PATCH: Step5 성공지표 저장 OR 채팅 기록 임시 저장
+// PATCH: Step5 성공지표 저장 OR 채팅 기록 임시 저장 OR 카드 미확정 처리
 export async function PATCH(req: NextRequest) {
   try {
     const body = await req.json()
-    const { participantId, cardNumber, step5Indicator, chatHistory } = body
+    const { participantId, cardNumber, step5Indicator, chatHistory, isConfirmed } = body
 
     if (!participantId || !cardNumber) {
       return NextResponse.json({ error: '필수 데이터가 없습니다.' }, { status: 400 })
@@ -158,7 +158,16 @@ export async function PATCH(req: NextRequest) {
 
     const supabase = createSupabaseServiceClient()
 
-    if (chatHistory !== undefined) {
+    if (isConfirmed === false) {
+      // 카드 미확정: is_confirmed = false + 채팅 기록 초기화
+      const { error } = await supabase
+        .from('card_responses')
+        .update({ is_confirmed: false, chat_history: [] })
+        .eq('participant_id', participantId)
+        .eq('card_number', cardNumber)
+      if (error) throw error
+      return NextResponse.json({ success: true })
+    } else if (chatHistory !== undefined) {
       // 채팅 기록 임시 저장: 기존 레코드 있으면 chat_history만 업데이트, 없으면 신규 생성
       const { data: existing } = await supabase
         .from('card_responses')

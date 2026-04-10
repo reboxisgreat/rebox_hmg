@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { useRouter } from 'next/navigation'
-import type { TrackingLog, MyScore } from '@/lib/types'
+import type { TrackingLog, MyScore, HomeworkSubmission, WeeklyProofSubmission } from '@/lib/types'
 import confetti from 'canvas-confetti'
 
 type Status = '미착수' | '진행중' | '완료'
@@ -40,12 +40,9 @@ function pick(arr: string[]) {
   return arr[Math.floor(Math.random() * arr.length)]
 }
 
-function calcLocalScore(logs: TrackingLog[]): number {
+function calcLocalScore(logs: TrackingLog[], homeworkApproved = false, weeklyProofApprovedCount = 0): number {
   const wLogs = logs.filter((l) => l.week_number > 0)
-  const hLogs = logs.filter((l) => l.week_number === 0)
-  const completedCount =
-    wLogs.filter((l) => l.status === '완료').length +
-    hLogs.filter((l) => l.status === '완료').length
+  const completedCount = wLogs.filter((l) => l.status === '완료').length
   const baseScore = completedCount * 10
   const weekMap = new Map<number, { total: number; done: number }>()
   for (const log of wLogs) {
@@ -60,7 +57,9 @@ function calcLocalScore(logs: TrackingLog[]): number {
   }
   const weeklyCompleted = wLogs.filter((l) => l.status === '완료').length
   const completionBonus = wLogs.length > 0 && wLogs.length === weeklyCompleted ? 50 : 0
-  return baseScore + weekBonus + completionBonus
+  const homeworkBonus = homeworkApproved ? 50 : 0
+  const weeklyProofBonus = weeklyProofApprovedCount * 50
+  return baseScore + weekBonus + completionBonus + homeworkBonus + weeklyProofBonus
 }
 
 function buildScoreToast(prevLogs: TrackingLog[], nextLogs: TrackingLog[], status: Status): string | null {
@@ -87,7 +86,7 @@ function buildScoreToast(prevLogs: TrackingLog[], nextLogs: TrackingLog[], statu
     const wasAllDone = prevWLogs.length > 0 && prevWLogs.every((l) => l.status === '완료')
     const isAllDone = nextWLogs.length > 0 && nextWLogs.every((l) => l.status === '완료')
     if (!wasAllDone && isAllDone) parts.push('전체 완주 🎊')
-    return `${parts.join(' ')}  ${pick(DONE_MESSAGES)}`
+    return `${parts.join(' ')}\n${pick(DONE_MESSAGES)}`
   }
 
   return `${delta}점`
@@ -115,8 +114,10 @@ function Toast({ message }: { message: string }) {
     <div className="fixed bottom-8 left-1/2 z-50 animate-[toastPop_0.45s_cubic-bezier(0.34,1.56,0.64,1)_both]"
       style={{ transform: 'translateX(-50%)', width: 'calc(100vw - 2rem)', maxWidth: '24rem' }}
     >
-      <div className="px-7 py-4 rounded-3xl shadow-[0_8px_32px_rgba(0,0,0,0.28)] text-base font-bold text-center bg-[#111111] text-white">
-        {message}
+      <div className="px-7 py-4 rounded-3xl shadow-[0_8px_32px_rgba(0,0,0,0.28)] text-center bg-[#111111] text-white">
+        {message.split('\n').map((line, i) => (
+          <p key={i} className={i === 0 ? 'text-base font-bold whitespace-nowrap' : 'text-sm font-medium mt-0.5 opacity-90'}>{line}</p>
+        ))}
       </div>
     </div>
   )
@@ -127,9 +128,11 @@ function Toast({ message }: { message: string }) {
 function HomeworkItem({
   item,
   onStatusChange,
+  locked,
 }: {
   item: TrackingLog
   onStatusChange: (logId: string, status: Status) => void
+  locked?: boolean
 }) {
   const isDone = item.status === '완료'
   return (
@@ -137,9 +140,10 @@ function HomeworkItem({
       <p className="text-sm text-[#111111] leading-snug mb-3">{item.item_content}</p>
       <div className="flex gap-2">
         <button
-          onClick={() => onStatusChange(item.id, '미착수')}
+          onClick={() => !locked && onStatusChange(item.id, '미착수')}
+          disabled={locked}
           className={`flex-1 h-10 rounded-xl text-sm font-semibold transition-colors ${
-            !isDone ? 'bg-[#FDE68A] text-[#92400E]' : 'bg-[#F3F4F6] text-[#8A8A8A]'
+            locked ? 'bg-[#F3F4F6] text-[#CCCCCC] cursor-not-allowed' : !isDone ? 'bg-[#FDE68A] text-[#92400E]' : 'bg-[#F3F4F6] text-[#8A8A8A]'
           }`}
         >
           아직이예요🥹
@@ -240,6 +244,10 @@ export default function TrackingPage() {
   const [logs, setLogs] = useState<TrackingLog[]>([])
   const [weekThemes, setWeekThemes] = useState<Record<number, string>>({})
   const [myScore, setMyScore] = useState<MyScore | null>(null)
+  const [homeworkSubmission, setHomeworkSubmission] = useState<HomeworkSubmission | null>(null)
+  const [weeklyProofSubmissions, setWeeklyProofSubmissions] = useState<WeeklyProofSubmission[]>([])
+  const [uploadingProof, setUploadingProof] = useState(false)
+  const [uploadingWeeklyProof, setUploadingWeeklyProof] = useState<number | null>(null)
   const [toast, setToast] = useState<string | null>(null)
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const memoTimers = useRef<Record<string, ReturnType<typeof setTimeout>>>({})
@@ -252,11 +260,13 @@ export default function TrackingPage() {
 
     fetch(`/api/tracking?participantId=${id}`)
       .then((r) => r.json())
-      .then((data: { logs: TrackingLog[]; weekThemes: Record<number, string>; myScore?: MyScore; error?: string }) => {
+      .then((data: { logs: TrackingLog[]; weekThemes: Record<number, string>; myScore?: MyScore; homeworkSubmission?: HomeworkSubmission | null; weeklyProofSubmissions?: WeeklyProofSubmission[]; error?: string }) => {
         if (data.error) { setErrorMsg(data.error); setLoading(false); return }
         setLogs(data.logs)
         setWeekThemes(data.weekThemes)
         if (data.myScore) setMyScore(data.myScore)
+        setHomeworkSubmission(data.homeworkSubmission ?? null)
+        setWeeklyProofSubmissions(data.weeklyProofSubmissions ?? [])
         setLoading(false)
       })
       .catch(() => { setErrorMsg('데이터를 불러오는 중 오류가 발생했어요.'); setLoading(false) })
@@ -270,11 +280,13 @@ export default function TrackingPage() {
   }, [])
 
   // ── 점수 재계산 (로컬)
-  const recalcScore = useCallback((updatedLogs: TrackingLog[]) => {
-    const totalScore = calcLocalScore(updatedLogs)
+  const recalcScore = useCallback((updatedLogs: TrackingLog[], hwApproved?: boolean) => {
+    const approved = hwApproved ?? (homeworkSubmission?.status === 'approved')
+    const weeklyApprovedCount = weeklyProofSubmissions.filter((s) => s.status === 'approved').length
+    const totalScore = calcLocalScore(updatedLogs, approved, weeklyApprovedCount)
     const completedCount = updatedLogs.filter((l) => l.week_number > 0 && l.status === '완료').length
     setMyScore((prev) => prev ? { ...prev, total_score: totalScore, completed_items: completedCount } : prev)
-  }, [])
+  }, [homeworkSubmission, weeklyProofSubmissions])
 
   // ── 상태 변경 (즉시 저장)
   const handleStatusChange = useCallback((logId: string, status: Status) => {
@@ -302,6 +314,54 @@ export default function TrackingPage() {
     }).catch(console.error)
   }, [showToast, recalcScore])
 
+  // ── 인증샷 업로드
+  const handleProofUpload = useCallback(async (files: FileList) => {
+    const id = localStorage.getItem('participant_id')
+    if (!id || files.length === 0) return
+    setUploadingProof(true)
+    try {
+      const formData = new FormData()
+      formData.append('participantId', id)
+      for (const file of Array.from(files)) formData.append('images', file)
+      const res = await fetch('/api/homework/submit', { method: 'POST', body: formData })
+      const data = await res.json()
+      if (data.submission) {
+        setHomeworkSubmission(data.submission)
+        showToast('인증샷 제출 완료!\n관리자 확인 후 +50점이 부여됩니다')
+      }
+    } catch {
+      showToast('업로드 중 오류가 발생했어요')
+    } finally {
+      setUploadingProof(false)
+    }
+  }, [showToast])
+
+  // ── 주차 인증샷 업로드
+  const handleWeeklyProofUpload = useCallback(async (weekNumber: number, files: FileList) => {
+    const id = localStorage.getItem('participant_id')
+    if (!id || files.length === 0) return
+    setUploadingWeeklyProof(weekNumber)
+    try {
+      const formData = new FormData()
+      formData.append('participantId', id)
+      formData.append('weekNumber', String(weekNumber))
+      for (const file of Array.from(files)) formData.append('images', file)
+      const res = await fetch('/api/weekly/submit', { method: 'POST', body: formData })
+      const data = await res.json()
+      if (data.submission) {
+        setWeeklyProofSubmissions((prev) => {
+          const filtered = prev.filter((s) => s.week_number !== weekNumber)
+          return [...filtered, data.submission]
+        })
+        showToast(`${weekNumber}주차 인증샷 제출 완료!\n관리자 확인 후 +50점이 부여됩니다`)
+      }
+    } catch {
+      showToast('업로드 중 오류가 발생했어요')
+    } finally {
+      setUploadingWeeklyProof(null)
+    }
+  }, [showToast])
+
   // ── 메모 변경 (800ms 디바운스)
   const handleMemoChange = useCallback((logId: string, memo: string) => {
     setLogs((prev) => prev.map((l) => l.id === logId ? { ...l, memo } : l))
@@ -319,6 +379,7 @@ export default function TrackingPage() {
   // ── 통계 계산 (진행률은 주차 항목만, 과제 제외)
   const homeworkLogs = logs.filter((l) => l.week_number === 0).sort((a, b) => a.item_index - b.item_index)
   const weeklyLogs = logs.filter((l) => l.week_number > 0)
+  const allHomeworkDone = homeworkLogs.length > 0 && homeworkLogs.every((l) => l.status === '완료')
 
   const totalItems = weeklyLogs.length
   const completedItems = weeklyLogs.filter((l) => l.status === '완료').length
@@ -487,19 +548,31 @@ export default function TrackingPage() {
         </div>
 
         {/* 점수 안내 */}
-        <div className="mt-3 flex gap-2 flex-wrap">
-          <span className="flex items-center gap-1 text-[10px] bg-[#F5F5F5] rounded-lg px-2 py-1 text-[#8A8A8A]">
-            과제 완료 <span className="font-bold text-[#111111]">+10점</span>
-          </span>
-          <span className="flex items-center gap-1 text-[10px] bg-[#F5F5F5] rounded-lg px-2 py-1 text-[#8A8A8A]">
-            항목 완료 <span className="font-bold text-[#111111]">+10점</span>
-          </span>
-          <span className="flex items-center gap-1 text-[10px] bg-[#F5F5F5] rounded-lg px-2 py-1 text-[#8A8A8A]">
-            주차 완주 <span className="font-bold text-[#111111]">+20점</span>
-          </span>
-          <span className="flex items-center gap-1 text-[10px] bg-[#F5F5F5] rounded-lg px-2 py-1 text-[#8A8A8A]">
-            전체 완주 <span className="font-bold text-[#111111]">+50점</span>
-          </span>
+        <div className="mt-3 flex flex-col gap-1.5">
+          <div className="grid grid-cols-3 gap-2">
+            <div className="flex flex-col items-center py-1.5 bg-[#F5F5F5] rounded-lg">
+              <span className="text-[9px] text-[#8A8A8A]">항목 완료</span>
+              <span className="text-[11px] font-bold text-[#111111]">+10점</span>
+            </div>
+            <div className="flex flex-col items-center py-1.5 bg-[#F5F5F5] rounded-lg">
+              <span className="text-[9px] text-[#8A8A8A]">주차 완주</span>
+              <span className="text-[11px] font-bold text-[#111111]">+20점</span>
+            </div>
+            <div className="flex flex-col items-center py-1.5 bg-[#F5F5F5] rounded-lg">
+              <span className="text-[9px] text-[#8A8A8A]">전체 완주</span>
+              <span className="text-[11px] font-bold text-[#111111]">+50점</span>
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-2">
+            <div className="flex flex-col items-center py-1.5 bg-[#FFFBEB] rounded-lg">
+              <span className="text-[9px] text-[#D97706]">주차 인증 승인</span>
+              <span className="text-[11px] font-bold text-[#D97706]">+50점</span>
+            </div>
+            <div className="flex flex-col items-center py-1.5 bg-[#FFFBEB] rounded-lg">
+              <span className="text-[9px] text-[#D97706]">과제 인증 승인</span>
+              <span className="text-[11px] font-bold text-[#D97706]">+50점</span>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -522,11 +595,69 @@ export default function TrackingPage() {
                 과제
               </span>
               <p className="text-sm font-bold text-[#111111]">구성원 공유 세션</p>
+              <span className="text-xs text-[#D97706] font-semibold ml-auto">과제 완료 인증 시 +50점</span>
             </div>
             <div className="space-y-2">
               {homeworkLogs.map((item) => (
-                <HomeworkItem key={item.id} item={item} onStatusChange={handleStatusChange} />
+                <HomeworkItem key={item.id} item={item} onStatusChange={handleStatusChange} locked={homeworkSubmission?.status === 'pending' || homeworkSubmission?.status === 'approved'} />
               ))}
+            </div>
+
+            {/* 인증샷 업로드 영역 */}
+            <div className="mt-3">
+              {homeworkSubmission?.status === 'approved' ? (
+                <div className="flex items-center gap-2 bg-[#F0FDF4] border border-[#BBF7D0] rounded-2xl px-4 py-3">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#16A34A" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                    <polyline points="20 6 9 17 4 12" />
+                  </svg>
+                  <div>
+                    <p className="text-sm font-bold text-[#15803D]">과제 완료 인증 +50점 🎉</p>
+                    <p className="text-xs text-[#16A34A]">관리자가 인증샷을 확인했습니다</p>
+                  </div>
+                </div>
+              ) : homeworkSubmission?.status === 'pending' ? (
+                <div className="flex items-center gap-2 bg-[#FFFBEB] border border-[#FDE68A] rounded-2xl px-4 py-3">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#D97706" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+                  </svg>
+                  <div>
+                    <p className="text-sm font-bold text-[#92400E]">심사 중이에요 🕐</p>
+                    <p className="text-xs text-[#D97706]">관리자 확인 후 +50점이 부여됩니다</p>
+                  </div>
+                </div>
+              ) : homeworkSubmission?.status === 'rejected' ? (
+                <div>
+                  <div className="flex items-center gap-2 bg-[#FFF1F2] border border-[#FECDD3] rounded-2xl px-4 py-3 mb-2">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#DC2626" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/>
+                    </svg>
+                    <div>
+                      <p className="text-sm font-bold text-[#991B1B]">반려되었습니다</p>
+                      <p className="text-xs text-[#DC2626]">인증샷을 다시 올려주세요</p>
+                    </div>
+                  </div>
+                  <label className="block w-full">
+                    <input type="file" accept="image/*" multiple className="hidden" onChange={(e) => e.target.files && handleProofUpload(e.target.files)} />
+                    <span className="flex items-center justify-center gap-2 w-full h-11 rounded-2xl bg-[#D97706] text-white text-sm font-bold cursor-pointer active:opacity-80">
+                      {uploadingProof ? '업로드 중...' : '인증샷 다시 올리기 📸'}
+                    </span>
+                  </label>
+                </div>
+              ) : allHomeworkDone ? (
+                <label className="block w-full">
+                  <input type="file" accept="image/*" multiple className="hidden" onChange={(e) => e.target.files && handleProofUpload(e.target.files)} />
+                  <span className="flex items-center justify-center gap-2 w-full h-11 rounded-2xl bg-[#111111] text-white text-sm font-bold cursor-pointer active:opacity-80">
+                    {uploadingProof ? '업로드 중...' : '인증샷 올리고 +50점 받기 📸'}
+                  </span>
+                </label>
+              ) : (
+                <div className="flex items-center gap-2 bg-[#F5F5F5] border border-[#EBEBEB] rounded-2xl px-4 py-3">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#8A8A8A" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/>
+                  </svg>
+                  <p className="text-xs text-[#8A8A8A]">4개 항목을 모두 완료하면 인증샷을 올릴 수 있어요</p>
+                </div>
+              )}
             </div>
           </div>
         )}
@@ -537,6 +668,8 @@ export default function TrackingPage() {
           const weekTotal = group.items.length
           const weekPct = weekTotal > 0 ? Math.round((weekCompleted / weekTotal) * 100) : 0
           const weekAllDone = weekCompleted === weekTotal
+          const weekProof = weeklyProofSubmissions.find((s) => s.week_number === group.week) ?? null
+          const isUploadingThisWeek = uploadingWeeklyProof === group.week
 
           return (
             <div key={group.week}>
@@ -581,6 +714,56 @@ export default function TrackingPage() {
                     onMemoChange={handleMemoChange}
                   />
                 ))}
+              </div>
+
+              {/* 주차 인증샷 업로드 영역 */}
+              <div className="mt-3">
+                {weekProof?.status === 'approved' ? (
+                  <div className="flex items-center gap-2 bg-[#F0FDF4] border border-[#BBF7D0] rounded-2xl px-4 py-3">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#16A34A" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                      <polyline points="20 6 9 17 4 12" />
+                    </svg>
+                    <div>
+                      <p className="text-sm font-bold text-[#15803D]">{group.week}주차 인증 완료 +50점 🎉</p>
+                      <p className="text-xs text-[#16A34A]">관리자가 인증샷을 확인했습니다</p>
+                    </div>
+                  </div>
+                ) : weekProof?.status === 'pending' ? (
+                  <div className="flex items-center gap-2 bg-[#FFFBEB] border border-[#FDE68A] rounded-2xl px-4 py-3">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#D97706" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+                    </svg>
+                    <div>
+                      <p className="text-sm font-bold text-[#92400E]">심사 중이에요 🕐</p>
+                      <p className="text-xs text-[#D97706]">관리자 확인 후 +50점이 부여됩니다</p>
+                    </div>
+                  </div>
+                ) : weekProof?.status === 'rejected' ? (
+                  <div>
+                    <div className="flex items-center gap-2 bg-[#FFF1F2] border border-[#FECDD3] rounded-2xl px-4 py-3 mb-2">
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#DC2626" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/>
+                      </svg>
+                      <div>
+                        <p className="text-sm font-bold text-[#991B1B]">반려되었습니다</p>
+                        <p className="text-xs text-[#DC2626]">인증샷을 다시 올려주세요</p>
+                      </div>
+                    </div>
+                    <label className="block w-full">
+                      <input type="file" accept="image/*" multiple className="hidden" onChange={(e) => e.target.files && handleWeeklyProofUpload(group.week, e.target.files)} />
+                      <span className="flex items-center justify-center gap-2 w-full h-11 rounded-2xl bg-[#D97706] text-white text-sm font-bold cursor-pointer active:opacity-80">
+                        {isUploadingThisWeek ? '업로드 중...' : `${group.week}주차 인증샷 다시 올리기 📸`}
+                      </span>
+                    </label>
+                  </div>
+                ) : (
+                  <label className="block w-full">
+                    <input type="file" accept="image/*" multiple className="hidden" onChange={(e) => e.target.files && handleWeeklyProofUpload(group.week, e.target.files)} />
+                    <span className="flex items-center justify-center gap-2 w-full h-11 rounded-2xl bg-[#F5F5F5] border border-[#EBEBEB] text-[#3A3A3A] text-sm font-semibold cursor-pointer active:opacity-70">
+                      {isUploadingThisWeek ? '업로드 중...' : `${group.week}주차 인증샷 올리기 📸 +50점`}
+                    </span>
+                  </label>
+                )}
               </div>
             </div>
           )
