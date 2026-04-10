@@ -112,8 +112,10 @@ function groupByWeek(logs: TrackingLog[], weekThemes: Record<number, string>): W
 
 function Toast({ message }: { message: string }) {
   return (
-    <div className="fixed bottom-8 left-4 right-4 z-50 flex justify-center animate-[toastPop_0.45s_cubic-bezier(0.34,1.56,0.64,1)_both]">
-      <div className="px-7 py-4 rounded-3xl shadow-[0_8px_32px_rgba(0,0,0,0.28)] text-base font-bold text-center bg-[#111111] text-white max-w-sm w-full">
+    <div className="fixed bottom-8 left-1/2 z-50 animate-[toastPop_0.45s_cubic-bezier(0.34,1.56,0.64,1)_both]"
+      style={{ transform: 'translateX(-50%)', width: 'calc(100vw - 2rem)', maxWidth: '24rem' }}
+    >
+      <div className="px-7 py-4 rounded-3xl shadow-[0_8px_32px_rgba(0,0,0,0.28)] text-base font-bold text-center bg-[#111111] text-white">
         {message}
       </div>
     </div>
