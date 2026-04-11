@@ -13,7 +13,7 @@ export async function GET() {
 
     // 모든 참가자 + 트래킹 로그 + 과제 승인 현황 조회
     const [participantsResult, logsResult, submissionsResult, weeklyProofResult] = await Promise.all([
-      supabase.from('participants').select('id, name, department, cohort'),
+      supabase.from('participants').select('id, name, department, cohort, admin_bonus'),
       supabase.from('tracking_logs').select('participant_id, week_number, status'),
       supabase.from('homework_submissions').select('participant_id, status'),
       supabase.from('weekly_proof_submissions').select('participant_id, week_number, status'),
@@ -63,7 +63,10 @@ export async function GET() {
       const weeklyProofApprovedCount = allWeeklyProofs.filter((s) => s.participant_id === p.id && s.status === 'approved').length
       const weeklyProofBonus = weeklyProofApprovedCount * 50
 
-      const totalScore = baseScore + weekBonus + completionBonus + homeworkBonus + weeklyProofBonus
+      // 관리자 가산점
+      const adminBonus = p.admin_bonus ?? 0
+
+      const totalScore = baseScore + weekBonus + completionBonus + homeworkBonus + weeklyProofBonus + adminBonus
 
       return {
         participant_id: p.id,
@@ -75,6 +78,7 @@ export async function GET() {
         completion_bonus: completionBonus,
         homework_bonus: homeworkBonus,
         weekly_proof_bonus: weeklyProofBonus,
+        admin_bonus: adminBonus,
         total_score: totalScore,
         completed_items: completedItems,
         total_items: totalItems,

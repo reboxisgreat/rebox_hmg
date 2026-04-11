@@ -177,8 +177,9 @@ export interface ScoreEntry {
   base_score: number      // 주차 완료 항목 × 10
   week_bonus: number      // 주차 완주 보너스 × 20
   completion_bonus: number // 전체 완주 보너스 50
-  homework_bonus: number  // 과제 인증샷 승인 시 50
-  weekly_proof_bonus: number // 주차 인증샷 승인 시 주당 +50
+  homework_bonus: number  // 과제 인증샷 제출 시 50
+  weekly_proof_bonus: number // 주차 인증샷 제출 시 주당 +50
+  admin_bonus: number     // 관리자 가산점
   total_score: number
   completed_items: number
   total_items: number
@@ -198,6 +199,7 @@ export interface MyScore {
   total_items: number
   homework_bonus: number
   weekly_proof_bonus: number
+  admin_bonus: number
 }
 
 // 카드 번호 → 주제 매핑

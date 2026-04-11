@@ -160,6 +160,8 @@ function ChatPageContent() {
   const [summaryCollapsed, setSummaryCollapsed] = useState(false)
   const [saving, setSaving] = useState(false)
   const [shouldAutoStart, setShouldAutoStart] = useState(false)
+  const [previousStepData, setPreviousStepData] = useState<CardSummary | null>(null)
+  const [showPrevData, setShowPrevData] = useState(false)
 
   // 모달
   const [showResetModal, setShowResetModal] = useState(false)
@@ -265,6 +267,16 @@ function ChatPageContent() {
 
           // 해당 카드의 채팅 기록 복원 (확정 카드 포함)
           const cardData = cards.find(c => c.card_number === next)
+          // 이전 답변 보존: is_confirmed=false 이지만 step 데이터가 남아 있을 경우 참고용으로 저장
+          if (cardData && !cardData.is_confirmed && cardData.step1_keywords) {
+            setPreviousStepData({
+              step1: cardData.step1_keywords ?? '',
+              step2: cardData.step2_asis ?? '',
+              step3: cardData.step3_tobe ?? '',
+              step4: cardData.step4_action ?? '',
+              step5: cardData.step5_indicator ?? '',
+            })
+          }
           if (cardData?.chat_history && cardData.chat_history.length > 0) {
             setMessages(cardData.chat_history)
             chatInitiatedRef.current = true
@@ -362,12 +374,35 @@ function ChatPageContent() {
   const handleReset = async () => {
     if (!participantId) return
     setResetting(true)
+    // 확정된 카드를 chatting 모드에서 초기화하는 경우 is_confirmed도 함께 해제
+    const isCardConfirmed = savedCards.some(c => c.card_number === currentCard)
     try {
-      await fetch('/api/card', {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ participantId, cardNumber: currentCard, chatHistory: [] }),
-      })
+      if (isCardConfirmed) {
+        // 이전 답변 보존
+        const prevCard = savedCards.find(c => c.card_number === currentCard)
+        if (prevCard?.step1_keywords) {
+          setPreviousStepData({
+            step1: prevCard.step1_keywords ?? '',
+            step2: prevCard.step2_asis ?? '',
+            step3: prevCard.step3_tobe ?? '',
+            step4: prevCard.step4_action ?? '',
+            step5: prevCard.step5_indicator ?? '',
+          })
+          setShowPrevData(false)
+        }
+        await fetch('/api/card', {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ participantId, cardNumber: currentCard, isConfirmed: false }),
+        })
+        setSavedCards(prev => prev.filter(c => c.card_number !== currentCard))
+      } else {
+        await fetch('/api/card', {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ participantId, cardNumber: currentCard, chatHistory: [] }),
+        })
+      }
     } catch { /* ignore */ } finally {
       setResetting(false)
       setShowResetModal(false)
@@ -453,6 +488,18 @@ function ChatPageContent() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ participantId, cardNumber: reviewCard, isConfirmed: false }),
       })
+      // 이전 답변 보존: 초기화 전 카드 데이터를 참고용으로 저장
+      const prevCard = savedCards.find(c => c.card_number === reviewCard)
+      if (prevCard?.step1_keywords) {
+        setPreviousStepData({
+          step1: prevCard.step1_keywords ?? '',
+          step2: prevCard.step2_asis ?? '',
+          step3: prevCard.step3_tobe ?? '',
+          step4: prevCard.step4_action ?? '',
+          step5: prevCard.step5_indicator ?? '',
+        })
+        setShowPrevData(false)
+      }
       setSavedCards(prev => prev.filter(c => c.card_number !== reviewCard))
       setCurrentCard(reviewCard)
       setMessages([])
@@ -873,6 +920,35 @@ function ChatPageContent() {
           </button>
         </div>
       </div>
+
+      {/* 이전 답변 참고 패널 (카드 초기화 후 재시작 시) */}
+      {previousStepData && (
+        <div className="px-4 pt-3 shrink-0">
+          <button
+            onClick={() => setShowPrevData(v => !v)}
+            className="w-full flex items-center justify-between px-4 py-2.5 rounded-2xl bg-amber-50 border border-amber-200 text-left active:opacity-70 transition-opacity"
+          >
+            <span className="text-xs font-semibold text-amber-700">📋 이전 답변 참고하기</span>
+            <span className="text-amber-500 text-xs">{showPrevData ? '▲ 접기' : '▼ 펼치기'}</span>
+          </button>
+          {showPrevData && (
+            <div className="mt-1.5 px-4 py-3 rounded-2xl bg-amber-50 border border-amber-200 space-y-2">
+              {[
+                { label: 'Step 1 · 키워드', value: previousStepData.step1 },
+                { label: 'Step 2 · AS-IS', value: previousStepData.step2 },
+                { label: 'Step 3 · TO-BE', value: previousStepData.step3 },
+                { label: 'Step 4 · 액션', value: previousStepData.step4 },
+                { label: 'Step 5 · 성공지표', value: previousStepData.step5 },
+              ].filter(s => s.value).map(s => (
+                <div key={s.label}>
+                  <p className="text-[10px] font-bold text-amber-600 mb-0.5">{s.label}</p>
+                  <p className="text-xs text-[#555] leading-relaxed whitespace-pre-wrap">{s.value}</p>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
 
       {/* 채팅 메시지 */}
       <div className="flex-1 overflow-y-auto px-4 py-4 space-y-3">

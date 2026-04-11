@@ -40,7 +40,7 @@ function pick(arr: string[]) {
   return arr[Math.floor(Math.random() * arr.length)]
 }
 
-function calcLocalScore(logs: TrackingLog[], homeworkApproved = false, weeklyProofApprovedCount = 0): number {
+function calcLocalScore(logs: TrackingLog[], homeworkApproved = false, weeklyProofApprovedCount = 0, adminBonus = 0): number {
   const wLogs = logs.filter((l) => l.week_number > 0)
   const completedCount = wLogs.filter((l) => l.status === '완료').length
   const baseScore = completedCount * 10
@@ -59,7 +59,7 @@ function calcLocalScore(logs: TrackingLog[], homeworkApproved = false, weeklyPro
   const completionBonus = wLogs.length > 0 && wLogs.length === weeklyCompleted ? 50 : 0
   const homeworkBonus = homeworkApproved ? 50 : 0
   const weeklyProofBonus = weeklyProofApprovedCount * 50
-  return baseScore + weekBonus + completionBonus + homeworkBonus + weeklyProofBonus
+  return baseScore + weekBonus + completionBonus + homeworkBonus + weeklyProofBonus + adminBonus
 }
 
 function buildScoreToast(prevLogs: TrackingLog[], nextLogs: TrackingLog[], status: Status): string | null {
@@ -283,10 +283,10 @@ export default function TrackingPage() {
   const recalcScore = useCallback((updatedLogs: TrackingLog[], hwApproved?: boolean) => {
     const approved = hwApproved ?? (homeworkSubmission?.status === 'approved')
     const weeklyApprovedCount = weeklyProofSubmissions.filter((s) => s.status === 'approved').length
-    const totalScore = calcLocalScore(updatedLogs, approved, weeklyApprovedCount)
+    const totalScore = calcLocalScore(updatedLogs, approved, weeklyApprovedCount, myScore?.admin_bonus ?? 0)
     const completedCount = updatedLogs.filter((l) => l.week_number > 0 && l.status === '완료').length
     setMyScore((prev) => prev ? { ...prev, total_score: totalScore, completed_items: completedCount } : prev)
-  }, [homeworkSubmission, weeklyProofSubmissions])
+  }, [homeworkSubmission, weeklyProofSubmissions, myScore?.admin_bonus])
 
   // ── 상태 변경 (즉시 저장)
   const handleStatusChange = useCallback((logId: string, status: Status) => {
@@ -485,11 +485,7 @@ export default function TrackingPage() {
         </div>
         <div className="flex items-start justify-between mb-3">
           <div>
-            <p className="text-[10px] font-bold tracking-[0.12em] uppercase text-[#8A8A8A] mb-0.5">30일 실행 체크리스트</p>
-            <h1 className="text-base font-bold text-[#111111] tracking-tight">나의 실행 현황</h1>
-          </div>
-          <div className="text-right shrink-0 ml-3">
-            <p className="text-2xl font-bold text-[#111111] tracking-tight">{progressPct}<span className="text-base font-medium text-[#8A8A8A]">%</span></p>
+            <h1 className="text-base font-bold text-[#111111] tracking-tight">30일 체크리스트 점검표</h1>
             <p className="text-xs text-[#8A8A8A]">{completedItems}/{totalItems} 완료</p>
           </div>
         </div>
@@ -526,11 +522,14 @@ export default function TrackingPage() {
         )}
 
         {/* 프로그레스바 */}
-        <div className="h-2.5 bg-[#EBEBEB] rounded-full overflow-hidden mb-2">
-          <div
-            className={`h-full rounded-full transition-all duration-500 ${allCompleted ? 'bg-[#16A34A]' : 'bg-[#111111]'}`}
-            style={{ width: `${progressPct}%` }}
-          />
+        <div className="flex items-center gap-2 mb-2">
+          <div className="flex-1 h-2.5 bg-[#EBEBEB] rounded-full overflow-hidden">
+            <div
+              className={`h-full rounded-full transition-all duration-500 ${allCompleted ? 'bg-[#16A34A]' : 'bg-[#111111]'}`}
+              style={{ width: `${progressPct}%` }}
+            />
+          </div>
+          <span className={`text-xs font-bold tabular-nums ${allCompleted ? 'text-[#16A34A]' : 'text-[#111111]'}`}>{progressPct}%</span>
         </div>
         <div className="flex gap-3 text-xs text-[#8A8A8A]">
           <span className="flex items-center gap-1">
@@ -548,8 +547,8 @@ export default function TrackingPage() {
         </div>
 
         {/* 점수 안내 */}
-        <div className="mt-3 flex flex-col gap-1.5">
-          <div className="grid grid-cols-3 gap-2">
+        <div className="mt-3">
+          <div className="grid grid-cols-5 gap-1.5">
             <div className="flex flex-col items-center py-1.5 bg-[#F5F5F5] rounded-lg">
               <span className="text-[9px] text-[#8A8A8A]">항목 완료</span>
               <span className="text-[11px] font-bold text-[#111111]">+10점</span>
@@ -562,16 +561,19 @@ export default function TrackingPage() {
               <span className="text-[9px] text-[#8A8A8A]">전체 완주</span>
               <span className="text-[11px] font-bold text-[#111111]">+50점</span>
             </div>
+            <div className="flex flex-col items-center py-1.5 bg-[#FFFBEB] rounded-lg">
+              <span className="text-[9px] text-[#D97706]">주차 인증샷</span>
+              <span className="text-[11px] font-bold text-[#D97706]">+50점</span>
+            </div>
+            <div className="flex flex-col items-center py-1.5 bg-[#FFFBEB] rounded-lg">
+              <span className="text-[9px] text-[#D97706]">과제 인증샷</span>
+              <span className="text-[11px] font-bold text-[#D97706]">+50점</span>
+            </div>
           </div>
-          <div className="grid grid-cols-2 gap-2">
-            <div className="flex flex-col items-center py-1.5 bg-[#FFFBEB] rounded-lg">
-              <span className="text-[9px] text-[#D97706]">주차 인증 승인</span>
-              <span className="text-[11px] font-bold text-[#D97706]">+50점</span>
-            </div>
-            <div className="flex flex-col items-center py-1.5 bg-[#FFFBEB] rounded-lg">
-              <span className="text-[9px] text-[#D97706]">과제 인증 승인</span>
-              <span className="text-[11px] font-bold text-[#D97706]">+50점</span>
-            </div>
+          <div className="mt-2 px-3 py-2.5 bg-[#FFF1F2] border border-[#FECDD3] rounded-xl text-center">
+            <p className="text-xs text-[#DC2626] font-medium leading-relaxed">
+              🎁 열심히 참여해주시는 분들에게는 보너스 점수 드립니다! <br />인증샷으로 솜씨를 뽐내주세요.
+            </p>
           </div>
         </div>
       </div>
@@ -612,7 +614,7 @@ export default function TrackingPage() {
                   </svg>
                   <div>
                     <p className="text-sm font-bold text-[#15803D]">과제 완료 인증 +50점 🎉</p>
-                    <p className="text-xs text-[#16A34A]">관리자가 인증샷을 확인했습니다</p>
+                    <p className="text-xs text-[#16A34A]">인증샷이 정상 제출되었습니다</p>
                   </div>
                 </div>
               ) : homeworkSubmission?.status === 'pending' ? (
@@ -725,7 +727,7 @@ export default function TrackingPage() {
                     </svg>
                     <div>
                       <p className="text-sm font-bold text-[#15803D]">{group.week}주차 인증 완료 +50점 🎉</p>
-                      <p className="text-xs text-[#16A34A]">관리자가 인증샷을 확인했습니다</p>
+                      <p className="text-xs text-[#16A34A]">인증샷이 정상 제출되었습니다</p>
                     </div>
                   </div>
                 ) : weekProof?.status === 'pending' ? (

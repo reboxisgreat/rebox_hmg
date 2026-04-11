@@ -421,9 +421,9 @@ function HomePage({
     switch (step) {
       case 0: return true
       case 1: return progress.problemDefinition?.is_confirmed === true
-      case 2: return progress.cards.find((c) => c.card_number === 1)?.is_confirmed === true
-      case 3: return progress.cards.find((c) => c.card_number === 2)?.is_confirmed === true
-      case 4: return progress.cards.find((c) => c.card_number === 3)?.is_confirmed === true
+      case 2: return progress.cards.find((c) => c.card_number === 1)?.is_confirmed === true || !!progress.masterPlan || progress.cards.some((c) => c.card_number >= 2)
+      case 3: return progress.cards.find((c) => c.card_number === 2)?.is_confirmed === true || !!progress.masterPlan || progress.cards.some((c) => c.card_number >= 3)
+      case 4: return progress.cards.find((c) => c.card_number === 3)?.is_confirmed === true || !!progress.masterPlan
       case 5: return progress.masterPlan?.is_confirmed === true
       case 6: return progress.actionPlan?.is_confirmed === true
       default: return false
@@ -581,7 +581,7 @@ function HomePage({
           ) : (
             <button
               onClick={() => router.push(getNextStep())}
-              className="w-full bg-[#002C5F] rounded-3xl px-5 py-5 text-left active:bg-[#003a7a] transition-all"
+              className="w-full bg-[#000000] rounded-3xl px-5 py-5 text-left active:bg-[#003a7a] transition-all"
             >
               <div className="flex items-center justify-between mb-3">
                 <p className="text-xs font-semibold text-white/70 uppercase tracking-[0.1em]">다음 단계로</p>

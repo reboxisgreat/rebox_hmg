@@ -39,9 +39,9 @@ export async function POST(req: NextRequest) {
         {
           participant_id: participantId,
           image_urls: imageUrls,
-          status: 'pending',
+          status: 'approved',
           submitted_at: new Date().toISOString(),
-          reviewed_at: null,
+          reviewed_at: new Date().toISOString(),
         },
         { onConflict: 'participant_id' }
       )

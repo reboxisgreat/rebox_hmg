@@ -99,16 +99,32 @@ export async function POST(req: NextRequest) {
   }
 }
 
-// PATCH: 비밀번호 초기화 (1234로 리셋)
+// PATCH: 비밀번호 초기화 (1234로 리셋) 또는 가산점 설정
 export async function PATCH(req: NextRequest) {
   try {
-    const { id } = await req.json()
+    const body = await req.json()
+    const { id, admin_bonus, adminPassword } = body
 
     if (!id) {
       return NextResponse.json({ error: 'id가 필요합니다.' }, { status: 400 })
     }
 
     const supabase = createSupabaseServiceClient()
+
+    // 가산점 설정
+    if (admin_bonus !== undefined) {
+      if (adminPassword !== process.env.ADMIN_PASSWORD) {
+        return NextResponse.json({ error: '권한이 없습니다.' }, { status: 403 })
+      }
+      const { error } = await supabase
+        .from('participants')
+        .update({ admin_bonus: Math.max(0, Number(admin_bonus)) })
+        .eq('id', id)
+      if (error) throw error
+      return NextResponse.json({ success: true })
+    }
+
+    // 비밀번호 초기화
     const { error } = await supabase
       .from('participants')
       .update({ password: '1234', password_changed: false })
@@ -118,9 +134,9 @@ export async function PATCH(req: NextRequest) {
 
     return NextResponse.json({ success: true })
   } catch (error) {
-    console.error('Admin password reset error:', error)
+    console.error('Admin participant PATCH error:', error)
     return NextResponse.json(
-      { error: '비밀번호 초기화 중 오류가 발생했습니다.' },
+      { error: '처리 중 오류가 발생했습니다.' },
       { status: 500 }
     )
   }

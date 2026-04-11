@@ -106,14 +106,7 @@ export default function MasterPlanPage() {
         const fetchedCards = data.cards
         setCards(fetchedCards)
 
-        // 카드 3장 모두 확정되어야 함
-        if (fetchedCards.length < 3 || fetchedCards.some((c) => !c.is_confirmed)) {
-          setErrorMsg('아직 카드 작성이 완료되지 않았습니다.')
-          setPhase('error')
-          return
-        }
-
-        // 마스터플랜이 이미 있으면 편집 화면으로
+        // 마스터플랜이 이미 있으면 편집 화면으로 (카드 확정 여부 무관)
         if (data.masterPlan) {
           const mp = data.masterPlan
           setMasterPlan({
@@ -130,6 +123,13 @@ export default function MasterPlanPage() {
           })
           setIsStale(mp.is_stale ?? false)
           setPhase('editing')
+          return
+        }
+
+        // 마스터플랜 없을 때: 카드 3장 모두 확정되어야 함
+        if (fetchedCards.length < 3 || fetchedCards.some((c) => !c.is_confirmed)) {
+          setErrorMsg('아직 카드 작성이 완료되지 않았습니다.')
+          setPhase('error')
           return
         }
 

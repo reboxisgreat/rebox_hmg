@@ -1063,7 +1063,27 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
   const [reviewingId, setReviewingId] = useState<string | null>(null)
   const [lightboxUrl, setLightboxUrl] = useState<string | null>(null)
   const [bulkDownloadingId, setBulkDownloadingId] = useState<string | null>(null)
+  const [adminBonusEdits, setAdminBonusEdits] = useState<Record<string, string>>({})
+  const [savingBonusId, setSavingBonusId] = useState<string | null>(null)
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null)
+
+  const handleSaveAdminBonus = async (participantId: string) => {
+    const value = adminBonusEdits[participantId]
+    if (value === undefined) return
+    const pw = sessionStorage.getItem('adminPassword') ?? ''
+    setSavingBonusId(participantId)
+    try {
+      await fetch('/api/admin/participant', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: participantId, admin_bonus: Number(value), adminPassword: pw }),
+      })
+      await fetchData()
+    } finally {
+      setSavingBonusId(null)
+      setAdminBonusEdits((prev) => { const next = { ...prev }; delete next[participantId]; return next })
+    }
+  }
 
   const handleBulkDownload = useCallback(async (urls: string[], prefix: string) => {
     const id = prefix
@@ -1272,8 +1292,8 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
             { id: 'progress', label: '진행 현황' },
             { id: 'ranking', label: '랭킹' },
             { id: 'gallery', label: '마스터플랜 갤러리' },
-            { id: 'homework', label: `과제 인증${homeworkSubmissions.filter((s) => s.status === 'pending').length > 0 ? ` (${homeworkSubmissions.filter((s) => s.status === 'pending').length})` : ''}` },
-            { id: 'weekly', label: `주차 인증${weeklySubmissions.filter((s) => s.status === 'pending').length > 0 ? ` (${weeklySubmissions.filter((s) => s.status === 'pending').length})` : ''}` },
+            { id: 'homework', label: `과제 인증${homeworkSubmissions.length > 0 ? ` (${homeworkSubmissions.length})` : ''}` },
+            { id: 'weekly', label: `주차 인증${weeklySubmissions.length > 0 ? ` (${weeklySubmissions.length})` : ''}` },
           ] as const).map(({ id, label }) => (
             <button
               key={id}
@@ -1330,7 +1350,7 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
                           <table className="w-full text-sm">
                             <thead>
                               <tr className="border-b border-[#EBEBEB] bg-[#F5F5F5]">
-                                {['차수 내 순위', '이름', '소속', '완료 항목', '기본 점수', '주차 보너스', '완주 보너스', '과제 보너스', '주차 인증', '총점'].map((h) => (
+                                {['차수 내 순위', '이름', '소속', '완료 항목', '기본 점수', '주차 보너스', '완주 보너스', '과제 보너스', '주차 인증', '가산점', '총점'].map((h) => (
                                   <th key={h} className="text-left px-4 py-3 text-xs font-semibold text-[#8A8A8A] whitespace-nowrap">{h}</th>
                                 ))}
                               </tr>
@@ -1362,6 +1382,26 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
                                     <td className="px-4 py-3">{s.completion_bonus > 0 ? <span className="text-[#16A34A] font-medium">+{s.completion_bonus}점</span> : <span className="text-[#D4D4D4]">-</span>}</td>
                                     <td className="px-4 py-3">{s.homework_bonus > 0 ? <span className="text-[#D97706] font-medium">+{s.homework_bonus}점</span> : <span className="text-[#D4D4D4]">-</span>}</td>
                                     <td className="px-4 py-3">{s.weekly_proof_bonus > 0 ? <span className="text-[#7C3AED] font-medium">+{s.weekly_proof_bonus}점</span> : <span className="text-[#D4D4D4]">-</span>}</td>
+                                    <td className="px-4 py-3">
+                                      <div className="flex items-center gap-1">
+                                        <input
+                                          type="number"
+                                          min={0}
+                                          value={adminBonusEdits[s.participant_id] ?? s.admin_bonus ?? 0}
+                                          onChange={(e) => setAdminBonusEdits((prev) => ({ ...prev, [s.participant_id]: e.target.value }))}
+                                          className="w-16 h-7 px-2 text-sm border border-[#EBEBEB] rounded-lg text-center focus:outline-none focus:border-[#111111]"
+                                        />
+                                        {adminBonusEdits[s.participant_id] !== undefined && (
+                                          <button
+                                            disabled={savingBonusId === s.participant_id}
+                                            onClick={() => handleSaveAdminBonus(s.participant_id)}
+                                            className="h-7 px-2 text-xs font-semibold bg-[#111111] text-white rounded-lg disabled:opacity-50"
+                                          >
+                                            {savingBonusId === s.participant_id ? '...' : '저장'}
+                                          </button>
+                                        )}
+                                      </div>
+                                    </td>
                                     <td className="px-4 py-3"><span className={`font-bold text-base ${isTop3 ? 'text-[#02855B]' : 'text-[#111111]'}`}>{s.total_score}점</span></td>
                                   </tr>
                                 )
@@ -1447,7 +1487,7 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
                     <table className="w-full text-sm">
                       <thead>
                         <tr className="border-b border-[#EBEBEB] bg-[#F5F5F5]">
-                          {['전체 순위', '이름', '소속', '차수', '완료 항목', '기본 점수', '주차 보너스', '완주 보너스', '과제 보너스', '주차 인증', '총점'].map((h) => (
+                          {['전체 순위', '이름', '소속', '차수', '완료 항목', '기본 점수', '주차 보너스', '완주 보너스', '과제 보너스', '주차 인증', '가산점', '총점'].map((h) => (
                             <th key={h} className="text-left px-4 py-3 text-xs font-semibold text-[#8A8A8A] whitespace-nowrap">{h}</th>
                           ))}
                         </tr>
@@ -1494,6 +1534,26 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
                               <td className="px-4 py-3">{s.completion_bonus > 0 ? <span className="text-[#16A34A] font-medium">+{s.completion_bonus}점</span> : <span className="text-[#D4D4D4]">-</span>}</td>
                               <td className="px-4 py-3">{s.homework_bonus > 0 ? <span className="text-[#D97706] font-medium">+{s.homework_bonus}점</span> : <span className="text-[#D4D4D4]">-</span>}</td>
                               <td className="px-4 py-3">{s.weekly_proof_bonus > 0 ? <span className="text-[#7C3AED] font-medium">+{s.weekly_proof_bonus}점</span> : <span className="text-[#D4D4D4]">-</span>}</td>
+                              <td className="px-4 py-3">
+                                <div className="flex items-center gap-1">
+                                  <input
+                                    type="number"
+                                    min={0}
+                                    value={adminBonusEdits[s.participant_id] ?? s.admin_bonus ?? 0}
+                                    onChange={(e) => setAdminBonusEdits((prev) => ({ ...prev, [s.participant_id]: e.target.value }))}
+                                    className="w-16 h-7 px-2 text-sm border border-[#EBEBEB] rounded-lg text-center focus:outline-none focus:border-[#111111]"
+                                  />
+                                  {adminBonusEdits[s.participant_id] !== undefined && (
+                                    <button
+                                      disabled={savingBonusId === s.participant_id}
+                                      onClick={() => handleSaveAdminBonus(s.participant_id)}
+                                      className="h-7 px-2 text-xs font-semibold bg-[#111111] text-white rounded-lg disabled:opacity-50"
+                                    >
+                                      {savingBonusId === s.participant_id ? '...' : '저장'}
+                                    </button>
+                                  )}
+                                </div>
+                              </td>
                               <td className="px-4 py-3"><span className={`font-bold text-base ${isTop3 ? 'text-[#02855B]' : 'text-[#111111]'}`}>{s.total_score}점</span></td>
                             </tr>
                           )
@@ -1689,17 +1749,14 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
         {/* 과제 인증 탭 */}
         {activeTab === 'homework' && (
           <div className="p-6 max-w-3xl mx-auto space-y-4">
-            <h2 className="text-base font-bold text-[#111111]">과제 인증샷 심사</h2>
+            <h2 className="text-base font-bold text-[#111111]">과제 인증샷 현황</h2>
             {homeworkSubmissions.length === 0 ? (
               <p className="text-sm text-[#8A8A8A]">제출된 인증샷이 없습니다.</p>
             ) : (
               homeworkSubmissions
-                .sort((a, b) => {
-                  const order = { pending: 0, rejected: 1, approved: 2 }
-                  return order[a.status] - order[b.status]
-                })
+                .sort((a, b) => new Date(b.submitted_at).getTime() - new Date(a.submitted_at).getTime())
                 .map((sub) => (
-                  <div key={sub.id} className={`rounded-2xl border p-4 ${sub.status === 'pending' ? 'border-[#FDE68A] bg-[#FFFBEB]' : sub.status === 'approved' ? 'border-[#BBF7D0] bg-[#F0FDF4]' : 'border-[#FECDD3] bg-[#FFF1F2]'}`}>
+                  <div key={sub.id} className="rounded-2xl border border-[#BBF7D0] bg-[#F0FDF4] p-4">
                     <div className="flex items-center justify-between mb-3">
                       <div>
                         <p className="text-sm font-bold text-[#111111]">
@@ -1708,8 +1765,8 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
                         </p>
                         <p className="text-xs text-[#8A8A8A]">{sub.participants?.department ?? '-'} · 제출: {new Date(sub.submitted_at).toLocaleString('ko-KR')}</p>
                       </div>
-                      <span className={`text-xs font-bold px-2 py-1 rounded-full ${sub.status === 'pending' ? 'bg-[#FDE68A] text-[#92400E]' : sub.status === 'approved' ? 'bg-[#DCFCE7] text-[#15803D]' : 'bg-[#FECDD3] text-[#991B1B]'}`}>
-                        {sub.status === 'pending' ? '심사 중' : sub.status === 'approved' ? '승인됨' : '반려됨'}
+                      <span className="text-xs font-bold px-2 py-1 rounded-full bg-[#DCFCE7] text-[#15803D]">
+                        ✓ 제출됨 (+50점)
                       </span>
                     </div>
 
@@ -1742,49 +1799,11 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
                       <button
                         onClick={() => handleBulkDownload(sub.image_urls, `과제인증_${sub.participants?.name ?? 'unknown'}`)}
                         disabled={bulkDownloadingId === `과제인증_${sub.participants?.name ?? 'unknown'}`}
-                        className="mb-3 text-xs text-[#8A8A8A] hover:text-[#111111] underline"
+                        className="text-xs text-[#8A8A8A] hover:text-[#111111] underline"
                       >
                         {bulkDownloadingId === `과제인증_${sub.participants?.name ?? 'unknown'}` ? '다운로드 중...' : `전체 ${sub.image_urls.length}장 일괄 다운로드`}
                       </button>
                     )}
-
-                    {/* 승인/반려 버튼 */}
-                    <div className="flex gap-2">
-                      <button
-                        disabled={reviewingId === sub.id || sub.status === 'approved'}
-                        onClick={async () => {
-                          setReviewingId(sub.id)
-                          const pw = sessionStorage.getItem('adminPassword') ?? ''
-                          await fetch('/api/homework/review', {
-                            method: 'PATCH',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ submissionId: sub.id, action: 'approve', adminPassword: pw }),
-                          })
-                          await fetchData()
-                          setReviewingId(null)
-                        }}
-                        className={`flex-1 h-10 rounded-xl text-sm font-semibold transition-colors ${sub.status === 'approved' ? 'bg-[#DCFCE7] text-[#15803D] cursor-default' : 'bg-[#16A34A] text-white active:opacity-80'}`}
-                      >
-                        {reviewingId === sub.id ? '처리 중...' : sub.status === 'approved' ? '✓ 승인 완료' : '승인 (+50점)'}
-                      </button>
-                      <button
-                        disabled={reviewingId === sub.id || sub.status === 'rejected'}
-                        onClick={async () => {
-                          setReviewingId(sub.id)
-                          const pw = sessionStorage.getItem('adminPassword') ?? ''
-                          await fetch('/api/homework/review', {
-                            method: 'PATCH',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ submissionId: sub.id, action: 'reject', adminPassword: pw }),
-                          })
-                          await fetchData()
-                          setReviewingId(null)
-                        }}
-                        className={`flex-1 h-10 rounded-xl text-sm font-semibold transition-colors ${sub.status === 'rejected' ? 'bg-[#FECDD3] text-[#991B1B] cursor-default' : 'bg-[#F3F4F6] text-[#3A3A3A] active:opacity-80'}`}
-                      >
-                        {sub.status === 'rejected' ? '✗ 반려됨' : '반려'}
-                      </button>
-                    </div>
                   </div>
                 ))
             )}
@@ -1793,17 +1812,14 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
         {/* 주차 인증 탭 */}
         {activeTab === 'weekly' && (
           <div className="p-6 max-w-3xl mx-auto space-y-4">
-            <h2 className="text-base font-bold text-[#111111]">주차별 인증샷 심사</h2>
+            <h2 className="text-base font-bold text-[#111111]">주차별 인증샷 현황</h2>
             {weeklySubmissions.length === 0 ? (
               <p className="text-sm text-[#8A8A8A]">제출된 인증샷이 없습니다.</p>
             ) : (
               weeklySubmissions
-                .sort((a, b) => {
-                  const order = { pending: 0, rejected: 1, approved: 2 }
-                  return order[a.status] - order[b.status] || a.week_number - b.week_number
-                })
+                .sort((a, b) => new Date(b.submitted_at).getTime() - new Date(a.submitted_at).getTime())
                 .map((sub) => (
-                  <div key={sub.id} className={`rounded-2xl border p-4 ${sub.status === 'pending' ? 'border-[#FDE68A] bg-[#FFFBEB]' : sub.status === 'approved' ? 'border-[#BBF7D0] bg-[#F0FDF4]' : 'border-[#FECDD3] bg-[#FFF1F2]'}`}>
+                  <div key={sub.id} className="rounded-2xl border border-[#BBF7D0] bg-[#F0FDF4] p-4">
                     <div className="flex items-center justify-between mb-3">
                       <div>
                         <div className="flex items-center gap-2 mb-0.5">
@@ -1815,8 +1831,8 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
                         </p>
                         <p className="text-xs text-[#8A8A8A]">{sub.participants?.department ?? '-'} · 제출: {new Date(sub.submitted_at).toLocaleString('ko-KR')}</p>
                       </div>
-                      <span className={`text-xs font-bold px-2 py-1 rounded-full ${sub.status === 'pending' ? 'bg-[#FDE68A] text-[#92400E]' : sub.status === 'approved' ? 'bg-[#DCFCE7] text-[#15803D]' : 'bg-[#FECDD3] text-[#991B1B]'}`}>
-                        {sub.status === 'pending' ? '심사 중' : sub.status === 'approved' ? '승인됨' : '반려됨'}
+                      <span className="text-xs font-bold px-2 py-1 rounded-full bg-[#DCFCE7] text-[#15803D]">
+                        ✓ 제출됨 (+50점)
                       </span>
                     </div>
 
@@ -1849,50 +1865,11 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
                       <button
                         onClick={() => handleBulkDownload(sub.image_urls, `인증샷_${sub.participants?.name ?? 'unknown'}_${sub.week_number}주차`)}
                         disabled={bulkDownloadingId === `인증샷_${sub.participants?.name ?? 'unknown'}_${sub.week_number}주차`}
-                        className="mb-3 text-xs text-[#8A8A8A] hover:text-[#111111] underline"
+                        className="text-xs text-[#8A8A8A] hover:text-[#111111] underline"
                       >
                         {bulkDownloadingId === `인증샷_${sub.participants?.name ?? 'unknown'}_${sub.week_number}주차` ? '다운로드 중...' : `전체 ${sub.image_urls.length}장 일괄 다운로드`}
                       </button>
                     )}
-
-
-                    {/* 승인/반려 버튼 */}
-                    <div className="flex gap-2">
-                      <button
-                        disabled={reviewingId === sub.id || sub.status === 'approved'}
-                        onClick={async () => {
-                          setReviewingId(sub.id)
-                          const pw = sessionStorage.getItem('adminPassword') ?? ''
-                          await fetch('/api/weekly/review', {
-                            method: 'PATCH',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ submissionId: sub.id, action: 'approve', adminPassword: pw }),
-                          })
-                          await fetchData()
-                          setReviewingId(null)
-                        }}
-                        className={`flex-1 h-10 rounded-xl text-sm font-semibold transition-colors ${sub.status === 'approved' ? 'bg-[#DCFCE7] text-[#15803D] cursor-default' : 'bg-[#16A34A] text-white active:opacity-80'}`}
-                      >
-                        {reviewingId === sub.id ? '처리 중...' : sub.status === 'approved' ? '✓ 승인 완료' : '승인 (+50점)'}
-                      </button>
-                      <button
-                        disabled={reviewingId === sub.id || sub.status === 'rejected'}
-                        onClick={async () => {
-                          setReviewingId(sub.id)
-                          const pw = sessionStorage.getItem('adminPassword') ?? ''
-                          await fetch('/api/weekly/review', {
-                            method: 'PATCH',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ submissionId: sub.id, action: 'reject', adminPassword: pw }),
-                          })
-                          await fetchData()
-                          setReviewingId(null)
-                        }}
-                        className={`flex-1 h-10 rounded-xl text-sm font-semibold transition-colors ${sub.status === 'rejected' ? 'bg-[#FECDD3] text-[#991B1B] cursor-default' : 'bg-[#F3F4F6] text-[#3A3A3A] active:opacity-80'}`}
-                      >
-                        {sub.status === 'rejected' ? '✗ 반려됨' : '반려'}
-                      </button>
-                    </div>
                   </div>
                 ))
             )}
