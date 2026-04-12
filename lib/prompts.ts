@@ -600,6 +600,7 @@ export function getActionPlanPrompt(
 1년 액션플랜은 교육생의 마스터플랜과 카드별 코칭 내용을 기반으로 설계하세요. 각 분기는 고객가치, 사람관리, 프로세스관리 3개 영역이 골고루 반영되도록 하되, 분기마다 집중 영역과 액션이 다양하게 구성되어야 합니다. 같은 액션이 반복되지 않도록 하세요.
 30일 체크리스트도 동일하게 주차별로 집중 영역과 액션이 다양하게 구성되어야 합니다. 같은 액션이 반복되지 않도록 하세요.
 각 분기의 액션 항목은 3개 이상 6개 미만으로 구성하세요.
+30일 체크리스트 항목은 주차별 3~5개로 구성하세요.
 각 액션 항목은 반드시 하나의 실행 단위만 담으세요. 쉼표나 '및'으로 여러 액션을 한 항목에 나열하지 말고 항목을 분리하세요.
 
 [마스터플랜]
@@ -617,10 +618,53 @@ ${cardSection}
     { "quarter": "Q4 (10~12월)", "focus": "이 분기의 핵심 집중 영역", "actions": ["단일 실행 액션", "..."] }
   ],
   "monthlyChecklist": [
-    { "week": 1, "theme": "1주차 핵심 테마", "items": ["당장 실행 가능한 액션1", "당장 실행 가능한 액션2", "당장 실행 가능한 액션3"] },
-    { "week": 2, "theme": "2주차 핵심 테마", "items": ["당장 실행 가능한 액션1", "당장 실행 가능한 액션2", "당장 실행 가능한 액션3"] },
-    { "week": 3, "theme": "3주차 핵심 테마", "items": ["당장 실행 가능한 액션1", "당장 실행 가능한 액션2", "당장 실행 가능한 액션3"] },
-    { "week": 4, "theme": "4주차 핵심 테마", "items": ["당장 실행 가능한 액션1", "당장 실행 가능한 액션2", "당장 실행 가능한 액션3"] }
+    { "week": 1, "theme": "1주차 핵심 테마", "items": ["당장 실행 가능한 액션1", "액션2", "액션3", "액션4"] },
+    { "week": 2, "theme": "2주차 핵심 테마", "items": ["액션1", "액션2", "액션3", "액션4", "액션5"] },
+    { "week": 3, "theme": "3주차 핵심 테마", "items": ["액션1", "액션2", "액션3"] },
+    { "week": 4, "theme": "4주차 핵심 테마", "items": ["액션1", "액션2", "액션3", "액션4"] }
+  ]
+}
+`
+}
+
+export function getChecklistOnlyPrompt(
+  yearlyPlan: Array<{ quarter: string; focus: string; actions: string[] }>,
+  masterPlan: {
+    slogan: string
+    customer: { strategy: string; what: string; why: string }
+    process: { strategy: string; what: string; why: string }
+    people: { strategy: string; what: string; why: string }
+  },
+  participantName: string
+): string {
+  const planText = yearlyPlan.map((q) =>
+    `${q.quarter} — 집중 영역: ${q.focus}\n${q.actions.map((a) => `  - ${a}`).join('\n')}`
+  ).join('\n\n')
+
+  return `
+당신은 HMG 실장급 리더의 조직관리 실행 로드맵을 설계하는 전문가입니다.
+
+${participantName}님이 직접 수정한 1년 액션플랜을 기반으로 첫 30일 실행 체크리스트를 도출해주세요.
+30일 체크리스트는 1년 플랜의 Q1 방향성과 일치하면서도, 교육 직후 바로 착수할 수 있는 구체적인 실행 단위로 구성하세요.
+주차별로 집중 영역과 액션이 다양하게 구성되어야 하며, 같은 액션이 반복되지 않도록 하세요.
+각 항목은 하나의 실행 단위만 담으세요. 주차별 항목은 3~5개로 구성하세요.
+
+[마스터플랜]
+슬로건: ${masterPlan.slogan}
+고객가치 전략: ${masterPlan.customer.strategy} / What: ${masterPlan.customer.what} / Why: ${masterPlan.customer.why}
+프로세스 전략: ${masterPlan.process.strategy} / What: ${masterPlan.process.what} / Why: ${masterPlan.process.why}
+사람 전략: ${masterPlan.people.strategy} / What: ${masterPlan.people.what} / Why: ${masterPlan.people.why}
+
+[교육생이 수정한 1년 액션플랜]
+${planText}
+
+반드시 아래 JSON 형식으로만 응답하세요. 다른 텍스트 없이 JSON만 출력하세요.
+{
+  "monthlyChecklist": [
+    { "week": 1, "theme": "1주차 핵심 테마", "items": ["당장 실행 가능한 액션1", "액션2", "액션3", "액션4"] },
+    { "week": 2, "theme": "2주차 핵심 테마", "items": ["액션1", "액션2", "액션3", "액션4", "액션5"] },
+    { "week": 3, "theme": "3주차 핵심 테마", "items": ["액션1", "액션2", "액션3"] },
+    { "week": 4, "theme": "4주차 핵심 테마", "items": ["액션1", "액션2", "액션3", "액션4"] }
   ]
 }
 `

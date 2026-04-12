@@ -41,6 +41,7 @@ export default function ActionPlanPage() {
   const [savedToast, setSavedToast] = useState(false)
   const [showRegenerateConfirm, setShowRegenerateConfirm] = useState(false)
   const [isStale, setIsStale] = useState(false)
+  const [isGeneratingChecklist, setIsGeneratingChecklist] = useState(false)
   const checklistRef = useRef<HTMLDivElement>(null)
   const savedToastTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const autoSaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -77,6 +78,40 @@ export default function ActionPlanPage() {
     }
   }, [])
 
+  // ── 수정된 1년 플랜 기반 30일 체크리스트 재도출
+  const generateChecklistFromYearlyPlan = useCallback(async () => {
+    if (!participantId || !masterPlan) return
+    setIsGeneratingChecklist(true)
+    setGenerateError('')
+    try {
+      const masterPlanForApi = {
+        slogan: masterPlan.slogan,
+        customer: { strategy: masterPlan.customer_strategy, what: masterPlan.customer_what, why: masterPlan.customer_why },
+        process: { strategy: masterPlan.process_strategy, what: masterPlan.process_what, why: masterPlan.process_why },
+        people: { strategy: masterPlan.people_strategy, what: masterPlan.people_what, why: masterPlan.people_why },
+      }
+      const res = await fetch('/api/actionplan', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          participantId,
+          participantName,
+          masterPlan: masterPlanForApi,
+          mode: 'checklist-only',
+          yearlyPlan,
+        }),
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error)
+      setMonthlyChecklist(data.monthlyChecklist)
+      setShowChecklist(true)
+    } catch {
+      setGenerateError('체크리스트 도출 중 오류가 발생했어요. 다시 시도해주세요.')
+    } finally {
+      setIsGeneratingChecklist(false)
+    }
+  }, [participantId, participantName, masterPlan, yearlyPlan])
+
   // ── 초기 데이터 로드
   useEffect(() => {
     const id = localStorage.getItem('participant_id')
@@ -102,9 +137,14 @@ export default function ActionPlanPage() {
 
         const ap = data.actionPlan
         if (ap) {
+          // 마스터플랜 변경 → 자동 재도출
+          if (ap.is_stale) {
+            generateActionPlan(id, name, mp)
+            return
+          }
           setYearlyPlan(ap.yearly_plan ?? [])
           setMonthlyChecklist(ap.monthly_checklist ?? [])
-          setIsStale(ap.is_stale ?? false)
+          setIsStale(false)
           if (ap.is_confirmed) {
             setShowChecklist(true)
             setPhase('confirmed')
@@ -522,18 +562,25 @@ export default function ActionPlanPage() {
         {/* 30일 체크리스트 버튼 또는 섹션 */}
         {!showChecklist ? (
           <button
-            onClick={() => setShowChecklist(true)}
-            className="w-full rounded-2xl border border-[#EBEBEB] bg-white active:scale-[0.98] transition-all shadow-[0_1px_3px_rgba(0,0,0,0.06)] px-5 py-4 flex items-center justify-between"
+            onClick={generateChecklistFromYearlyPlan}
+            disabled={isGeneratingChecklist}
+            className="w-full rounded-2xl border border-[#EBEBEB] bg-white active:scale-[0.98] transition-all shadow-[0_1px_3px_rgba(0,0,0,0.06)] px-5 py-4 flex items-center justify-between disabled:opacity-60"
           >
             <div className="flex items-center gap-3">
               <div className="w-9 h-9 bg-[#ECFDF5] rounded-xl flex items-center justify-center shrink-0">
-                <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#02855B" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                  <polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>
-                </svg>
+                {isGeneratingChecklist ? (
+                  <div className="w-4 h-4 border-2 border-[#02855B] border-t-transparent rounded-full animate-spin" />
+                ) : (
+                  <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#02855B" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                    <polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>
+                  </svg>
+                )}
               </div>
               <div className="text-left">
                 <p className="text-[11px] text-[#8A8A8A] font-medium">다음 단계</p>
-                <p className="text-[15px] font-bold text-[#111111]">30일 체크리스트 도출하기</p>
+                <p className="text-[15px] font-bold text-[#111111]">
+                  {isGeneratingChecklist ? 'AI가 체크리스트를 도출하고 있어요...' : '30일 체크리스트 도출하기'}
+                </p>
               </div>
             </div>
             <div className="w-7 h-7 rounded-full border border-[#DDDDDD] flex items-center justify-center shrink-0">

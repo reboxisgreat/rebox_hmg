@@ -227,6 +227,7 @@ function ChatPageContent() {
 
   // 인증 확인 + 저장 데이터 로드
   useEffect(() => {
+    let stale = false
     const id = localStorage.getItem('participant_id')
     if (!id) { router.replace('/'); return }
     setParticipantId(id)
@@ -234,6 +235,7 @@ function ChatPageContent() {
     fetch(`/api/card?participantId=${id}`)
       .then(r => r.json())
       .then(({ cards }: { cards: SavedCard[] }) => {
+        if (stale) return
         const confirmed = cards.filter(c => c.is_confirmed)
         if (confirmed.length === 3) {
           setSavedCards(confirmed.sort((a, b) => a.card_number - b.card_number))
@@ -290,9 +292,11 @@ function ChatPageContent() {
         }
       })
       .catch(() => {
+        if (stale) return
         setPhase('chatting')
         setShouldAutoStart(true)
       })
+    return () => { stale = true }
   }, [router, searchParams])
 
   // AI 자동 시작
@@ -877,15 +881,7 @@ function ChatPageContent() {
               <span className="text-[12px] font-medium">홈으로 이동</span>
             </button>
           )}
-          {currentCard < 3 ? (
-            <button
-              onClick={handleGoNext}
-              className="flex items-center gap-1.5 text-[#3A3A3A] active:opacity-60 transition-colors"
-            >
-              <span className="text-[12px] font-medium">다음으로 가기</span>
-              <ChevronRight size={15} />
-            </button>
-          ) : (
+          {currentCard === 3 && (
             <button
               onClick={() => saveAndNavigate('/')}
               className="flex items-center gap-1.5 text-[#3A3A3A] active:opacity-60 transition-colors"
@@ -954,11 +950,8 @@ function ChatPageContent() {
       <div className="flex-1 overflow-y-auto px-4 py-4 space-y-3">
         {messages.length === 0 && isStreaming && (
           <div className="flex justify-start items-end gap-2">
-            <div
-              className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0"
-              style={{ background: CARD_ICON_BG[currentCard] }}
-            >
-              <Sparkles size={13} color={CARD_COLOR[currentCard]} />
+            <div className="w-7 h-7 rounded-lg overflow-hidden shrink-0">
+              <Image src="/dog-character.jpg" alt="AI" width={28} height={28} className="w-full h-full object-cover" />
             </div>
             <div className="bg-white rounded-2xl rounded-bl-sm px-4 py-3 shadow-sm">
               <span className="inline-flex gap-1">
@@ -977,11 +970,8 @@ function ChatPageContent() {
           return (
             <div key={i} className={`flex items-end gap-2 ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
               {msg.role === 'model' && (
-                <div
-                  className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0"
-                  style={{ background: CARD_ICON_BG[currentCard] }}
-                >
-                  <Sparkles size={13} color={CARD_COLOR[currentCard]} />
+                <div className="w-7 h-7 rounded-lg overflow-hidden shrink-0">
+                  <Image src="/dog-character.jpg" alt="AI" width={28} height={28} className="w-full h-full object-cover" />
                 </div>
               )}
               <div className={`max-w-[80%] px-4 py-3 rounded-2xl text-sm leading-relaxed whitespace-pre-wrap ${

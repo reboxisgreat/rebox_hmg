@@ -29,7 +29,7 @@ export async function GET(request: NextRequest) {
     const { data: cards, error } = await supabase
       .from('card_responses')
       .select('id, participant_id, card_number, card_topic, step1_keywords, step2_asis, step3_tobe, step4_action, step5_indicator, is_confirmed, participants!inner(name, department, cohort)')
-      .eq('is_confirmed', true)
+      .not('step1_keywords', 'is', null)
       .eq('participants.cohort', participant.cohort)
       .order('created_at', { ascending: true })
 

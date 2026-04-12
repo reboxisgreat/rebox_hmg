@@ -227,6 +227,7 @@ export default function MasterPlanPage() {
         people_why: mp.people.why,
       })
       setIsStale(false)
+      setIsPostCompletion(false)
       setPhase('editing')
     } catch {
       setGenerateError('마스터플랜 도출 중 오류가 발생했어요. 다시 시도해주세요.')

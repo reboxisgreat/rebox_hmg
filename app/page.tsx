@@ -500,53 +500,54 @@ function HomePage({
       </div>
 
       {/* 헤더 */}
-      <div className="relative px-5 pt-14 pb-5">
+      <div className="relative px-5 pt-10 pb-0">
         {/* 헤더 콘텐츠 */}
         <div className="relative z-10">
           <div className="flex items-start justify-between mb-4">
             <div className="flex flex-col gap-3">
-              <img src="/main-logo.png" alt="리더스러닝랩 xClass" className="h-9 object-contain" />
-              <span className="text-[14px] font-bold text-[#000000] tracking-[0.12em] pl-0.5">리더스러닝랩 xClass 조직관리 과정</span>
+              <img src="/main-logo.png" alt="리더스러닝랩 xClass" className="h-11 object-contain" />
+              <span className="text-[15px] font-bold text-[#000000] tracking-[0.10em] pl-0.5">리더스러닝랩 xClass 조직관리 과정</span>
             </div>
           </div>
-          <div className="flex items-start justify-between gap-3">
-            <h1 className="text-[1.6rem] font-bold text-[#111] leading-tight tracking-tight">
-              안녕하세요,<br />{participantName}님!
-            </h1>
+          <div className="flex items-center justify-between gap-3">
+            <div className="flex-1">
+              <div className="flex items-center gap-2 mb-1">
+                <img
+                  src="/dog-character.jpg"
+                  alt="정직이"
+                  className="w-10 h-10 rounded-full object-cover object-top border-2 border-white shadow-sm shrink-0"
+                />
+                <span className="text-[1.4rem] font-bold text-[#111] leading-snug">반가워요, {participantName}님! </span>
+              </div>
+            </div>
             {progress?.score ? (
               <button
                 onClick={() => router.push('/ranking')}
-                className="shrink-0 mt-1 rounded-2xl overflow-hidden shadow-md flex items-center gap-3 px-4 py-3 active:opacity-80 transition-opacity"
+                className="shrink-0 mt-1 rounded-2xl overflow-hidden shadow-md flex items-center gap-2 px-3 py-2.5 active:opacity-80 transition-opacity"
                 style={{ background: '#FEF9C3' }}
               >
-                <span className="text-2xl leading-none">🏆</span>
+                <span className="text-xl leading-none">🏆</span>
                 <div>
                   <p className="text-[10px] font-bold text-[#CA8A04] tracking-wider leading-none">
                     {progress.score.cohort ? `${progress.score.cohort}차수 랭킹` : '주차별 랭킹'}
                   </p>
-                  <p className="text-2xl font-black text-[#92400E] leading-tight">{progress.score.rank}위</p>
+                  <p className="text-xl font-black text-[#92400E] leading-tight">{progress.score.rank}위</p>
                   <p className="text-[10px] text-[#A16207] leading-none">{progress.score.total_participants}명 중</p>
                 </div>
-                <ChevronRight size={14} color="#CA8A04" />
+                <ChevronRight size={13} color="#CA8A04" />
               </button>
             ) : (
-              <div className="shrink-0 mt-1 rounded-2xl overflow-hidden shadow-md flex items-center gap-3 px-4 py-3"
+              <div className="shrink-0 mt-1 rounded-2xl overflow-hidden shadow-md flex items-center gap-2 px-3 py-2.5"
                 style={{ background: '#F3F4F6' }}>
-                <span className="text-2xl leading-none">🏅</span>
+                <span className="text-xl leading-none">🏅</span>
                 <div>
                   <p className="text-[10px] font-bold text-[#9CA3AF] tracking-wider leading-none">RANKING</p>
-                  <p className="text-base font-black text-[#6B7280] leading-tight">미참여</p>
+                  <p className="text-sm font-black text-[#6B7280] leading-tight">미참여</p>
                   <p className="text-[10px] text-[#9CA3AF] leading-none">지금 시작해보세요!</p>
                 </div>
               </div>
             )}
           </div>
-          {progress?.participant.department && (
-            <div className="flex items-center gap-1.5 mt-2">
-              <User size={12} color="#8A8A8A" />
-              <p className="text-sm text-[#8A8A8A]">{progress.participant.department}</p>
-            </div>
-          )}
         </div>
       </div>
 
@@ -562,7 +563,7 @@ function HomePage({
 
           {/* 전체 진행 카드 */}
           {allDone ? (
-            <div className="rounded-3xl px-5 py-3 relative overflow-hidden flex items-center justify-between" style={{ backgroundImage: 'linear-gradient(60deg,rgb(0, 0, 0) 0%, #485563 100%)' }}>
+            <div className="rounded-3xl px-5 py-3 relative overflow-hidden flex items-center justify-between bg-[#111111]">
               {/* 폭죽 애니메이션 — 좌측 */}
               <Lottie
                 animationData={confettiData}
@@ -581,24 +582,25 @@ function HomePage({
           ) : (
             <button
               onClick={() => router.push(getNextStep())}
-              className="w-full bg-[#000000] rounded-3xl px-5 py-5 text-left active:bg-[#003a7a] transition-all"
+              className="w-full rounded-3xl px-5 py-5 text-left transition-all"
+              style={{ backgroundColor: '#111111', isolation: 'isolate', position: 'relative', zIndex: 1 }}
             >
               <div className="flex items-center justify-between mb-3">
-                <p className="text-xs font-semibold text-white/70 uppercase tracking-[0.1em]">다음 단계로</p>
-                <div className="flex items-center gap-1.5 bg-white/20 rounded-full px-3 py-1">
+                <p className="text-xs font-semibold text-[#888888] uppercase tracking-[0.1em]">다음 단계로</p>
+                <div className="flex items-center gap-1.5 bg-[#2a2a2a] rounded-full px-3 py-1">
                   <span className="text-xs font-bold text-white">{completedSteps}/{totalSteps}</span>
                 </div>
               </div>
               {/* 진행 바 */}
-              <div className="h-1.5 bg-white/20 rounded-full mb-3 overflow-hidden">
+              <div className="h-1.5 bg-[#2a2a2a] rounded-full mb-3 overflow-hidden">
                 <div
                   className="h-full bg-white rounded-full transition-all"
                   style={{ width: `${(completedSteps / totalSteps) * 100}%` }}
                 />
               </div>
               <div className="flex items-center justify-between">
-                <p className="text-base font-semibold text-white">이어서 계속하기</p>
-                <div className="w-8 h-8 bg-white/20 rounded-full flex items-center justify-center">
+                <p className="text-base font-semibold text-white">이어서 계속하기 👉🏻</p>
+                <div className="w-8 h-8 bg-[#2a2a2a] rounded-full flex items-center justify-center">
                   <ArrowRight size={16} color="white" />
                 </div>
               </div>

@@ -393,8 +393,8 @@ export default function ProblemDefinitionPage() {
           return (
             <div key={i} className={`flex items-end gap-2 ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
               {msg.role === 'model' && (
-                <div className="w-7 h-7 bg-[#F0FDF4] rounded-lg flex items-center justify-center shrink-0">
-                  <Sparkles size={13} color="#02855B" />
+                <div className="w-7 h-7 rounded-lg overflow-hidden shrink-0">
+                  <Image src="/dog-character.jpg" alt="AI" width={28} height={28} className="w-full h-full object-cover" />
                 </div>
               )}
               <div className={`max-w-[80%] px-4 py-3 rounded-2xl text-sm leading-relaxed whitespace-pre-wrap ${

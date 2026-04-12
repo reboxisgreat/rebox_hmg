@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { generateSingleResponse } from '@/lib/gemini'
-import { getActionPlanPrompt } from '@/lib/prompts'
+import { getActionPlanPrompt, getChecklistOnlyPrompt } from '@/lib/prompts'
 import { createSupabaseServiceClient } from '@/lib/supabase'
 import type { QuarterlyPlan, WeeklyChecklist, ChecklistItem } from '@/lib/types'
 import { HOMEWORK_ITEMS } from '@/lib/types'
@@ -46,10 +46,11 @@ export async function GET(req: NextRequest) {
 }
 
 // POST: 액션플랜 AI 도출 + Supabase 저장
+// mode === 'checklist-only': 수정된 1년 플랜 기반으로 30일 체크리스트만 재도출
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json()
-    const { participantId, participantName, masterPlan } = body
+    const { participantId, participantName, masterPlan, mode, yearlyPlan: providedYearlyPlan } = body
 
     if (!participantId || !masterPlan) {
       return NextResponse.json({ error: '필수 데이터가 없습니다.' }, { status: 400 })
@@ -57,6 +58,36 @@ export async function POST(req: NextRequest) {
 
     const supabase = createSupabaseServiceClient()
 
+    // ── 체크리스트 전용 재도출 ──────────────────────────────────────
+    if (mode === 'checklist-only' && providedYearlyPlan) {
+      const prompt = getChecklistOnlyPrompt(providedYearlyPlan, masterPlan, participantName ?? '리더')
+      const raw = await generateSingleResponse(prompt, '30일 체크리스트를 도출해주세요.')
+
+      const stripped = raw.replace(/```(?:json)?\s*/g, '').replace(/```\s*/g, '').trim()
+      const jsonMatch = stripped.match(/\{[\s\S]*\}/)
+      if (!jsonMatch) throw new Error('JSON 파싱 실패')
+
+      const result: Pick<ActionPlanResult, 'monthlyChecklist'> = JSON.parse(jsonMatch[0])
+      const monthlyChecklist: WeeklyChecklist[] = result.monthlyChecklist.map((week) => ({
+        week: week.week,
+        theme: week.theme,
+        items: week.items.map((content, index): ChecklistItem => ({
+          index,
+          content,
+          status: '미착수',
+          memo: '',
+        })),
+      }))
+
+      await supabase
+        .from('action_plans')
+        .update({ monthly_checklist: monthlyChecklist, yearly_plan: providedYearlyPlan, is_stale: false })
+        .eq('participant_id', participantId)
+
+      return NextResponse.json({ monthlyChecklist })
+    }
+
+    // ── 전체 액션플랜 도출 ─────────────────────────────────────────
     // 카드별 코칭 내용 조회 (confirmed된 것만)
     const { data: cards } = await supabase
       .from('card_responses')
