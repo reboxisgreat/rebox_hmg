@@ -46,10 +46,11 @@ export default function RankingPage() {
   ]
 
   const scoreGuide = [
-    { label: '과제 완료', point: '+10' },
-    { label: '항목 완료', point: '+10' },
-    { label: '주차 완주', point: '+20' },
-    { label: '전체 완주', point: '+50' },
+    { label: '항목 완료', point: '+10', amber: false },
+    { label: '주차 완주', point: '+20', amber: false },
+    { label: '전체 완주', point: '+50', amber: false },
+    { label: '주차 인증샷', point: '+50', amber: true },
+    { label: '과제 인증샷', point: '+50', amber: true },
   ]
 
   if (loading) {
@@ -131,13 +132,18 @@ export default function RankingPage() {
         )}
 
         {/* 점수 기준 칩 */}
-        <div className="flex gap-1.5 mt-3">
-          {scoreGuide.map(({ label, point }) => (
-            <div key={label} className="flex-1 bg-white/70 backdrop-blur-sm rounded-xl px-2 py-1.5 text-center shadow-sm border border-white/80">
-              <p className="text-xs font-bold text-[#111111]">{point}<span className="text-[#8A8A8A] font-normal">점</span></p>
-              <p className="text-[9px] text-[#8A8A8A] mt-0.5 leading-tight">{label}</p>
+        <div className="grid grid-cols-5 gap-1.5 mt-3">
+          {scoreGuide.map(({ label, point, amber }) => (
+            <div key={label} className={`flex flex-col items-center py-1.5 rounded-lg ${amber ? 'bg-[#FFFBEB]' : 'bg-white/70 backdrop-blur-sm border border-white/80'}`}>
+              <span className={`text-[9px] ${amber ? 'text-[#D97706]' : 'text-[#8A8A8A]'}`}>{label}</span>
+              <span className={`text-[11px] font-bold ${amber ? 'text-[#D97706]' : 'text-[#111111]'}`}>{point}점</span>
             </div>
           ))}
+        </div>
+        <div className="mt-2 px-3 py-2.5 bg-[#FFF1F2] border border-[#FECDD3] rounded-xl text-center">
+          <p className="text-xs text-[#DC2626] font-medium leading-relaxed">
+            🎁 열심히 참여해주시는 분들에게는 보너스 점수 드립니다! <br />인증샷으로 솜씨를 뽐내주세요.
+          </p>
         </div>
       </div>
 
