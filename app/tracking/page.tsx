@@ -135,9 +135,23 @@ function HomeworkItem({
   locked?: boolean
 }) {
   const isDone = item.status === '완료'
+  const isQuestionItem = item.item_content.startsWith('[질문]')
   return (
     <div className={`rounded-2xl border px-4 py-3 transition-colors ${isDone ? 'bg-[#FFFBEB] border-[#FDE68A]' : 'bg-white border-[#EBEBEB]'}`}>
-      <p className="text-sm text-[#111111] leading-snug mb-3">{item.item_content}</p>
+      <div className="flex items-start justify-between gap-2 mb-3">
+        <p className="text-sm text-[#111111] leading-snug break-keep">{item.item_content}</p>
+        {isQuestionItem && (
+          <span className="flex flex-col items-end gap-0.5 shrink-0">
+            <span className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-white border border-[#EBEBEB] text-[#AAAAAA] text-[11px] font-semibold opacity-60 cursor-not-allowed">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/>
+              </svg>
+              AI 정직이
+            </span>
+            <span className="text-[9px] text-[#AAAAAA]">(교육 이후 오픈)</span>
+          </span>
+        )}
+      </div>
       <div className="flex gap-2">
         <button
           onClick={() => !locked && onStatusChange(item.id, '미착수')}
@@ -761,7 +775,7 @@ export default function TrackingPage() {
                 ) : (
                   <label className="block w-full">
                     <input type="file" accept="image/*" multiple className="hidden" onChange={(e) => e.target.files && handleWeeklyProofUpload(group.week, e.target.files)} />
-                    <span className="flex items-center justify-center gap-2 w-full h-11 rounded-2xl bg-[#F5F5F5] border border-[#EBEBEB] text-[#3A3A3A] text-sm font-semibold cursor-pointer active:opacity-70">
+                    <span className="flex items-center justify-center gap-2 w-full h-11 rounded-2xl bg-[#111111] text-white text-sm font-semibold cursor-pointer active:opacity-70">
                       {isUploadingThisWeek ? '업로드 중...' : `${group.week}주차 인증샷 올리기 📸 +50점`}
                     </span>
                   </label>

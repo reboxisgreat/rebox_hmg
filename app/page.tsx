@@ -517,7 +517,7 @@ function HomePage({
                   alt="정직이"
                   className="w-10 h-10 rounded-full object-cover object-top border-2 border-white shadow-sm shrink-0"
                 />
-                <span className="text-[1.4rem] font-bold text-[#111] leading-snug">반가워요, {participantName}님! </span>
+                <span className="text-[1.4rem] font-bold text-[#111] leading-snug">반가워요, <br/>{participantName}님! </span>
               </div>
             </div>
             {progress?.score ? (
