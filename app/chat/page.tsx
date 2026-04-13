@@ -881,7 +881,7 @@ function ChatPageContent() {
               <span className="text-[12px] font-medium">홈으로 이동</span>
             </button>
           )}
-          {currentCard === 3 && (
+          {currentCard >= 2 && (
             <button
               onClick={() => saveAndNavigate('/')}
               className="flex items-center gap-1.5 text-[#3A3A3A] active:opacity-60 transition-colors"
