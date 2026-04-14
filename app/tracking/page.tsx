@@ -363,11 +363,23 @@ export default function TrackingPage() {
       const res = await fetch('/api/weekly/submit', { method: 'POST', body: formData })
       const data = await res.json()
       if (data.submission) {
-        setWeeklyProofSubmissions((prev) => {
-          const filtered = prev.filter((s) => s.week_number !== weekNumber)
-          return [...filtered, data.submission]
-        })
-        showToast(`${weekNumber}주차 인증샷 제출 완료!\n관리자 확인 후 +50점이 부여됩니다`)
+        const newSubmissions = [
+          ...weeklyProofSubmissions.filter((s) => s.week_number !== weekNumber),
+          data.submission,
+        ]
+        setWeeklyProofSubmissions(newSubmissions)
+
+        // 즉시 점수 반영
+        const newApprovedCount = newSubmissions.filter((s) => s.status === 'approved').length
+        const totalScore = calcLocalScore(
+          logs,
+          homeworkSubmission?.status === 'approved',
+          newApprovedCount,
+          myScore?.admin_bonus ?? 0
+        )
+        setMyScore((prev) => prev ? { ...prev, total_score: totalScore } : prev)
+
+        showToast(`+50점 획득!\n${weekNumber}주차 인증샷 제출 완료!`)
       }
     } catch {
       showToast('업로드 중 오류가 발생했어요')
