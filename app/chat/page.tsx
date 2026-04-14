@@ -742,11 +742,15 @@ function ChatPageContent() {
               <div className="px-4 pb-3 flex gap-2">
                 {(() => {
                   const kws = parseKeywords(card?.step1_keywords ?? '')
-                  return [0, 1, 2].map(i => (
-                    <div key={i} className="flex-1 rounded-xl px-2 py-2.5 text-center border bg-white" style={{ borderColor: CARD_BORDER[reviewCard] }}>
-                      <p className="text-xs font-bold leading-tight" style={{ color: CARD_COLOR[reviewCard] }}>#{(kws[i] ?? '').trim()}</p>
-                    </div>
-                  ))
+                  return [0, 1, 2].map(i => {
+                    const text = `#${(kws[i] ?? '').trim()}`
+                    const fs = text.length <= 6 ? '11px' : text.length <= 8 ? '10px' : text.length <= 10 ? '9px' : '8px'
+                    return (
+                      <div key={i} className="flex-1 min-w-0 rounded-xl px-2 py-2.5 text-center border bg-white overflow-hidden" style={{ borderColor: CARD_BORDER[reviewCard] }}>
+                        <p className="font-bold leading-tight whitespace-nowrap" style={{ color: CARD_COLOR[reviewCard], fontSize: fs }}>{text}</p>
+                      </div>
+                    )
+                  })
                 })()}
               </div>
 
