@@ -28,7 +28,7 @@ export async function GET(request: NextRequest) {
     // 같은 차수의 확정된 card_responses 조회
     const { data: cards, error } = await supabase
       .from('card_responses')
-      .select('id, participant_id, card_number, card_topic, step1_keywords, step2_asis, step3_tobe, step4_action, step5_indicator, is_confirmed, participants!inner(name, department, cohort)')
+      .select('id, participant_id, card_number, card_topic, step1_keywords, step2_asis, step3_tobe, step4_action, step5_indicator, is_confirmed, participants!inner(name, department, cohort, username)')
       .not('step1_keywords', 'is', null)
       .eq('participants.cohort', participant.cohort)
       .order('created_at', { ascending: true })
@@ -54,9 +54,9 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    const HIDDEN_IDS = ['rebox']
+    const HIDDEN_USERNAMES = ['rebox']
     const data = cards
-      .filter((c) => !HIDDEN_IDS.includes(c.participant_id))
+      .filter((c) => !HIDDEN_USERNAMES.includes((c.participants as { username?: string })?.username ?? ''))
       .map((c) => ({
         ...c,
         like_count: likeCountMap[c.id] ?? 0,

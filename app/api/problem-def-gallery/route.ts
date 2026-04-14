@@ -28,7 +28,7 @@ export async function GET(request: NextRequest) {
     // 같은 차수의 확정된 problem_definitions 조회
     const { data: defs, error } = await supabase
       .from('problem_definitions')
-      .select('id, participant_id, step1_customer, step2_problem, step3_definition, step4_keywords, is_confirmed, participants!inner(name, department, cohort)')
+      .select('id, participant_id, step1_customer, step2_problem, step3_definition, step4_keywords, is_confirmed, participants!inner(name, department, cohort, username)')
       .not('step1_customer', 'is', null)
       .eq('participants.cohort', participant.cohort)
       .order('created_at', { ascending: true })
@@ -54,9 +54,9 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    const HIDDEN_IDS = ['rebox']
+    const HIDDEN_USERNAMES = ['rebox']
     const data = defs
-      .filter((d) => !HIDDEN_IDS.includes(d.participant_id))
+      .filter((d) => !HIDDEN_USERNAMES.includes((d.participants as { username?: string })?.username ?? ''))
       .map((d) => ({
         ...d,
         like_count: likeCountMap[d.id] ?? 0,
