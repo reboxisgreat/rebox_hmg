@@ -180,7 +180,11 @@ export default function GalleryPage() {
                             {card[strategyKey] && (
                               <div>
                                 <p className="text-[10px] font-semibold text-[#8A8A8A] mb-0.5">조직관리 전략</p>
-                                <p className="text-[12px] text-[#1A1A1A] leading-relaxed">{card[strategyKey]}</p>
+                                <div className="text-[12px] text-[#1A1A1A] leading-relaxed space-y-0.5">
+                                  {card[strategyKey]!.split(/\s*·\s*/).filter(Boolean).map((item, i) => (
+                                    <p key={i}>· {item.replace(/^·\s*/, '')}</p>
+                                  ))}
+                                </div>
                               </div>
                             )}
                             <div>
