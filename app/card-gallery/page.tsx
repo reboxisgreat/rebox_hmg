@@ -20,13 +20,29 @@ interface CardGalleryItem {
   participants: { name: string; department: string | null } | null
 }
 
+interface ProblemDefItem {
+  id: string
+  participant_id: string
+  step1_customer: string | null
+  step2_problem: string | null
+  step3_definition: string | null
+  step4_keywords: string | null
+  is_confirmed: boolean
+  like_count: number
+  is_liked: boolean
+  participants: { name: string; department: string | null } | null
+}
+
 const CARD_CONFIG: Record<1 | 2 | 3, { label: string; color: string; bg: string; border: string; leftBar: string }> = {
   1: { label: '고객가치 관리', color: '#DC2626', bg: '#FFF1F2', border: '#FECDD3', leftBar: '#EF4444' },
   2: { label: '사람관리',      color: '#D97706', bg: '#FFFBEB', border: '#FDE68A', leftBar: '#F59E0B' },
   3: { label: '프로세스 관리', color: '#16A34A', bg: '#F0FDF4', border: '#BBF7D0', leftBar: '#22C55E' },
 }
 
-const FILTER_TABS: { key: 1 | 2 | 3; label: string }[] = [
+const PROB_CONFIG = { label: '진짜문제 정의', color: '#7C3AED', bg: '#F5F3FF', border: '#DDD6FE', leftBar: '#8B5CF6' }
+
+const FILTER_TABS: { key: 0 | 1 | 2 | 3; label: string }[] = [
+  { key: 0, label: '진짜문제' },
   { key: 1, label: '고객가치' },
   { key: 2, label: '사람관리' },
   { key: 3, label: '프로세스' },
@@ -45,22 +61,26 @@ export default function CardGalleryPage() {
   const router = useRouter()
   const [participantId, setParticipantId] = useState<string | null>(null)
   const [cards, setCards] = useState<CardGalleryItem[]>([])
+  const [problemDefs, setProblemDefs] = useState<ProblemDefItem[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [openId, setOpenId] = useState<string | null>(null)
   const [likingId, setLikingId] = useState<string | null>(null)
-  const [filter, setFilter] = useState<1 | 2 | 3>(1)
+  const [filter, setFilter] = useState<0 | 1 | 2 | 3>(0)
 
   useEffect(() => {
     const id = localStorage.getItem('participant_id')
     if (!id) { router.replace('/'); return }
     setParticipantId(id)
 
-    fetch(`/api/card-gallery?participantId=${id}`)
-      .then((r) => r.json())
-      .then((d) => {
-        if (d.error) setError(d.error)
-        else setCards(d.data ?? [])
+    Promise.all([
+      fetch(`/api/card-gallery?participantId=${id}`).then((r) => r.json()),
+      fetch(`/api/problem-def-gallery?participantId=${id}`).then((r) => r.json()),
+    ])
+      .then(([cardData, probData]) => {
+        if (cardData.error) setError(cardData.error)
+        else setCards(cardData.data ?? [])
+        if (!probData.error) setProblemDefs(probData.data ?? [])
       })
       .catch(() => setError('데이터를 불러오는 중 오류가 발생했습니다.'))
       .finally(() => setLoading(false))
@@ -73,7 +93,6 @@ export default function CardGalleryPage() {
     if (!participantId || likingId) return
     setLikingId(card.id)
 
-    // 낙관적 업데이트
     setCards((prev) =>
       prev
         .map((c) =>
@@ -91,7 +110,6 @@ export default function CardGalleryPage() {
         body: JSON.stringify({ participantId, cardResponseId: card.id }),
       })
     } catch {
-      // 실패 시 롤백
       setCards((prev) =>
         prev
           .map((c) =>
@@ -106,7 +124,44 @@ export default function CardGalleryPage() {
     }
   }
 
+  const handleProbLike = async (e: React.MouseEvent, def: ProblemDefItem) => {
+    e.stopPropagation()
+    if (!participantId || likingId) return
+    setLikingId(def.id)
+
+    setProblemDefs((prev) =>
+      prev
+        .map((d) =>
+          d.id === def.id
+            ? { ...d, is_liked: !d.is_liked, like_count: d.is_liked ? d.like_count - 1 : d.like_count + 1 }
+            : d
+        )
+        .sort((a, b) => b.like_count - a.like_count)
+    )
+
+    try {
+      await fetch('/api/problem-def-gallery/like', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ participantId, problemDefinitionId: def.id }),
+      })
+    } catch {
+      setProblemDefs((prev) =>
+        prev
+          .map((d) =>
+            d.id === def.id
+              ? { ...d, is_liked: def.is_liked, like_count: def.like_count }
+              : d
+          )
+          .sort((a, b) => b.like_count - a.like_count)
+      )
+    } finally {
+      setLikingId(null)
+    }
+  }
+
   const filtered = cards.filter((c) => c.card_number === filter)
+  const displayCount = filter === 0 ? problemDefs.length : filtered.length
 
   return (
     <div className="min-h-screen bg-[#F5F5F5]">
@@ -121,8 +176,8 @@ export default function CardGalleryPage() {
         <div className="flex-1">
           <p className="text-[16px] font-bold text-[#111]">카드 갤러리</p>
         </div>
-        {!loading && cards.length > 0 && (
-          <span className="text-[12px] font-semibold text-[#8A8A8A]">{filtered.length}명</span>
+        {!loading && displayCount > 0 && (
+          <span className="text-[12px] font-semibold text-[#8A8A8A]">{displayCount}명</span>
         )}
       </div>
 
@@ -137,7 +192,7 @@ export default function CardGalleryPage() {
               filter === key
                 ? {
                     backgroundColor:
-                      key === 1 ? '#DC2626' : key === 2 ? '#D97706' : '#16A34A',
+                      key === 0 ? '#7C3AED' : key === 1 ? '#DC2626' : key === 2 ? '#D97706' : '#16A34A',
                     color: '#fff',
                   }
                 : { backgroundColor: '#F5F5F5', color: '#8A8A8A' }
@@ -164,6 +219,112 @@ export default function CardGalleryPage() {
           </div>
         ) : error ? (
           <div className="bg-red-50 border border-red-200 rounded-xl px-4 py-3 text-sm text-red-600">{error}</div>
+        ) : filter === 0 ? (
+          problemDefs.length === 0 ? (
+            <div className="text-center py-16 text-[#8A8A8A] text-sm">아직 확정된 진짜문제 정의가 없습니다.</div>
+          ) : (
+            <div className="bg-white rounded-2xl overflow-hidden border border-[#EBEBEB] shadow-sm">
+              {problemDefs.map((def, idx) => {
+                const isOpen = openId === def.id
+                return (
+                  <div
+                    key={def.id}
+                    className={idx < problemDefs.length - 1 ? 'border-b border-[#F0F0F0]' : ''}
+                    style={{ borderLeft: `4px solid ${PROB_CONFIG.leftBar}` }}
+                  >
+                    {/* 아코디언 헤더 */}
+                    <div className="flex items-center gap-3 px-4 py-3.5 active:bg-[#F9F9F9]">
+                      <button
+                        onClick={() => toggle(def.id)}
+                        className="flex-1 min-w-0 text-left"
+                      >
+                        <p className="text-[13px] font-bold text-[#111] leading-tight">
+                          {def.participants?.name ?? '-'}
+                        </p>
+                        <p className="text-[11px] text-[#AAAAAA] leading-tight">
+                          {def.participants?.department ?? ''}{def.participants?.department ? ' · ' : ''}{PROB_CONFIG.label}
+                        </p>
+                      </button>
+
+                      {/* 좋아요 버튼 */}
+                      <button
+                        onClick={(e) => handleProbLike(e, def)}
+                        disabled={likingId === def.id}
+                        className="flex items-center gap-1 shrink-0 px-2 py-1 rounded-full active:scale-90 transition-transform"
+                        style={{ backgroundColor: def.is_liked ? '#F5F3FF' : '#F5F5F5' }}
+                      >
+                        <Heart
+                          size={14}
+                          color={def.is_liked ? '#7C3AED' : '#CCCCCC'}
+                          fill={def.is_liked ? '#7C3AED' : 'none'}
+                        />
+                        {def.like_count > 0 && (
+                          <span className="text-[11px] font-bold" style={{ color: def.is_liked ? '#7C3AED' : '#AAAAAA' }}>
+                            {def.like_count}
+                          </span>
+                        )}
+                      </button>
+
+                      {/* 펼침 화살표 */}
+                      <button onClick={() => toggle(def.id)} className="shrink-0">
+                        {isOpen ? <ChevronUp size={16} color="#AAAAAA" /> : <ChevronDown size={16} color="#AAAAAA" />}
+                      </button>
+                    </div>
+
+                    {/* 펼쳐진 내용 */}
+                    {isOpen && (
+                      <div className="px-4 pb-4 pt-1" style={{ backgroundColor: '#F9F9F9' }}>
+                        <div
+                          className="rounded-xl border p-3 space-y-3"
+                          style={{ backgroundColor: PROB_CONFIG.bg, borderColor: PROB_CONFIG.border }}
+                        >
+                          <p className="text-[12px] font-bold" style={{ color: PROB_CONFIG.color }}>{PROB_CONFIG.label}</p>
+
+                          <div className="grid grid-cols-2 gap-2">
+                            <div className="bg-white rounded-lg p-2.5">
+                              <p className="text-[10px] font-bold mb-1" style={{ color: PROB_CONFIG.color }}>고객/구성원</p>
+                              <p className="text-[11px] text-[#333] leading-relaxed whitespace-pre-wrap">
+                                {def.step1_customer ?? <span className="text-[#CCC] italic">미작성</span>}
+                              </p>
+                            </div>
+                            <div className="bg-white rounded-lg p-2.5">
+                              <p className="text-[10px] font-bold mb-1" style={{ color: PROB_CONFIG.color }}>핵심 문제</p>
+                              <p className="text-[11px] text-[#333] leading-relaxed whitespace-pre-wrap">
+                                {def.step2_problem ?? <span className="text-[#CCC] italic">미작성</span>}
+                              </p>
+                            </div>
+                            <div className="col-span-2 bg-white rounded-lg p-2.5">
+                              <p className="text-[10px] font-bold mb-1" style={{ color: PROB_CONFIG.color }}>진짜문제 정의</p>
+                              <p className="text-[11px] text-[#333] leading-relaxed whitespace-pre-wrap">
+                                {def.step3_definition ?? <span className="text-[#CCC] italic">미작성</span>}
+                              </p>
+                            </div>
+                            <div className="col-span-2 bg-white rounded-lg p-2.5">
+                              <p className="text-[10px] font-bold mb-1" style={{ color: PROB_CONFIG.color }}>핵심 키워드</p>
+                              <div className="flex flex-wrap gap-1.5 mt-1">
+                                {parseKeywords(def.step4_keywords).length > 0
+                                  ? parseKeywords(def.step4_keywords).map((kw, i) => (
+                                      <span
+                                        key={i}
+                                        className="px-2.5 py-1 rounded-full text-[11px] font-semibold border"
+                                        style={{ borderColor: PROB_CONFIG.border, color: PROB_CONFIG.color, backgroundColor: '#fff' }}
+                                      >
+                                        #{kw}
+                                      </span>
+                                    ))
+                                  : <span className="text-[11px] text-[#CCC] italic">미작성</span>
+                                }
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )
+              })}
+            </div>
+          )
         ) : filtered.length === 0 ? (
           <div className="text-center py-16 text-[#8A8A8A] text-sm">아직 확정된 카드가 없습니다.</div>
         ) : (
@@ -181,7 +342,6 @@ export default function CardGalleryPage() {
                 >
                   {/* 아코디언 헤더 */}
                   <div className="flex items-center gap-3 px-4 py-3.5 active:bg-[#F9F9F9]">
-                    {/* 이름+부서 (탭하면 펼침) */}
                     <button
                       onClick={() => toggle(card.id)}
                       className="flex-1 min-w-0 text-left"
@@ -226,10 +386,8 @@ export default function CardGalleryPage() {
                         className="rounded-xl border p-3 space-y-3"
                         style={{ backgroundColor: cfg.bg, borderColor: cfg.border }}
                       >
-                        {/* 카드 타이틀 */}
                         <p className="text-[12px] font-bold" style={{ color: cfg.color }}>{cfg.label}</p>
 
-                        {/* 키워드 */}
                         {keywords.length > 0 && (
                           <div className="flex flex-wrap gap-1.5">
                             {keywords.map((kw, i) => (
@@ -244,7 +402,6 @@ export default function CardGalleryPage() {
                           </div>
                         )}
 
-                        {/* 2×2 그리드 */}
                         <div className="grid grid-cols-2 gap-2">
                           <div className="bg-white rounded-lg p-2.5">
                             <p className="text-[10px] font-bold mb-1" style={{ color: cfg.color }}>As-is 현재수준</p>

@@ -54,7 +54,9 @@ export async function GET(request: NextRequest) {
       }
     }
 
+    const HIDDEN_IDS = ['rebox']
     const data = cards
+      .filter((c) => !HIDDEN_IDS.includes(c.participant_id))
       .map((c) => ({
         ...c,
         like_count: likeCountMap[c.id] ?? 0,

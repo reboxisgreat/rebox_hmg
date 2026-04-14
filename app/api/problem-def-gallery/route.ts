@@ -25,48 +25,48 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ data: [] })
     }
 
-    // 같은 차수의 확정된 마스터플랜 조회
-    const { data: plans, error } = await supabase
-      .from('master_plans')
-      .select('id, participant_id, slogan, customer_strategy, customer_what, customer_why, process_strategy, process_what, process_why, people_strategy, people_what, people_why, is_confirmed, participants!inner(name, department, cohort)')
-      .eq('is_confirmed', true)
+    // 같은 차수의 확정된 problem_definitions 조회
+    const { data: defs, error } = await supabase
+      .from('problem_definitions')
+      .select('id, participant_id, step1_customer, step2_problem, step3_definition, step4_keywords, is_confirmed, participants!inner(name, department, cohort)')
+      .not('step1_customer', 'is', null)
       .eq('participants.cohort', participant.cohort)
       .order('created_at', { ascending: true })
 
     if (error) throw error
-    if (!plans || plans.length === 0) return NextResponse.json({ data: [] })
+    if (!defs || defs.length === 0) return NextResponse.json({ data: [] })
 
-    // 좋아요 집계: 각 마스터플랜의 like_count
-    const planIds = plans.map((p) => p.id)
+    // 좋아요 집계
+    const defIds = defs.map((d) => d.id)
     const { data: likes, error: lError } = await supabase
-      .from('gallery_likes')
-      .select('master_plan_id, participant_id')
-      .in('master_plan_id', planIds)
+      .from('problem_definition_likes')
+      .select('problem_definition_id, participant_id')
+      .in('problem_definition_id', defIds)
 
     if (lError) throw lError
 
     const likeCountMap: Record<string, number> = {}
     const likedByMe: Record<string, boolean> = {}
     for (const like of likes ?? []) {
-      likeCountMap[like.master_plan_id] = (likeCountMap[like.master_plan_id] ?? 0) + 1
+      likeCountMap[like.problem_definition_id] = (likeCountMap[like.problem_definition_id] ?? 0) + 1
       if (like.participant_id === participantId) {
-        likedByMe[like.master_plan_id] = true
+        likedByMe[like.problem_definition_id] = true
       }
     }
 
     const HIDDEN_IDS = ['rebox']
-    const data = plans
-      .filter((p) => !HIDDEN_IDS.includes(p.participant_id))
-      .map((p) => ({
-        ...p,
-        like_count: likeCountMap[p.id] ?? 0,
-        is_liked: likedByMe[p.id] ?? false,
+    const data = defs
+      .filter((d) => !HIDDEN_IDS.includes(d.participant_id))
+      .map((d) => ({
+        ...d,
+        like_count: likeCountMap[d.id] ?? 0,
+        is_liked: likedByMe[d.id] ?? false,
       }))
       .sort((a, b) => b.like_count - a.like_count)
 
     return NextResponse.json({ data })
   } catch (error) {
-    console.error('Gallery API error:', error)
+    console.error('Problem def gallery API error:', error)
     return NextResponse.json({ error: '데이터를 불러오는 중 오류가 발생했습니다.' }, { status: 500 })
   }
 }

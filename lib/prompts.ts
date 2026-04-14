@@ -189,6 +189,7 @@ ${BASE_PROMPT}
 - 피드백 기준: 반드시 **비교 가능한 두 지점(현재와 미래)**이 포함되도록 유도하고, 리더가 수치 제시를 어려워하면 "현재보다 약 몇 % 정도의 개선을 기대하십니까?"라고 질문하여 수치를 이끌어내십시오.
 [최종 정리 - 필수]
 Step 5까지 완료되면 아래 블록을 정확히 출력:
+
 __SUMMARY_START__
 {
   "step1": "[교육생이 직접 말한 키워드 원문 그대로. 절대 해석/변형 금지]",
@@ -226,6 +227,7 @@ ${BASE_PROMPT}
 }
 
 
+
 export function getMasterPlanPrompt(
   cardResponses: {
     card1: { step1: string; step2: string; step3: string; step4: string; step5: string }
@@ -235,31 +237,56 @@ export function getMasterPlanPrompt(
   participantName: string
 ): string {
   return `
-당신은 HMG 실장급 리더의 조직관리 마스터플랜을 작성하는 전문가입니다.
-${participantName}님의 내용을 바탕으로 2026년 조직관리 마스터플랜을 도출해주세요.
+당신은 HMG 실장급 리더의 조직관리 마스터플랜을 설계하는 전문가입니다.
+아래 교육생의 워크숍 결과물을 분석하여 ${participantName}님만의 2026년 조직관리 마스터플랜을 도출하십시오.
 
 [교육생 작성 내용]
-■ 고객가치: 키워드(${cardResponses.card1.step1}) / As-Is(${cardResponses.card1.step2}) / To-Be(${cardResponses.card1.step3}) / 액션(${cardResponses.card1.step4}) / 성공지표(${cardResponses.card1.step5})
-■ 사람관리: 키워드(${cardResponses.card2.step1}) / As-Is(${cardResponses.card2.step2}) / To-Be(${cardResponses.card2.step3}) / 액션(${cardResponses.card2.step4}) / 성공지표(${cardResponses.card2.step5})
-■ 프로세스: 키워드(${cardResponses.card3.step1}) / As-Is(${cardResponses.card3.step2}) / To-Be(${cardResponses.card3.step3}) / 액션(${cardResponses.card3.step4}) / 성공지표(${cardResponses.card3.step5})
+■ 고객가치
+  - 현재 수준(As-Is): ${cardResponses.card1.step2}
+  - 지향점(To-Be): ${cardResponses.card1.step3}
+  - 실행 액션: ${cardResponses.card1.step4}
+  - 성공 지표: ${cardResponses.card1.step5}
 
-반드시 아래 JSON 형식으로만 응답하세요. 다른 텍스트 없이 JSON만 출력하세요.
+■ 사람관리
+  - 현재 수준(As-Is): ${cardResponses.card2.step2}
+  - 지향점(To-Be): ${cardResponses.card2.step3}
+  - 실행 액션: ${cardResponses.card2.step4}
+  - 성공 지표: ${cardResponses.card2.step5}
+
+■ 프로세스관리
+  - 현재 수준(As-Is): ${cardResponses.card3.step2}
+  - 지향점(To-Be): ${cardResponses.card3.step3}
+  - 실행 액션: ${cardResponses.card3.step4}
+  - 성공 지표: ${cardResponses.card3.step5}
+
+[마스터플랜 작성 원칙]
+1. 교육생이 직접 작성한 As-Is·To-Be·액션·지표의 표현과 맥락을 반드시 유지하십시오. 일반론으로 희석하지 마십시오.
+2. To-Be는 각 영역 strategy의 첫 문장에 목표 방향으로 반드시 반영하십시오.
+3. what은 교육생 액션 기반으로, 실장급 권한으로 실행 가능한 내용을 2026년 실행 흐름으로 구성하십시오. 실장급 권한의 예시로는 제도 설계, 의사결정 권한 위임, 자원 배분, 조직 구조 조정 등이 있으나, 교육생의 액션 맥락에 따라 가장 적합한 실행 방식을 자유롭게 선택하십시오.
+4. why는 As-Is 문제를 근거로, 이 액션이 왜 지금 필요한지 HMG 경영 맥락과 연결하여 압축하십시오.
+5. 3개 영역이 독립된 계획이 아니라 상호 강화하는 하나의 전략임이 slogan에 드러나야 합니다.
+6. 교육생의 답변이 짧거나 추상적이더라도 As-Is·To-Be·액션·지표의 맥락을 종합적으로 해석하여 교육생이 납득할 수 있는 수준으로 구체화하십시오. 단, 교육생이 말하지 않은 방향을 임의로 추가하지 말고, 교육생이 암묵적으로 의도했을 현실적 내용으로 채우십시오.
+
+반드시 아래 JSON 형식으로만 응답하십시오. 다른 텍스트 없이 JSON만 출력하십시오.
 {
-  "slogan": "고객가치·사람관리·프로세스 3개 영역을 관통하는 하나의 강력한 조직관리 철학을 담은 1문장 슬로건 (20자 내외, 임팩트 있게, 3개 영역이 지향하는 공통 방향성이 느껴져야 함)",
+  "slogan": "3개 영역(고객가치·사람관리·프로세스)의 To-Be 방향성을 관통하는 조직관리 철학 슬로건. 교육생의 To-Be 표현을 직접 활용하여 20자 내외로 작성. 추상적 미사여구 금지.",
+
   "customer": {
-    "strategy": "고객가치 영역의 성공지표를 '• 지표명: 수치/변화' 형태로 1~3개 bullet 정리. 각 bullet은 반드시 줄바꾼(\\n)으로 구분하세요. (교육생이 작성한 성공지표 원문 기반)",
-    "what": "각 실행 액션 및 성공지표를 달성하기 위해 구체적으로 실행해야 할 핵심 액션들을 2~3문장으로 기술",
-    "why": "이 액션을 해야 하는 이유와 근거를 2~3문장으로 명확히 기술"
+    "strategy": "첫 문장: 교육생의 고객가치 To-Be를 목표 선언으로 직접 반영. 이후 성공지표를 '• 지표명: From → To' 형태로 1~3개 bullet 정리(수치 있으면 유지, 없으면 교육생 표현 기반 합리적 수치 제안). 각 bullet은 \\n으로 구분.",
+    "what": "교육생의 고객가치 액션을 2026년 실행 흐름으로 재구성. 액션의 수와 성격에 따라 분기(Q1~Q4)를 유연하게 배분하되, 선행되어야 할 액션부터 순서대로 배치할 것. 각 항목은 '• Q[N]: 실행 내용' 형태로 작성하며 실행 주체와 방법이 드러나도록 1~2문장으로 기술. 각 bullet은 \\n으로 구분.",
+    "why": "고객가치 As-Is 문제를 근거로 이 액션이 왜 2026년 지금 실행되어야 하는지, HMG 고객 중심 경영 맥락과 연결하여 1~2문장으로 압축."
   },
-  "process": {
-    "strategy": "프로세스 영역의 성공지표를 '• 지표명: 수치/변화' 형태로 1~3개 bullet 정리. 각 bullet은 반드시 줄바꾼(\\n)으로 구분하세요. (교육생이 작성한 성공지표 원문 기반)",
-    "what": "각 실행 액션 및 성공지표를 달성하기 위해 구체적으로 실행해야 할 핵심 액션들을 2~3문장으로 기술",
-    "why": "이 액션을 해야 하는 이유와 근거를 2~3문장으로 명확히 기술"
-  },
+
   "people": {
-    "strategy": "사람 영역의 성공지표를 '• 지표명: 수치/변화' 형태로 1~3개 bullet 정리. 각 bullet은 반드시 줄바꾼(\\n)으로 구분하세요. (교육생이 작성한 성공지표 원문 기반)",
-    "what": "각 실행 액션 및 성공지표를 달성하기 위해 구체적으로 실행해야 할 핵심 액션들을 2~3문장으로 기술",
-    "why": "이 액션을 해야 하는 이유와 근거를 2~3문장으로 명확히 기술"
+    "strategy": "첫 문장: 교육생의 사람관리 To-Be를 목표 선언으로 직접 반영. 이후 성공지표를 '• 지표명: From → To' 형태로 1~3개 bullet 정리(수치 있으면 유지, 없으면 교육생 표현 기반 합리적 수치 제안). 각 bullet은 \\n으로 구분.",
+    "what": "교육생의 사람관리 액션을 2026년 실행 흐름으로 재구성. 액션의 수와 성격에 따라 분기(Q1~Q4)를 유연하게 배분하되, 선행되어야 할 액션부터 순서대로 배치할 것. 각 항목은 '• Q[N]: 실행 내용' 형태로 작성하며 실행 주체와 방법이 드러나도록 1~2문장으로 기술. 각 bullet은 \\n으로 구분.",
+    "why": "사람관리 As-Is 문제를 근거로 이 액션이 왜 2026년 지금 실행되어야 하는지, 인재 몰입·성장 맥락과 연결하여 1~2문장으로 압축."
+  },
+
+  "process": {
+    "strategy": "첫 문장: 교육생의 프로세스 To-Be를 목표 선언으로 직접 반영. 이후 성공지표를 '• 지표명: From → To' 형태로 1~3개 bullet 정리(수치 있으면 유지, 없으면 교육생 표현 기반 합리적 수치 제안). 각 bullet은 \\n으로 구분.",
+    "what": "교육생의 프로세스 액션을 2026년 실행 흐름으로 재구성. 액션의 수와 성격에 따라 분기(Q1~Q4)를 유연하게 배분하되, 선행되어야 할 액션부터 순서대로 배치할 것. 각 항목은 '• Q[N]: 실행 내용' 형태로 작성하며 실행 주체와 방법이 드러나도록 1~2문장으로 기술. 각 bullet은 \\n으로 구분.",
+    "why": "프로세스 As-Is 문제를 근거로 이 액션이 왜 2026년 지금 실행되어야 하는지, 조직 실행력·의사결정 속도 맥락과 연결하여 1~2문장으로 압축."
   }
 }
 `
@@ -290,21 +317,18 @@ export function getActionPlanPrompt(
   const cardSection = cardSummaries ? `
 [카드별 코칭 내용 요약]
 ■ 고객가치 카드
-  핵심 키워드: ${cardSummaries.고객가치.keywords ?? '-'}
   현재(As-Is): ${cardSummaries.고객가치.asIs ?? '-'}
   목표(To-Be): ${cardSummaries.고객가치.toBe ?? '-'}
   핵심 액션: ${cardSummaries.고객가치.action ?? '-'}
   성과 지표: ${cardSummaries.고객가치.indicator ?? '-'}
 
 ■ 사람관리 카드
-  핵심 키워드: ${cardSummaries.사람관리.keywords ?? '-'}
   현재(As-Is): ${cardSummaries.사람관리.asIs ?? '-'}
   목표(To-Be): ${cardSummaries.사람관리.toBe ?? '-'}
   핵심 액션: ${cardSummaries.사람관리.action ?? '-'}
   성과 지표: ${cardSummaries.사람관리.indicator ?? '-'}
 
 ■ 프로세스 카드
-  핵심 키워드: ${cardSummaries.프로세스.keywords ?? '-'}
   현재(As-Is): ${cardSummaries.프로세스.asIs ?? '-'}
   목표(To-Be): ${cardSummaries.프로세스.toBe ?? '-'}
   핵심 액션: ${cardSummaries.프로세스.action ?? '-'}
@@ -313,36 +337,54 @@ export function getActionPlanPrompt(
 
   return `
 당신은 HMG 실장급 리더의 조직관리 실행 로드맵을 설계하는 전문가입니다.
+${participantName}님이 워크숍에서 직접 도출한 내용을 기반으로, 2026년 1년 액션플랜과 30일 체크리스트를 설계하십시오.
 
-아래 ${participantName}님의 마스터플랜과 카드별 코칭 내용은 액션플랜 설계의 핵심 참고 자료입니다.
-참고 자료를 충실히 반영하되, HMG 실장급 리더에게 효과적인 조직관리 액션(전략 정렬, 구성원 몰입, 성과 가시화, 협업 체계 구축 등)을 추가로 제안하여 더 풍부하고 실행력 있는 액션플랜을 도출하세요.
-단, 추가 제안 액션도 반드시 실(본부) 단위 거시 관점에서 실장급 리더가 직접 실행 가능한 수준으로 구체화하세요.
-
-1년 액션플랜은 교육생의 마스터플랜과 카드별 코칭 내용을 기반으로 설계하세요. 각 분기는 고객가치, 사람관리, 프로세스관리 3개 영역이 골고루 반영되도록 하되, 분기마다 집중 영역과 액션이 다양하게 구성되어야 합니다. 같은 액션이 반복되지 않도록 하세요.
-30일 체크리스트도 동일하게 주차별로 집중 영역과 액션이 다양하게 구성되어야 합니다. 같은 액션이 반복되지 않도록 하세요.
-각 분기의 액션 항목은 3개 이상 6개 미만으로 구성하세요.
-30일 체크리스트 항목은 주차별 3~5개로 구성하세요.
-각 액션 항목은 반드시 하나의 실행 단위만 담으세요. 쉼표나 '및'으로 여러 액션을 한 항목에 나열하지 말고 항목을 분리하세요.
+[설계 원칙]
+1. 교육생 기반 우선: 모든 액션은 아래 마스터플랜과 카드별 코칭 내용에서 출발하십시오. 교육생이 직접 작성한 As-Is·To-Be·액션·지표의 맥락을 반드시 반영하십시오.
+2. 실장급 실행 가능성: 각 액션은 실(본부) 단위에서 실장이 직접 주도할 수 있는 수준으로 구체화하십시오. "소통 강화", "면담 실시"처럼 추상적인 표현은 금지하고, 누가·언제·무엇을·어떻게 할지가 드러나도록 작성하십시오.
+3. 단일 실행 단위: 각 항목은 하나의 실행 단위만 담으십시오. 쉼표나 '및'으로 여러 액션을 한 항목에 나열하지 마십시오.
+4. 다양성 확보: 고객가치·사람관리·프로세스 3개 영역이 연간 전체에 걸쳐 골고루 배분되도록 하고, 같은 액션이 반복되지 않도록 하십시오.
+5. 즉시 실행 우선: 30일 체크리스트는 연간 플랜 전체에서 지금 당장 착수할 수 있는 항목을 선별하여 주차별로 배치하십시오. Q1 액션이 중심이 되되, 다른 분기 액션이라도 준비·착수 단계로 30일 안에 시작 가능한 것이라면 포함할 수 있습니다. 1주차는 내일 당장 실행 가능한 항목으로만 구성하십시오.
+6. 보완적 제안 허용: 교육생 내용만으로 액션이 부족할 경우, HMG 실장급 맥락에 맞는 액션을 보완 제안할 수 있습니다. 단, 보완 제안은 교육생의 As-Is 문제와 To-Be 방향에 부합해야 하며, 일반론적 내용은 금지합니다.
+7. 교육생의 답변이 짧거나 추상적인 경우, As-Is의 문제 상황과 To-Be의 방향성을 종합하여 교육생이 처한 현실 맥락을 추론하십시오. 추론한 맥락을 바탕으로 실제 현장에서 납득 가능한 수준의 구체적 액션으로 채우되, 교육생이 의도하지 않은 방향으로 이탈하지 마십시오.
 
 [마스터플랜]
 슬로건: ${masterPlan.slogan}
-고객가치 전략: ${masterPlan.customer.strategy} / What: ${masterPlan.customer.what} / Why: ${masterPlan.customer.why}
-프로세스 전략: ${masterPlan.process.strategy} / What: ${masterPlan.process.what} / Why: ${masterPlan.process.why}
-사람 전략: ${masterPlan.people.strategy} / What: ${masterPlan.people.what} / Why: ${masterPlan.people.why}
+
+고객가치
+  - 전략(To-Be + 지표): ${masterPlan.customer.strategy}
+  - 2026년 실행 흐름(What): ${masterPlan.customer.what}
+  - 실행 근거(Why): ${masterPlan.customer.why}
+
+사람관리
+  - 전략(To-Be + 지표): ${masterPlan.people.strategy}
+  - 2026년 실행 흐름(What): ${masterPlan.people.what}
+  - 실행 근거(Why): ${masterPlan.people.why}
+
+프로세스관리
+  - 전략(To-Be + 지표): ${masterPlan.process.strategy}
+  - 2026년 실행 흐름(What): ${masterPlan.process.what}
+  - 실행 근거(Why): ${masterPlan.process.why}
+
 ${cardSection}
-반드시 아래 JSON 형식으로만 응답하세요. 다른 텍스트 없이 JSON만 출력하세요.
+
+[출력 형식 규칙]
+- yearlyPlan: 분기별 액션 3개 이상 6개 미만. 각 분기는 집중 영역(focus)이 다르게 구성.
+- monthlyChecklist: 연간 플랜 전체에서 즉시 착수 가능한 항목을 선별해 주차별로 배치. 주차별 3~5개 항목. 1주차는 내일 당장 실행 가능한 항목으로만 구성.
+
+반드시 아래 JSON 형식으로만 응답하십시오. 다른 텍스트 없이 JSON만 출력하십시오.
 {
   "yearlyPlan": [
-    { "quarter": "Q1 (1~3월)", "focus": "이 분기의 핵심 집중 영역", "actions": ["단일 실행 액션 (3~5개, 항목당 하나의 액션만)", "..."] },
-    { "quarter": "Q2 (4~6월)", "focus": "이 분기의 핵심 집중 영역", "actions": ["단일 실행 액션", "..."] },
-    { "quarter": "Q3 (7~9월)", "focus": "이 분기의 핵심 집중 영역", "actions": ["단일 실행 액션", "..."] },
-    { "quarter": "Q4 (10~12월)", "focus": "이 분기의 핵심 집중 영역", "actions": ["단일 실행 액션", "..."] }
+    { "quarter": "Q1 (1~3월)", "focus": "이 분기의 핵심 집중 영역", "actions": ["액션1", "액션2", "액션3"] },
+    { "quarter": "Q2 (4~6월)", "focus": "이 분기의 핵심 집중 영역", "actions": ["액션1", "액션2", "액션3"] },
+    { "quarter": "Q3 (7~9월)", "focus": "이 분기의 핵심 집중 영역", "actions": ["액션1", "액션2", "액션3"] },
+    { "quarter": "Q4 (10~12월)", "focus": "이 분기의 핵심 집중 영역", "actions": ["액션1", "액션2", "액션3"] }
   ],
   "monthlyChecklist": [
-    { "week": 1, "theme": "1주차 핵심 테마", "items": ["당장 실행 가능한 액션1", "액션2", "액션3", "액션4"] },
-    { "week": 2, "theme": "2주차 핵심 테마", "items": ["액션1", "액션2", "액션3", "액션4", "액션5"] },
+    { "week": 1, "theme": "1주차 핵심 테마", "items": ["내일 당장 실행 가능한 액션1", "액션2", "액션3"] },
+    { "week": 2, "theme": "2주차 핵심 테마", "items": ["액션1", "액션2", "액션3"] },
     { "week": 3, "theme": "3주차 핵심 테마", "items": ["액션1", "액션2", "액션3"] },
-    { "week": 4, "theme": "4주차 핵심 테마", "items": ["액션1", "액션2", "액션3", "액션4"] }
+    { "week": 4, "theme": "4주차 핵심 테마", "items": ["액션1", "액션2", "액션3"] }
   ]
 }
 `
@@ -427,7 +469,7 @@ export function getProblemDefinitionSystemPrompt(): string {
 "[Step 3/4] 고객의 진짜 문제를 한 문장으로 정의해봅시다.
 
 아래 구조로 작성해보세요:
-[고객]은 [상황] 때문에 [결과/불편]을 겪고 있다.
+[고객]은 [상황] 때문에 [결과/불편]을 겪고 있다."
 
 피드백 가이드:
 - 작성이 미흡할 경우: 실장님의 이전 답변을 토대로 문장을 직접 만들어 제안하고 확답을 받으세요.
