@@ -341,7 +341,7 @@ export default function TrackingPage() {
       const data = await res.json()
       if (data.submission) {
         setHomeworkSubmission(data.submission)
-        showToast('인증샷 제출 완료!\n관리자 확인 후 +50점이 부여됩니다')
+        showToast('인증샷 제출 완료!\n+50점이 부여됩니다')
       }
     } catch {
       showToast('업로드 중 오류가 발생했어요')
@@ -649,8 +649,7 @@ export default function TrackingPage() {
                     <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
                   </svg>
                   <div>
-                    <p className="text-sm font-bold text-[#92400E]">심사 중이에요 🕐</p>
-                    <p className="text-xs text-[#D97706]">관리자 확인 후 +50점이 부여됩니다</p>
+                    <p className="text-xs text-[#D97706]">+50점이 부여됩니다</p>
                   </div>
                 </div>
               ) : homeworkSubmission?.status === 'rejected' ? (
@@ -762,8 +761,7 @@ export default function TrackingPage() {
                       <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
                     </svg>
                     <div>
-                      <p className="text-sm font-bold text-[#92400E]">심사 중이에요 🕐</p>
-                      <p className="text-xs text-[#D97706]">관리자 확인 후 +50점이 부여됩니다</p>
+                      <p className="text-xs text-[#D97706]">+50점이 부여됩니다</p>
                     </div>
                   </div>
                 ) : weekProof?.status === 'rejected' ? (
