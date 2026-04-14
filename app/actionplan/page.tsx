@@ -250,21 +250,17 @@ export default function ActionPlanPage() {
       const pdf = new jsPDF('p', 'mm', 'a4')
       const pageWidth = pdf.internal.pageSize.getWidth()
       const pageHeight = pdf.internal.pageSize.getHeight()
-      const imgWidth = pageWidth
-      const imgHeight = (img.height * imgWidth) / img.width
 
-      let heightLeft = imgHeight
-      let position = 0
+      // 한 페이지에 맞게 scale
+      const scaleW = pageWidth / img.width
+      const scaleH = pageHeight / img.height
+      const scale = Math.min(scaleW, scaleH)
+      const imgWidth = img.width * scale
+      const imgHeight = img.height * scale
+      const xOffset = (pageWidth - imgWidth) / 2
+      const yOffset = (pageHeight - imgHeight) / 2
 
-      pdf.addImage(dataUrl, 'PNG', 0, position, imgWidth, imgHeight)
-      heightLeft -= pageHeight
-
-      while (heightLeft > 0) {
-        position = heightLeft - imgHeight
-        pdf.addPage()
-        pdf.addImage(dataUrl, 'PNG', 0, position, imgWidth, imgHeight)
-        heightLeft -= pageHeight
-      }
+      pdf.addImage(dataUrl, 'PNG', xOffset, yOffset, imgWidth, imgHeight)
 
       const today = new Date().toISOString().slice(0, 10)
       pdf.save(`HMG_조직관리플랜_${today}.pdf`)
@@ -710,13 +706,21 @@ export default function ActionPlanPage() {
             </button>
           </div>
         ) : showChecklist ? (
-          <button
-            onClick={handleConfirm}
-            disabled={phase === 'saving'}
-            className="w-full h-12 rounded-2xl bg-[#111111] active:scale-[0.98] active:bg-[#2A2A2A] text-white font-semibold text-sm disabled:opacity-50 transition-all shadow-[0_2px_12px_rgba(0,0,0,0.09)]"
-          >
-            저장하기
-          </button>
+          <div className="space-y-2.5">
+            <button
+              onClick={handleConfirm}
+              disabled={phase === 'saving'}
+              className="w-full h-12 rounded-2xl bg-[#111111] active:scale-[0.98] active:bg-[#2A2A2A] text-white font-semibold text-sm disabled:opacity-50 transition-all shadow-[0_2px_12px_rgba(0,0,0,0.09)]"
+            >
+              저장하기
+            </button>
+            <button
+              onClick={handleDownloadPDF}
+              className="w-full h-12 rounded-2xl border border-[#EBEBEB] bg-white active:bg-[#F5F5F5] active:scale-[0.98] text-[#3A3A3A] font-semibold text-sm transition-all"
+            >
+              PDF로 저장하기
+            </button>
+          </div>
         ) : (
           <p className="text-center text-xs text-[#8A8A8A]">1년 플랜을 검토한 후 체크리스트를 도출하세요</p>
         )}

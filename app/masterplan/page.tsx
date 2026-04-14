@@ -9,6 +9,8 @@ import ChatWindow from '@/components/chat/ChatWindow'
 import { CARD_TITLES } from '@/lib/types'
 import type { ChatMessage } from '@/lib/types'
 import gradientBg from '../../public/gradient-bg.json'
+import { toPng } from 'html-to-image'
+import jsPDF from 'jspdf'
 
 type CardNumber = 1 | 2 | 3
 type Phase = 'loading' | 'error' | 'step5' | 'plan-ready' | 'generating' | 'editing' | 'saving'
@@ -251,6 +253,55 @@ export default function MasterPlanPage() {
     }, 1000)
   }, [participantId, masterPlan])
 
+  // ── PDF 다운로드 ─────────────────────────────────────────────────
+  const handleDownloadPDF = async () => {
+    const element = document.getElementById('masterplan-pdf-content')
+    if (!element) return
+
+    const parent = element.parentElement
+    const prevOverflow = parent?.style.overflow ?? ''
+    const prevMaxHeight = parent?.style.maxHeight ?? ''
+    if (parent) {
+      parent.style.overflow = 'visible'
+      parent.style.maxHeight = 'none'
+    }
+
+    try {
+      const dataUrl = await toPng(element, { cacheBust: true, pixelRatio: 2 })
+
+      const img = new window.Image()
+      img.src = dataUrl
+      await new Promise<void>((resolve) => { img.onload = () => resolve() })
+
+      const pdf = new jsPDF('p', 'mm', 'a4')
+      const pageWidth = pdf.internal.pageSize.getWidth()
+      const pageHeight = pdf.internal.pageSize.getHeight()
+      const imgWidth = pageWidth
+      const imgHeight = (img.height * imgWidth) / img.width
+
+      let heightLeft = imgHeight
+      let position = 0
+
+      pdf.addImage(dataUrl, 'PNG', 0, position, imgWidth, imgHeight)
+      heightLeft -= pageHeight
+
+      while (heightLeft > 0) {
+        position = heightLeft - imgHeight
+        pdf.addPage()
+        pdf.addImage(dataUrl, 'PNG', 0, position, imgWidth, imgHeight)
+        heightLeft -= pageHeight
+      }
+
+      const today = new Date().toISOString().slice(0, 10)
+      pdf.save(`HMG_마스터플랜_${today}.pdf`)
+    } finally {
+      if (parent) {
+        parent.style.overflow = prevOverflow
+        parent.style.maxHeight = prevMaxHeight
+      }
+    }
+  }
+
   // ── 마스터플랜 확정 ───────────────────────────────────────────────
   const handleConfirm = useCallback(async () => {
     if (!participantId) return
@@ -476,6 +527,7 @@ export default function MasterPlanPage() {
             </button>
           </div>
         )}
+        <div id="masterplan-pdf-content">
         {/* 슬로건 — dark featured card */}
         <div className="relative rounded-2xl overflow-hidden text-center bg-[#111111]">
           {/* Lottie 배경 — 절대 배치, 높이는 콘텐츠가 결정 */}
@@ -540,6 +592,7 @@ export default function MasterPlanPage() {
             </div>
           </div>
         ))}
+        </div>{/* /masterplan-pdf-content */}
 
         <div className="h-2" />
       </div>
@@ -553,6 +606,12 @@ export default function MasterPlanPage() {
               className="w-full h-12 rounded-xl bg-[#111111] active:bg-[#3A3A3A] text-white font-semibold text-sm transition-colors"
             >
               액션플랜으로 →
+            </button>
+            <button
+              onClick={handleDownloadPDF}
+              className="w-full h-12 rounded-xl border border-[#EBEBEB] bg-white active:bg-[#F5F5F5] active:scale-[0.98] text-[#3A3A3A] font-semibold text-sm transition-all"
+            >
+              PDF로 저장하기
             </button>
             <p className="text-center text-xs text-[#8A8A8A]">수정 내용은 자동으로 저장됩니다</p>
           </div>
