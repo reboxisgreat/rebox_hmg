@@ -216,10 +216,12 @@ function DetailModal({
   participantId,
   onClose,
   initialTab = 'cards',
+  onHideToggle,
 }: {
   participantId: string
   onClose: () => void
   initialTab?: 'cards' | 'masterplan' | 'actionplan'
+  onHideToggle?: () => void
 }) {
   const [detail, setDetail] = useState<ParticipantDetail | null>(null)
   const [loading, setLoading] = useState(true)
@@ -228,6 +230,7 @@ function DetailModal({
   const [resetting, setResetting] = useState(false)
   const [resetMsg, setResetMsg] = useState<{ type: 'ok' | 'err'; text: string } | null>(null)
   const [pdfLoading, setPdfLoading] = useState<'tab' | 'all' | null>(null)
+  const [hiding, setHiding] = useState(false)
 
   const handleResetPassword = async () => {
     if (!confirm(`${detail?.participant.name}님의 비밀번호를 1234로 초기화할까요?`)) return
@@ -246,6 +249,35 @@ function DetailModal({
       setResetMsg({ type: 'err', text: '오류가 발생했습니다. 다시 시도해주세요.' })
     } finally {
       setResetting(false)
+    }
+  }
+
+  const handleHideToggle = async () => {
+    if (!detail) return
+    const isHidden = (detail.participant as { is_hidden?: boolean }).is_hidden ?? false
+    const label = isHidden ? '숨김을 해제' : '대시보드에서 숨김 처리'
+    if (!confirm(`${detail.participant.name}님을 ${label}할까요?`)) return
+    setHiding(true)
+    try {
+      const res = await fetch('/api/admin/participant', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: participantId, action: isHidden ? 'unhide' : 'hide' }),
+      })
+      if (!res.ok) { alert('처리 중 오류가 발생했습니다.'); return }
+      onHideToggle?.()
+      if (!isHidden) onClose()
+      else {
+        // 숨김 해제: detail 갱신
+        setDetail((prev) => prev ? {
+          ...prev,
+          participant: { ...prev.participant, is_hidden: false } as typeof prev.participant,
+        } : prev)
+      }
+    } catch {
+      alert('오류가 발생했습니다.')
+    } finally {
+      setHiding(false)
     }
   }
 
@@ -350,6 +382,13 @@ function DetailModal({
                   className="h-9 px-3 rounded-xl border border-[#EBEBEB] text-xs font-medium text-[#8A8A8A] hover:bg-[#FFF5F5] hover:text-red-500 hover:border-red-200 disabled:opacity-50 transition-colors whitespace-nowrap"
                 >
                   {resetting ? '초기화 중...' : '비밀번호 초기화'}
+                </button>
+                <button
+                  onClick={handleHideToggle}
+                  disabled={hiding}
+                  className="h-9 px-3 rounded-xl border border-[#EBEBEB] text-xs font-medium text-[#8A8A8A] hover:bg-amber-50 hover:text-amber-600 hover:border-amber-200 disabled:opacity-50 transition-colors whitespace-nowrap"
+                >
+                  {hiding ? '처리 중...' : (detail.participant as { is_hidden?: boolean }).is_hidden ? '숨김 해제' : '숨김 처리'}
                 </button>
               </>
             )}
@@ -1022,6 +1061,8 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
   const [cohortFilter, setCohortFilter] = useState<'all' | 1 | 2 | 3>('all')
   const [rankingSubTab, setRankingSubTab] = useState<'cohort' | 'total'>('cohort')
   const [showCsvUpload, setShowCsvUpload] = useState(false)
+  const [showHidden, setShowHidden] = useState(false)
+  const showHiddenRef = useRef(false)
   const [homeworkSubmissions, setHomeworkSubmissions] = useState<HomeworkSubmissionAdmin[]>([])
   const [weeklySubmissions, setWeeklySubmissions] = useState<WeeklyProofSubmissionAdmin[]>([])
   const [reviewingId, setReviewingId] = useState<string | null>(null)
@@ -1075,7 +1116,7 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
     setFetchError('')
     try {
       const [progressRes, leaderboardRes, hwRes, weeklyRes] = await Promise.all([
-        fetch('/api/admin/progress'),
+        fetch(`/api/admin/progress${showHiddenRef.current ? '?include_hidden=true' : ''}`),
         fetch('/api/leaderboard'),
         fetch('/api/admin/homework'),
         fetch('/api/admin/weekly'),
@@ -1109,6 +1150,12 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
     timerRef.current = setInterval(fetchData, 30_000)
     return () => { if (timerRef.current) clearInterval(timerRef.current) }
   }, [fetchData])
+
+  // showHidden 변경 시 ref 업데이트 후 데이터 재조회
+  useEffect(() => {
+    showHiddenRef.current = showHidden
+    fetchData()
+  }, [showHidden, fetchData])
 
   // 현재 필터 적용된 rows
   const filteredRows = cohortFilter === 'all' ? rows : rows.filter((r) => r.cohort === cohortFilter)
@@ -1561,6 +1608,15 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
               )}
             </button>
           ))}
+          <label className="flex items-center gap-2 cursor-pointer ml-auto">
+            <input
+              type="checkbox"
+              checked={showHidden}
+              onChange={(e) => setShowHidden(e.target.checked)}
+              className="w-4 h-4 rounded border-[#EBEBEB] accent-amber-500"
+            />
+            <span className="text-sm text-[#8A8A8A]">숨긴 교육생 보기</span>
+          </label>
         </div>
 
         {/* 요약 카드 */}
@@ -1632,9 +1688,14 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
                     <tr
                       key={row.id}
                       onClick={() => setSelectedId(row.id)}
-                      className="border-b border-[#F5F5F5] hover:bg-[#F5F5F5] cursor-pointer transition-colors"
+                      className={`border-b border-[#F5F5F5] cursor-pointer transition-colors ${row.is_hidden ? 'bg-[#F9F9F9] opacity-60 hover:opacity-80' : 'hover:bg-[#F5F5F5]'}`}
                     >
-                      <td className="px-4 py-3 font-medium text-[#111111] whitespace-nowrap">{row.name}</td>
+                      <td className="px-4 py-3 font-medium text-[#111111] whitespace-nowrap">
+                        <span>{row.name}</span>
+                        {row.is_hidden && (
+                          <span className="ml-1.5 text-[10px] font-medium bg-amber-100 text-amber-600 px-1.5 py-0.5 rounded-full align-middle">숨김</span>
+                        )}
+                      </td>
                       <td className="px-4 py-3 text-[#8A8A8A] max-w-[160px] truncate">{row.department}</td>
                       <td className="px-4 py-3">
                         {row.cohort ? (
@@ -1895,6 +1956,7 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
           participantId={selectedId}
           initialTab={selectedInitialTab}
           onClose={() => { setSelectedId(null); setSelectedInitialTab('cards') }}
+          onHideToggle={fetchData}
         />
       )}
 

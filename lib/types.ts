@@ -147,6 +147,7 @@ export interface AdminProgressRow {
   tracking_total: number
   homework_proof_status: 'none' | 'pending' | 'approved' | 'rejected'
   weekly_proof_approved: number   // 0~4, 승인된 주차 수
+  is_hidden?: boolean
 }
 
 // 과제 인증샷 제출

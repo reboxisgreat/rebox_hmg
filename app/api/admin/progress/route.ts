@@ -1,11 +1,14 @@
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 import { createSupabaseServiceClient } from '@/lib/supabase'
 
-export async function GET() {
+export async function GET(req: NextRequest) {
   try {
+    const { searchParams } = new URL(req.url)
+    const includeHidden = searchParams.get('include_hidden') === 'true'
+
     const supabase = createSupabaseServiceClient()
 
-    const [progressResult, problemDefResult, homeworkResult, weeklyResult] = await Promise.all([
+    const [progressResult, problemDefResult, homeworkResult, weeklyResult, hiddenResult] = await Promise.all([
       supabase
         .from('admin_progress_view')
         .select('*')
@@ -19,6 +22,9 @@ export async function GET() {
       supabase
         .from('weekly_proof_submissions')
         .select('participant_id, status'),
+      supabase
+        .from('participants')
+        .select('id, is_hidden'),
     ])
 
     if (progressResult.error) throw progressResult.error
@@ -38,12 +44,19 @@ export async function GET() {
       }
     }
 
-    const data = (progressResult.data ?? []).map((row) => ({
+    const hiddenMap = new Map<string, boolean>(
+      (hiddenResult.data ?? []).map((p: { id: string; is_hidden: boolean | null }) => [p.id, p.is_hidden ?? false])
+    )
+
+    const allRows = (progressResult.data ?? []).map((row) => ({
       ...row,
       problem_definition_status: problemDefMap.get(row.id) ? '완료' : '미완료',
       homework_proof_status: homeworkMap.get(row.id) ?? 'none',
       weekly_proof_approved: weeklyMap.get(row.id) ?? 0,
+      is_hidden: hiddenMap.get(row.id) ?? false,
     }))
+
+    const data = includeHidden ? allRows : allRows.filter((r) => !r.is_hidden)
 
     return NextResponse.json({ data })
   } catch (error) {

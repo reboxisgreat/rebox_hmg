@@ -111,17 +111,27 @@ export async function POST(req: NextRequest) {
   }
 }
 
-// PATCH: 비밀번호 초기화 (1234로 리셋) 또는 가산점 설정
+// PATCH: 비밀번호 초기화 (1234로 리셋) / 가산점 설정 / 숨김 토글
 export async function PATCH(req: NextRequest) {
   try {
     const body = await req.json()
-    const { id, admin_bonus, adminPassword } = body
+    const { id, admin_bonus, adminPassword, action } = body
 
     if (!id) {
       return NextResponse.json({ error: 'id가 필요합니다.' }, { status: 400 })
     }
 
     const supabase = createSupabaseServiceClient()
+
+    // 숨김 / 숨김 해제
+    if (action === 'hide' || action === 'unhide') {
+      const { error } = await supabase
+        .from('participants')
+        .update({ is_hidden: action === 'hide' })
+        .eq('id', id)
+      if (error) throw error
+      return NextResponse.json({ success: true })
+    }
 
     // 가산점 설정
     if (admin_bonus !== undefined) {
