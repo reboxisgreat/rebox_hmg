@@ -5,8 +5,7 @@ import { useRouter } from 'next/navigation'
 import Image from 'next/image'
 import type { QuarterlyPlan, WeeklyChecklist, ChecklistItem } from '@/lib/types'
 import { HOMEWORK_ITEMS } from '@/lib/types'
-import { toPng } from 'html-to-image'
-import jsPDF from 'jspdf'
+import { buildPdf, buildActionPlanHtml } from '@/lib/pdf'
 
 
 type Phase = 'loading' | 'no-masterplan' | 'generating' | 'editing' | 'saving' | 'confirmed' | 'error'
@@ -225,51 +224,9 @@ export default function ActionPlanPage() {
 
   // ── PDF 저장
   const handleDownloadPDF = async () => {
-    const element = document.getElementById('pdf-content')
-    if (!element) return
-
-    // 전체 높이 캡처를 위해 일시적으로 overflow 해제
-    const parent = element.parentElement
-    const prevOverflow = parent?.style.overflow ?? ''
-    const prevMaxHeight = parent?.style.maxHeight ?? ''
-    if (parent) {
-      parent.style.overflow = 'visible'
-      parent.style.maxHeight = 'none'
-    }
-
-    try {
-      const dataUrl = await toPng(element, {
-        cacheBust: true,
-        pixelRatio: 2,
-      })
-
-      const img = new window.Image()
-      img.src = dataUrl
-      await new Promise<void>((resolve) => { img.onload = () => resolve() })
-
-      const pdf = new jsPDF('p', 'mm', 'a4')
-      const pageWidth = pdf.internal.pageSize.getWidth()
-      const pageHeight = pdf.internal.pageSize.getHeight()
-
-      // 한 페이지에 맞게 scale
-      const scaleW = pageWidth / img.width
-      const scaleH = pageHeight / img.height
-      const scale = Math.min(scaleW, scaleH)
-      const imgWidth = img.width * scale
-      const imgHeight = img.height * scale
-      const xOffset = (pageWidth - imgWidth) / 2
-      const yOffset = (pageHeight - imgHeight) / 2
-
-      pdf.addImage(dataUrl, 'PNG', xOffset, yOffset, imgWidth, imgHeight)
-
-      const today = new Date().toISOString().slice(0, 10)
-      pdf.save(`HMG_조직관리플랜_${today}.pdf`)
-    } finally {
-      if (parent) {
-        parent.style.overflow = prevOverflow
-        parent.style.maxHeight = prevMaxHeight
-      }
-    }
+    const today = new Date().toISOString().slice(0, 10)
+    const pdf = await buildPdf([buildActionPlanHtml({ yearly_plan: yearlyPlan, monthly_checklist: monthlyChecklist })])
+    pdf.save(`HMG_조직관리플랜_${today}.pdf`)
   }
 
   // ── 자동저장 (confirmed 상태에서 데이터 변경 시 1초 디바운스)

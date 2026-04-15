@@ -9,8 +9,7 @@ import ChatWindow from '@/components/chat/ChatWindow'
 import { CARD_TITLES } from '@/lib/types'
 import type { ChatMessage } from '@/lib/types'
 import gradientBg from '../../public/gradient-bg.json'
-import { toPng } from 'html-to-image'
-import jsPDF from 'jspdf'
+import { buildPdf, buildMasterPlanHtml } from '@/lib/pdf'
 
 type CardNumber = 1 | 2 | 3
 type Phase = 'loading' | 'error' | 'step5' | 'plan-ready' | 'generating' | 'editing' | 'saving'
@@ -255,51 +254,9 @@ export default function MasterPlanPage() {
 
   // ── PDF 다운로드 ─────────────────────────────────────────────────
   const handleDownloadPDF = async () => {
-    const element = document.getElementById('masterplan-pdf-content')
-    if (!element) return
-
-    const parent = element.parentElement
-    const prevOverflow = parent?.style.overflow ?? ''
-    const prevMaxHeight = parent?.style.maxHeight ?? ''
-    if (parent) {
-      parent.style.overflow = 'visible'
-      parent.style.maxHeight = 'none'
-    }
-
-    try {
-      const dataUrl = await toPng(element, { cacheBust: true, pixelRatio: 2 })
-
-      const img = new window.Image()
-      img.src = dataUrl
-      await new Promise<void>((resolve) => { img.onload = () => resolve() })
-
-      const pdf = new jsPDF('p', 'mm', 'a4')
-      const pageWidth = pdf.internal.pageSize.getWidth()
-      const pageHeight = pdf.internal.pageSize.getHeight()
-      const imgWidth = pageWidth
-      const imgHeight = (img.height * imgWidth) / img.width
-
-      let heightLeft = imgHeight
-      let position = 0
-
-      pdf.addImage(dataUrl, 'PNG', 0, position, imgWidth, imgHeight)
-      heightLeft -= pageHeight
-
-      while (heightLeft > 0) {
-        position = heightLeft - imgHeight
-        pdf.addPage()
-        pdf.addImage(dataUrl, 'PNG', 0, position, imgWidth, imgHeight)
-        heightLeft -= pageHeight
-      }
-
-      const today = new Date().toISOString().slice(0, 10)
-      pdf.save(`HMG_마스터플랜_${today}.pdf`)
-    } finally {
-      if (parent) {
-        parent.style.overflow = prevOverflow
-        parent.style.maxHeight = prevMaxHeight
-      }
-    }
+    const today = new Date().toISOString().slice(0, 10)
+    const pdf = await buildPdf([buildMasterPlanHtml(masterPlan)])
+    pdf.save(`HMG_마스터플랜_${today}.pdf`)
   }
 
   // ── 마스터플랜 확정 ───────────────────────────────────────────────

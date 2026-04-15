@@ -6,6 +6,7 @@ import { CARD_TITLES, STEP_TITLES } from '@/lib/types'
 import { toPng } from 'html-to-image'
 import jsPDF from 'jspdf'
 import JSZip from 'jszip'
+import { buildPdf, buildMasterPlanHtml, buildActionPlanHtml } from '@/lib/pdf'
 
 // ─────────────────────────────────────────────
 // 로그인 화면
@@ -71,61 +72,8 @@ function AdminLogin({ onSuccess }: { onSuccess: () => void }) {
 }
 
 // ─────────────────────────────────────────────
-// PDF 생성 유틸리티
+// PDF 생성 유틸리티 (buildPdf, buildMasterPlanHtml, buildActionPlanHtml → @/lib/pdf)
 // ─────────────────────────────────────────────
-
-// overflow:hidden 래퍼 안에 넣어서 화면에 표시 안 하면서도
-// 브라우저가 내부 요소의 레이아웃(scrollHeight 등)을 정상 계산하게 한다.
-function createHiddenContent(html: string): { wrapper: HTMLDivElement; content: HTMLDivElement } {
-  const wrapper = document.createElement('div')
-  wrapper.style.cssText =
-    'position:fixed;top:0;left:0;width:0;height:0;overflow:hidden;pointer-events:none;z-index:-1;'
-  document.body.appendChild(wrapper)
-
-  const content = document.createElement('div')
-  content.style.cssText =
-    'width:720px;background:#ffffff;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;'
-  content.innerHTML = html
-  wrapper.appendChild(content)
-  return { wrapper, content }
-}
-
-// 콘텐츠 높이 = 페이지 높이인 가변 크기 PDF를 생성한다.
-// A4 고정 높이를 쓰지 않으므로 내용 아래 여백이 생기지 않는다.
-async function buildPdf(htmlSections: string[]): Promise<jsPDF> {
-  const RENDER_W = 720   // 렌더링 픽셀 폭
-  const PDF_W_MM = 210   // A4 폭(mm) 고정
-
-  let pdf: jsPDF | null = null
-
-  for (const html of htmlSections) {
-    const el = await renderSection(html)
-    // 브라우저 레이아웃 완료 대기
-    await new Promise<void>((resolve) => setTimeout(resolve, 200))
-
-    const elH = el.scrollHeight
-    const heightMm = (elH * PDF_W_MM) / RENDER_W
-
-    const dataUrl = await toPng(el, {
-      cacheBust: true,
-      pixelRatio: 2,
-      backgroundColor: '#ffffff',
-      width: RENDER_W,
-      height: elH,
-    })
-    cleanupSection(el)
-
-    if (!pdf) {
-      // 첫 페이지는 생성자에서 크기 지정
-      pdf = new jsPDF({ unit: 'mm', format: [PDF_W_MM, heightMm] })
-    } else {
-      pdf.addPage([PDF_W_MM, heightMm])
-    }
-    pdf.addImage(dataUrl, 'PNG', 0, 0, PDF_W_MM, heightMm)
-  }
-
-  return pdf!
-}
 
 function buildCoverHtml(p: Participant): string {
   const date = new Date().toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric' })
@@ -208,73 +156,6 @@ function buildCardsHtml(cards: CardResponse[]): string {
   return `<div style="padding:36px 40px;background:#ffffff;">${rows}</div>`
 }
 
-function buildMasterPlanHtml(mp: MasterPlan): string {
-  const areas = [
-    { label: '고객가치', whatKey: 'customer_what' as const, whyKey: 'customer_why' as const, color: '#2563EB', bg: '#EFF6FF' },
-    { label: '프로세스', whatKey: 'process_what' as const,  whyKey: 'process_why' as const,  color: '#EA580C', bg: '#FFF7ED' },
-    { label: '사람',    whatKey: 'people_what' as const,    whyKey: 'people_why' as const,    color: '#D97706', bg: '#FFFBEB' },
-  ]
-  const areasHtml = areas.map(({ label, whatKey, whyKey, color, bg }) => `
-    <div style="border:1px solid #EBEBEB;border-left:4px solid ${color};border-radius:10px;overflow:hidden;margin-bottom:12px;">
-      <div style="background:${bg};padding:10px 16px;">
-        <p style="font-size:14px;font-weight:700;color:${color};margin:0;">${label}</p>
-      </div>
-      <div style="padding:14px 16px;background:#ffffff;">
-        <p style="font-size:10px;font-weight:600;color:#8A8A8A;margin:0 0 4px;">What</p>
-        <p style="font-size:13px;color:#111111;line-height:1.65;margin:0 0 12px;">${mp[whatKey] ?? '-'}</p>
-        <p style="font-size:10px;font-weight:600;color:#8A8A8A;margin:0 0 4px;">Why</p>
-        <p style="font-size:13px;color:#111111;line-height:1.65;margin:0;">${mp[whyKey] ?? '-'}</p>
-      </div>
-    </div>`).join('')
-  return `
-    <div style="padding:36px 40px;background:#ffffff;">
-      <p style="font-size:10px;font-weight:600;letter-spacing:0.12em;text-transform:uppercase;color:#8A8A8A;margin:0 0 20px;">마스터플랜</p>
-      <div style="background:#111111;border-radius:14px;padding:22px 28px;margin-bottom:20px;">
-        <p style="font-size:10px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:rgba(255,255,255,0.45);margin:0 0 6px;">슬로건</p>
-        <p style="font-size:18px;font-weight:700;color:#ffffff;margin:0;">${mp.slogan ?? ''}</p>
-      </div>
-      ${areasHtml}
-    </div>`
-}
-
-function buildActionPlanHtml(ap: ActionPlan): string {
-  const yearlyHtml = ap.yearly_plan
-    ? `<div style="margin-bottom:32px;">
-        <h2 style="font-size:15px;font-weight:700;color:#111111;margin:0 0 14px;">연간 플랜 (Q1~Q4)</h2>
-        <div style="display:flex;flex-wrap:wrap;gap:10px;">
-          ${ap.yearly_plan.map((q: { quarter: string; focus: string; actions: string[] }) => `
-            <div style="flex:1;min-width:300px;border:1px solid #EBEBEB;border-radius:10px;padding:14px 16px;">
-              <p style="font-size:13px;font-weight:700;color:#111111;margin:0 0 4px;">${q.quarter}</p>
-              <p style="font-size:11px;color:#8A8A8A;margin:0 0 10px;">${q.focus ?? ''}</p>
-              ${(q.actions ?? []).map((a: string) => `<p style="font-size:12px;color:#3A3A3A;line-height:1.55;border-top:1px solid #F5F5F5;padding:5px 0;margin:0;">• ${a}</p>`).join('')}
-            </div>`).join('')}
-        </div>
-      </div>` : ''
-
-  const checklistHtml = ap.monthly_checklist
-    ? `<div>
-        <h2 style="font-size:15px;font-weight:700;color:#111111;margin:0 0 14px;">30일 체크리스트</h2>
-        ${ap.monthly_checklist.map((week: { week: number; theme: string; items: Array<{ index: number; content: string; status: string }> }) => `
-          <div style="margin-bottom:20px;">
-            <h3 style="font-size:13px;font-weight:700;color:#111111;margin:0 0 8px;">
-              ${week.week}주차${week.theme ? ` — ${week.theme}` : ''}
-            </h3>
-            ${week.items.map((item) => {
-              const sc = item.status === '완료' ? '#16A34A' : item.status === '진행중' ? '#2563EB' : '#6B7280'
-              const sb = item.status === '완료' ? '#DCFCE7' : item.status === '진행중' ? '#DBEAFE' : '#F3F4F6'
-              return `<div style="display:flex;align-items:flex-start;gap:10px;background:#F5F5F5;border-radius:8px;padding:10px 12px;margin-bottom:6px;">
-                <span style="background:${sb};color:${sc};font-size:10px;font-weight:600;padding:2px 8px;border-radius:20px;flex-shrink:0;white-space:nowrap;">${item.status}</span>
-                <p style="font-size:12px;color:#111111;line-height:1.6;margin:0;">${item.content}</p>
-              </div>`
-            }).join('')}
-          </div>`).join('')}
-      </div>` : ''
-
-  return `<div style="padding:36px 40px;background:#ffffff;">
-    <p style="font-size:10px;font-weight:600;letter-spacing:0.12em;text-transform:uppercase;color:#8A8A8A;margin:0 0 20px;">액션플랜</p>
-    ${yearlyHtml}${checklistHtml}
-  </div>`
-}
 
 interface ParticipantDetailFull {
   participant: Participant
@@ -283,16 +164,6 @@ interface ParticipantDetailFull {
   actionPlan: ActionPlan | null
 }
 
-async function renderSection(html: string): Promise<HTMLDivElement> {
-  const { wrapper, content } = createHiddenContent(html)
-  ;(content as HTMLDivElement & { __wrapper: HTMLDivElement }).__wrapper = wrapper
-  return content
-}
-
-function cleanupSection(el: HTMLElement) {
-  const wrapper = (el as HTMLDivElement & { __wrapper: HTMLDivElement }).__wrapper
-  if (wrapper?.parentNode) wrapper.parentNode.removeChild(wrapper)
-}
 
 async function generateParticipantPDF(detail: ParticipantDetailFull): Promise<jsPDF> {
   const { participant, cards, masterPlan, actionPlan } = detail
