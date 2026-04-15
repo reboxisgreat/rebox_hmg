@@ -75,24 +75,29 @@ export async function buildPdf(htmlSections: string[]): Promise<jsPDF> {
 
 export function buildMasterPlanHtml(mp: {
   slogan?: string | null
+  customer_strategy?: string | null
   customer_what?: string | null
   customer_why?: string | null
+  process_strategy?: string | null
   process_what?: string | null
   process_why?: string | null
+  people_strategy?: string | null
   people_what?: string | null
   people_why?: string | null
 }): string {
   const areas = [
-    { label: '고객가치', whatKey: 'customer_what' as const, whyKey: 'customer_why' as const, color: '#2563EB', bg: '#EFF6FF' },
-    { label: '프로세스', whatKey: 'process_what' as const,  whyKey: 'process_why' as const,  color: '#EA580C', bg: '#FFF7ED' },
-    { label: '사람',    whatKey: 'people_what' as const,    whyKey: 'people_why' as const,    color: '#D97706', bg: '#FFFBEB' },
+    { label: '고객가치', strategyKey: 'customer_strategy' as const, whatKey: 'customer_what' as const, whyKey: 'customer_why' as const, color: '#2563EB', bg: '#EFF6FF' },
+    { label: '프로세스', strategyKey: 'process_strategy' as const,  whatKey: 'process_what' as const,  whyKey: 'process_why' as const,  color: '#EA580C', bg: '#FFF7ED' },
+    { label: '사람',    strategyKey: 'people_strategy' as const,    whatKey: 'people_what' as const,    whyKey: 'people_why' as const,    color: '#D97706', bg: '#FFFBEB' },
   ]
-  const areasHtml = areas.map(({ label, whatKey, whyKey, color, bg }) => `
+  const areasHtml = areas.map(({ label, strategyKey, whatKey, whyKey, color, bg }) => `
     <div style="border:1px solid #EBEBEB;border-left:4px solid ${color};border-radius:10px;overflow:hidden;margin-bottom:12px;">
       <div style="background:${bg};padding:10px 16px;">
         <p style="font-size:14px;font-weight:700;color:${color};margin:0;">${label}</p>
       </div>
       <div style="padding:14px 16px;background:#ffffff;">
+        ${mp[strategyKey] ? `<p style="font-size:10px;font-weight:600;color:#8A8A8A;margin:0 0 4px;">조직관리 전략</p>
+        <p style="font-size:13px;color:#111111;line-height:1.65;margin:0 0 12px;">${mp[strategyKey]}</p>` : ''}
         <p style="font-size:10px;font-weight:600;color:#8A8A8A;margin:0 0 4px;">What</p>
         <p style="font-size:13px;color:#111111;line-height:1.65;margin:0 0 12px;">${mp[whatKey] ?? '-'}</p>
         <p style="font-size:10px;font-weight:600;color:#8A8A8A;margin:0 0 4px;">Why</p>
