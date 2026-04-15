@@ -12,7 +12,7 @@ export async function GET(req: NextRequest) {
 
     const supabase = createSupabaseServiceClient()
 
-    const [participantRes, cardsRes, masterplanRes, actionplanRes, trackingRes] = await Promise.all([
+    const [participantRes, cardsRes, masterplanRes, actionplanRes, trackingRes, homeworkRes, weeklyRes] = await Promise.all([
       supabase.from('participants').select('*').eq('id', id).single(),
       supabase
         .from('card_responses')
@@ -25,6 +25,16 @@ export async function GET(req: NextRequest) {
         .from('tracking_logs')
         .select('week_number, item_index, status, memo')
         .eq('participant_id', id),
+      supabase
+        .from('homework_submissions')
+        .select('id, image_urls, status, submitted_at')
+        .eq('participant_id', id)
+        .maybeSingle(),
+      supabase
+        .from('weekly_proof_submissions')
+        .select('id, week_number, image_urls, status, submitted_at')
+        .eq('participant_id', id)
+        .order('week_number', { ascending: true }),
     ])
 
     if (participantRes.error) throw participantRes.error
@@ -53,6 +63,8 @@ export async function GET(req: NextRequest) {
       cards: cardsRes.data ?? [],
       masterPlan: masterplanRes.data ?? null,
       actionPlan: actionPlan ?? null,
+      homeworkSubmission: homeworkRes.data ?? null,
+      weeklySubmissions: weeklyRes.data ?? [],
     })
   } catch (error) {
     console.error('Admin participant API error:', error)

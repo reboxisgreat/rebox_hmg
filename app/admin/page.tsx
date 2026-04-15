@@ -192,11 +192,24 @@ function CohortBadge({ cohort, size = 'sm' }: { cohort: number; size?: 'sm' | 'x
 // ─────────────────────────────────────────────
 // 교육생 상세 모달
 // ─────────────────────────────────────────────
+interface ProofSubmission {
+  id: string
+  image_urls: string[]
+  status: string
+  submitted_at: string
+}
+
+interface WeeklyProofSubmission extends ProofSubmission {
+  week_number: number
+}
+
 interface ParticipantDetail {
   participant: Participant
   cards: CardResponse[]
   masterPlan: MasterPlan | null
   actionPlan: ActionPlan | null
+  homeworkSubmission: ProofSubmission | null
+  weeklySubmissions: WeeklyProofSubmission[]
 }
 
 function DetailModal({
@@ -210,7 +223,8 @@ function DetailModal({
 }) {
   const [detail, setDetail] = useState<ParticipantDetail | null>(null)
   const [loading, setLoading] = useState(true)
-  const [activeTab, setActiveTab] = useState<'cards' | 'masterplan' | 'actionplan'>(initialTab)
+  const [activeTab, setActiveTab] = useState<'cards' | 'masterplan' | 'actionplan' | 'homework' | 'weekly'>(initialTab)
+  const [lightboxUrl, setLightboxUrl] = useState<string | null>(null)
   const [resetting, setResetting] = useState(false)
   const [resetMsg, setResetMsg] = useState<{ type: 'ok' | 'err'; text: string } | null>(null)
   const [pdfLoading, setPdfLoading] = useState<'tab' | 'all' | null>(null)
@@ -360,13 +374,13 @@ function DetailModal({
         {/* 탭 */}
         <div className="flex items-center border-b border-[#EBEBEB] px-6 shrink-0">
           <div className="flex flex-1">
-            {(['cards', 'masterplan', 'actionplan'] as const).map((tab) => {
-              const labels = { cards: '카드 응답', masterplan: '마스터플랜', actionplan: '액션플랜' }
+            {(['cards', 'masterplan', 'actionplan', 'homework', 'weekly'] as const).map((tab) => {
+              const labels = { cards: '카드 응답', masterplan: '마스터플랜', actionplan: '액션플랜', homework: '과제 인증샷', weekly: '주차별 인증샷' }
               return (
                 <button
                   key={tab}
                   onClick={() => setActiveTab(tab)}
-                  className={`mr-4 py-3 text-sm font-medium border-b-2 transition-colors ${
+                  className={`mr-4 py-3 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
                     activeTab === tab
                       ? 'border-[#111111] text-[#111111]'
                       : 'border-transparent text-[#8A8A8A]'
@@ -377,7 +391,7 @@ function DetailModal({
               )
             })}
           </div>
-          {detail && (
+          {detail && activeTab !== 'homework' && activeTab !== 'weekly' && (
             <button
               onClick={handleTabPDF}
               disabled={!!pdfLoading}
@@ -528,8 +542,87 @@ function DetailModal({
               <p className="text-sm text-[#8A8A8A] italic text-center mt-8">액션플랜 미작성</p>
             )
           )}
+
+          {/* 과제 인증샷 탭 */}
+          {!loading && detail && activeTab === 'homework' && (
+            detail.homeworkSubmission ? (
+              <div className="space-y-3">
+                <div className="flex items-center gap-2 mb-1">
+                  <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${
+                    detail.homeworkSubmission.status === 'approved' ? 'bg-[#DCFCE7] text-[#16A34A]'
+                    : detail.homeworkSubmission.status === 'rejected' ? 'bg-[#FEE2E2] text-[#DC2626]'
+                    : 'bg-[#FFFBEB] text-[#D97706]'
+                  }`}>
+                    {detail.homeworkSubmission.status === 'approved' ? '승인' : detail.homeworkSubmission.status === 'rejected' ? '반려' : '검토중'}
+                  </span>
+                  <span className="text-xs text-[#8A8A8A]">제출: {new Date(detail.homeworkSubmission.submitted_at).toLocaleString('ko-KR')}</span>
+                </div>
+                <div className="flex gap-3 flex-wrap">
+                  {detail.homeworkSubmission.image_urls.map((url, i) => {
+                    const proxyUrl = `/api/homework/image?path=${encodeURIComponent(url)}`
+                    return (
+                      <div key={i} className="flex flex-col gap-1">
+                        <button onClick={() => setLightboxUrl(proxyUrl)}>
+                          <img src={proxyUrl} alt={`과제 인증샷 ${i + 1}`} className="h-40 w-auto rounded-xl object-cover border border-[#EBEBEB] hover:opacity-90 transition-opacity" />
+                        </button>
+                        <a href={proxyUrl} download={`과제인증_${detail.participant.name}_${i + 1}.jpg`} className="text-center text-[10px] text-[#2563EB] font-medium hover:underline">다운로드</a>
+                      </div>
+                    )
+                  })}
+                </div>
+              </div>
+            ) : (
+              <p className="text-sm text-[#8A8A8A] italic text-center mt-8">제출된 과제 인증샷이 없습니다.</p>
+            )
+          )}
+
+          {/* 주차별 인증샷 탭 */}
+          {!loading && detail && activeTab === 'weekly' && (
+            detail.weeklySubmissions.length > 0 ? (
+              <div className="space-y-5">
+                {detail.weeklySubmissions.map((sub) => (
+                  <div key={sub.id}>
+                    <div className="flex items-center gap-2 mb-2">
+                      <span className="text-sm font-bold text-[#111111]">{sub.week_number}주차</span>
+                      <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${
+                        sub.status === 'approved' ? 'bg-[#DCFCE7] text-[#16A34A]'
+                        : sub.status === 'rejected' ? 'bg-[#FEE2E2] text-[#DC2626]'
+                        : 'bg-[#FFFBEB] text-[#D97706]'
+                      }`}>
+                        {sub.status === 'approved' ? '승인' : sub.status === 'rejected' ? '반려' : '검토중'}
+                      </span>
+                      <span className="text-xs text-[#8A8A8A]">제출: {new Date(sub.submitted_at).toLocaleString('ko-KR')}</span>
+                    </div>
+                    <div className="flex gap-3 flex-wrap">
+                      {sub.image_urls.map((url, i) => {
+                        const proxyUrl = `/api/homework/image?path=${encodeURIComponent(url)}`
+                        return (
+                          <div key={i} className="flex flex-col gap-1">
+                            <button onClick={() => setLightboxUrl(proxyUrl)}>
+                              <img src={proxyUrl} alt={`${sub.week_number}주차 인증샷 ${i + 1}`} className="h-40 w-auto rounded-xl object-cover border border-[#EBEBEB] hover:opacity-90 transition-opacity" />
+                            </button>
+                            <a href={proxyUrl} download={`주차인증_${detail.participant.name}_${sub.week_number}주차_${i + 1}.jpg`} className="text-center text-[10px] text-[#2563EB] font-medium hover:underline">다운로드</a>
+                          </div>
+                        )
+                      })}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="text-sm text-[#8A8A8A] italic text-center mt-8">제출된 주차별 인증샷이 없습니다.</p>
+            )
+          )}
         </div>
       </div>
+
+      {/* 라이트박스 */}
+      {lightboxUrl && (
+        <div className="fixed inset-0 bg-black/80 z-[60] flex items-center justify-center p-4" onClick={() => setLightboxUrl(null)}>
+          <button className="absolute top-4 right-4 text-white text-2xl leading-none" onClick={() => setLightboxUrl(null)}>×</button>
+          <img src={lightboxUrl} alt="인증샷 확대" className="max-h-[90vh] max-w-full rounded-xl object-contain" onClick={(e) => e.stopPropagation()} />
+        </div>
+      )}
     </div>
   )
 }
@@ -1504,7 +1597,7 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-[#EBEBEB] bg-[#F5F5F5]">
-                  {['이름', '소속', '차수', '진짜문제정의', '카드완료', '마스터플랜', '액션플랜', '트래킹 완료율', '마지막 접속'].map((h) => (
+                  {['이름', '소속', '차수', '진짜문제정의', '카드완료', '마스터플랜', '액션플랜', '트래킹 완료율', '과제 인증', '주차 인증', '마지막 접속'].map((h) => (
                     <th key={h} className="text-left px-4 py-3 text-xs font-semibold text-[#8A8A8A] whitespace-nowrap">
                       {h}
                     </th>
@@ -1515,7 +1608,7 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
                 {loading && (
                   Array.from({ length: 5 }).map((_, i) => (
                     <tr key={i} className="border-b border-[#F5F5F5]">
-                      {Array.from({ length: 9 }).map((_, j) => (
+                      {Array.from({ length: 11 }).map((_, j) => (
                         <td key={j} className="px-4 py-3">
                           <div className="h-4 bg-[#F5F5F5] rounded animate-pulse" />
                         </td>
@@ -1525,7 +1618,7 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
                 )}
                 {!loading && filteredRows.length === 0 && (
                   <tr>
-                    <td colSpan={9} className="text-center py-12 text-[#8A8A8A] text-sm">
+                    <td colSpan={11} className="text-center py-12 text-[#8A8A8A] text-sm">
                       {cohortFilter === 'all' ? '등록된 교육생이 없습니다.' : `${cohortFilter}차수 교육생이 없습니다.`}
                     </td>
                   </tr>
@@ -1587,6 +1680,25 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
                           </div>
                           <span className="text-xs text-[#8A8A8A] whitespace-nowrap">{trackingRate}%</span>
                         </div>
+                      </td>
+                      <td className="px-4 py-3">
+                        {row.homework_proof_status === 'none' && (
+                          <span className="text-xs text-[#AAAAAA]">미제출</span>
+                        )}
+                        {row.homework_proof_status === 'pending' && (
+                          <span className="inline-block text-[10px] font-semibold px-2 py-0.5 rounded-full bg-[#FFFBEB] text-[#D97706]">검토중</span>
+                        )}
+                        {row.homework_proof_status === 'approved' && (
+                          <span className="inline-block text-[10px] font-semibold px-2 py-0.5 rounded-full bg-[#DCFCE7] text-[#16A34A]">승인</span>
+                        )}
+                        {row.homework_proof_status === 'rejected' && (
+                          <span className="inline-block text-[10px] font-semibold px-2 py-0.5 rounded-full bg-[#FEE2E2] text-[#DC2626]">반려</span>
+                        )}
+                      </td>
+                      <td className="px-4 py-3 text-xs text-[#8A8A8A] whitespace-nowrap">
+                        <span className={row.weekly_proof_approved > 0 ? 'text-[#16A34A] font-semibold' : ''}>
+                          {row.weekly_proof_approved}/4
+                        </span>
                       </td>
                       <td className="px-4 py-3 text-[#8A8A8A] text-xs whitespace-nowrap">
                         {formatTime(row.last_active_at)}
