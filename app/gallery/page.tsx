@@ -10,6 +10,23 @@ interface GalleryCard extends MasterPlanCard {
   is_liked: boolean
 }
 
+// • 또는 · 기호를 줄바꿈 bullet으로 분리 렌더링
+function GalleryBulletText({ text }: { text: string }) {
+  const parts = text.split(/(?=[•·])/).map((s) => s.trim()).filter(Boolean)
+  if (parts.length <= 1) {
+    return <p className="text-[12px] text-[#1A1A1A] leading-relaxed">{text}</p>
+  }
+  const [first, ...bullets] = parts
+  return (
+    <div className="text-[12px] text-[#1A1A1A] leading-relaxed space-y-0.5">
+      {first && !/^[•·]/.test(first) && <p>{first}</p>}
+      {(/^[•·]/.test(first) ? parts : bullets).map((b, i) => (
+        <p key={i}>{b}</p>
+      ))}
+    </div>
+  )
+}
+
 const AREAS = [
   { strategyKey: 'customer_strategy' as const, whatKey: 'customer_what' as const, whyKey: 'customer_why' as const, label: '고객가치', color: '#DC2626', bg: '#FFF1F2', border: '#FECDD3' },
   { strategyKey: 'process_strategy' as const, whatKey: 'process_what' as const, whyKey: 'process_why' as const, label: '프로세스', color: '#16A34A', bg: '#F0FDF4', border: '#BBF7D0' },
@@ -180,18 +197,14 @@ export default function GalleryPage() {
                             {card[strategyKey] && (
                               <div>
                                 <p className="text-[10px] font-semibold text-[#8A8A8A] mb-0.5">조직관리 전략</p>
-                                <div className="text-[12px] text-[#1A1A1A] leading-relaxed space-y-0.5">
-                                  {card[strategyKey]!.split(/\s*·\s*/).filter(Boolean).map((item, i) => (
-                                    <p key={i}>· {item.replace(/^·\s*/, '')}</p>
-                                  ))}
-                                </div>
+                                <GalleryBulletText text={card[strategyKey]!} />
                               </div>
                             )}
                             <div>
                               <p className="text-[10px] font-semibold text-[#8A8A8A] mb-0.5">What</p>
-                              <p className="text-[12px] text-[#1A1A1A] leading-relaxed">
-                                {card[whatKey] ?? <span className="text-[#CCCCCC] italic">미작성</span>}
-                              </p>
+                              {card[whatKey]
+                                ? <GalleryBulletText text={card[whatKey]!} />
+                                : <span className="text-[12px] text-[#CCCCCC] italic">미작성</span>}
                             </div>
                             <div>
                               <p className="text-[10px] font-semibold text-[#8A8A8A] mb-0.5">Why</p>

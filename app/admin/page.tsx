@@ -212,6 +212,23 @@ interface ParticipantDetail {
   weeklySubmissions: WeeklyProofSubmission[]
 }
 
+// • 기호를 줄바꿈 bullet으로 분리 렌더링
+function BulletText({ text }: { text: string }) {
+  const parts = text.split(/(?=•)/).map((s) => s.trim()).filter(Boolean)
+  if (parts.length <= 1) {
+    return <p className="text-sm text-[#111111] leading-relaxed">{text}</p>
+  }
+  const [first, ...bullets] = parts
+  return (
+    <div className="text-sm text-[#111111] leading-relaxed space-y-1">
+      {first && !first.startsWith('•') && <p>{first}</p>}
+      {(first.startsWith('•') ? parts : bullets).map((b, i) => (
+        <p key={i}>{b}</p>
+      ))}
+    </div>
+  )
+}
+
 function DetailModal({
   participantId,
   onClose,
@@ -520,16 +537,12 @@ function DetailModal({
                       {(mp[strategyKey as keyof MasterPlan] as string) && (
                         <div>
                           <p className="text-xs font-semibold text-[#8A8A8A] mb-1">조직관리 전략</p>
-                          <p className="text-sm text-[#111111] leading-relaxed">
-                            {(mp[strategyKey as keyof MasterPlan] as string)}
-                          </p>
+                          <BulletText text={mp[strategyKey as keyof MasterPlan] as string} />
                         </div>
                       )}
                       <div>
                         <p className="text-xs font-semibold text-[#8A8A8A] mb-1">What</p>
-                        <p className="text-sm text-[#111111] leading-relaxed">
-                          {(mp[whatKey as keyof MasterPlan] as string) ?? '-'}
-                        </p>
+                        <BulletText text={(mp[whatKey as keyof MasterPlan] as string) ?? '-'} />
                       </div>
                       <div>
                         <p className="text-xs font-semibold text-[#8A8A8A] mb-1">Why</p>
