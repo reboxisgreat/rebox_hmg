@@ -14,7 +14,8 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ success: false }, { status: 500 })
     }
 
-    if (password === adminPassword) {
+    const validPasswords = adminPassword.split(',').map((p) => p.trim())
+    if (validPasswords.includes(password)) {
       return NextResponse.json({ success: true })
     }
 

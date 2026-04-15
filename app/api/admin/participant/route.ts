@@ -113,7 +113,7 @@ export async function PATCH(req: NextRequest) {
 
     // 가산점 설정
     if (admin_bonus !== undefined) {
-      if (adminPassword !== process.env.ADMIN_PASSWORD) {
+      if (!process.env.ADMIN_PASSWORD?.split(',').map((p) => p.trim()).includes(adminPassword)) {
         return NextResponse.json({ error: '권한이 없습니다.' }, { status: 403 })
       }
       const { error } = await supabase
