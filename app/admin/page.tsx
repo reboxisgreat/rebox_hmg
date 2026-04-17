@@ -6,7 +6,7 @@ import { CARD_TITLES, STEP_TITLES } from '@/lib/types'
 import { toPng } from 'html-to-image'
 import jsPDF from 'jspdf'
 import JSZip from 'jszip'
-import { buildPdf, buildMasterPlanHtml, buildActionPlanHtml } from '@/lib/pdf'
+import { buildPdf, buildMasterPlanHtml, buildActionPlanHtml, bulletToHtml } from '@/lib/pdf'
 
 // ─────────────────────────────────────────────
 // 로그인 화면
@@ -146,7 +146,7 @@ function buildCardsHtml(cards: CardResponse[]): string {
               const val = card[field as keyof CardResponse] as string
               return `<div style="background:#F5F5F5;border-radius:10px;padding:12px 16px;margin-bottom:8px;">
                 <p style="font-size:10px;font-weight:600;color:#8A8A8A;margin:0 0 5px;">Step ${stepNum}. ${STEP_TITLES[stepNum]}</p>
-                <p style="font-size:13px;color:#111111;line-height:1.65;margin:0;">${val}</p>
+                ${bulletToHtml(val, 'font-size:13px;color:#111111;line-height:1.65;margin:0 0 4px;')}
               </div>`
             }).join('')
           : '<p style="font-size:13px;color:#8A8A8A;font-style:italic;margin:0;">미작성</p>'

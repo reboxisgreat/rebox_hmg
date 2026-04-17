@@ -563,7 +563,7 @@ export default function ActionPlanPage() {
                     <span className="inline-block text-[10px] font-bold tracking-[0.12em] uppercase px-2 py-0.5 rounded-full bg-white border border-[#FDE68A] text-[#D97706] mb-1.5">
                       과제
                     </span>
-                    <p className="text-base font-bold text-[#111111] leading-snug">구성원 공유 세션</p>
+                    <p className="text-base font-bold text-[#111111] leading-snug">리뷰 세션</p>
                   </div>
                   <span className="flex flex-col items-end gap-0.5 shrink-0">
                     <span className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-white border border-[#EBEBEB] text-[#AAAAAA] text-[11px] font-semibold opacity-60 cursor-not-allowed">

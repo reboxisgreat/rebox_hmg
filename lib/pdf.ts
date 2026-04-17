@@ -34,6 +34,14 @@ function cleanupSection(el: HTMLElement) {
   if (wrapper?.parentNode) wrapper.parentNode.removeChild(wrapper)
 }
 
+export function bulletToHtml(text: string, style: string): string {
+  const parts = text.split(/(?=•)/).map((s) => s.trim()).filter(Boolean)
+  if (parts.length <= 1) return `<p style="${style}">${text}</p>`
+  const first = parts[0]
+  const lines = first.startsWith('•') ? parts : (first ? parts : parts.slice(1))
+  return lines.map((line) => `<p style="${style}">${line}</p>`).join('')
+}
+
 // ── 공개 API ─────────────────────────────────────────────
 
 /**
@@ -97,11 +105,11 @@ export function buildMasterPlanHtml(mp: {
       </div>
       <div style="padding:14px 16px;background:#ffffff;">
         ${mp[strategyKey] ? `<p style="font-size:10px;font-weight:600;color:#8A8A8A;margin:0 0 4px;">조직관리 전략</p>
-        <p style="font-size:13px;color:#111111;line-height:1.65;margin:0 0 12px;">${mp[strategyKey]}</p>` : ''}
+        <div style="margin:0 0 12px;">${bulletToHtml(mp[strategyKey]!, 'font-size:13px;color:#111111;line-height:1.65;margin:0 0 4px;')}</div>` : ''}
         <p style="font-size:10px;font-weight:600;color:#8A8A8A;margin:0 0 4px;">What</p>
-        <p style="font-size:13px;color:#111111;line-height:1.65;margin:0 0 12px;">${mp[whatKey] ?? '-'}</p>
+        <div style="margin:0 0 12px;">${bulletToHtml(mp[whatKey] ?? '-', 'font-size:13px;color:#111111;line-height:1.65;margin:0 0 4px;')}</div>
         <p style="font-size:10px;font-weight:600;color:#8A8A8A;margin:0 0 4px;">Why</p>
-        <p style="font-size:13px;color:#111111;line-height:1.65;margin:0;">${mp[whyKey] ?? '-'}</p>
+        <div style="margin:0;">${bulletToHtml(mp[whyKey] ?? '-', 'font-size:13px;color:#111111;line-height:1.65;margin:0 0 4px;')}</div>
       </div>
     </div>`).join('')
   return `
