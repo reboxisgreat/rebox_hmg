@@ -622,7 +622,7 @@ export default function TrackingPage() {
               <span className="inline-block text-[10px] font-bold tracking-[0.12em] uppercase px-2 py-0.5 rounded-full bg-[#FFFBEB] border border-[#FDE68A] text-[#D97706]">
                 과제
               </span>
-              <p className="text-sm font-bold text-[#111111]">구성원 공유 세션</p>
+              <p className="text-sm font-bold text-[#111111]">리뷰 세션</p>
               <span className="text-xs text-[#D97706] font-semibold ml-auto">과제 완료 인증 시 +50점</span>
             </div>
             <div className="space-y-2">
