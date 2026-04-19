@@ -526,8 +526,8 @@ function DetailModal({
                 </div>
                 {([
                   ['고객가치', 'customer_strategy', 'customer_what', 'customer_why', 'bg-[#EFF6FF]', 'text-[#2563EB]', 'border-l-[#2563EB]'],
-                  ['프로세스', 'process_strategy',  'process_what',  'process_why',  'bg-[#FFF7ED]', 'text-[#EA580C]', 'border-l-[#EA580C]'],
                   ['사람',    'people_strategy',   'people_what',   'people_why',   'bg-[#FFFBEB]', 'text-[#D97706]', 'border-l-[#D97706]'],
+                  ['프로세스', 'process_strategy',  'process_what',  'process_why',  'bg-[#FFF7ED]', 'text-[#EA580C]', 'border-l-[#EA580C]'],
                 ] as const).map(([label, strategyKey, whatKey, whyKey, hBg, hText, lBorder]) => (
                   <div key={label} className={`border border-[#EBEBEB] border-l-4 ${lBorder} rounded-2xl overflow-hidden`}>
                     <div className={`px-4 py-2.5 ${hBg}`}>
@@ -745,8 +745,8 @@ function MasterPlanGallery({ onSelectParticipant }: { onSelectParticipant: (id: 
 
   const AREAS = [
     { strategyKey: 'customer_strategy' as const, whatKey: 'customer_what' as const, whyKey: 'customer_why' as const, label: '고객가치', color: '#DC2626', bg: '#FFF1F2', border: '#FECDD3' },
-    { strategyKey: 'process_strategy' as const, whatKey: 'process_what' as const, whyKey: 'process_why' as const, label: '프로세스', color: '#16A34A', bg: '#F0FDF4', border: '#BBF7D0' },
     { strategyKey: 'people_strategy' as const, whatKey: 'people_what' as const, whyKey: 'people_why' as const, label: '사람', color: '#D97706', bg: '#FFFBEB', border: '#FDE68A' },
+    { strategyKey: 'process_strategy' as const, whatKey: 'process_what' as const, whyKey: 'process_why' as const, label: '프로세스', color: '#16A34A', bg: '#F0FDF4', border: '#BBF7D0' },
   ]
 
   if (loading) {
