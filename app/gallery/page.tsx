@@ -29,8 +29,8 @@ function GalleryBulletText({ text }: { text: string }) {
 
 const AREAS = [
   { strategyKey: 'customer_strategy' as const, whatKey: 'customer_what' as const, whyKey: 'customer_why' as const, label: '고객가치', color: '#DC2626', bg: '#FFF1F2', border: '#FECDD3' },
-  { strategyKey: 'process_strategy' as const, whatKey: 'process_what' as const, whyKey: 'process_why' as const, label: '프로세스', color: '#16A34A', bg: '#F0FDF4', border: '#BBF7D0' },
   { strategyKey: 'people_strategy' as const, whatKey: 'people_what' as const, whyKey: 'people_why' as const, label: '사람', color: '#D97706', bg: '#FFFBEB', border: '#FDE68A' },
+  { strategyKey: 'process_strategy' as const, whatKey: 'process_what' as const, whyKey: 'process_why' as const, label: '프로세스', color: '#16A34A', bg: '#F0FDF4', border: '#BBF7D0' },
 ]
 
 export default function GalleryPage() {
