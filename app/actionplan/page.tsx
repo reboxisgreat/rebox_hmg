@@ -565,15 +565,17 @@ export default function ActionPlanPage() {
                     </span>
                     <p className="text-base font-bold text-[#111111] leading-snug">리뷰 세션</p>
                   </div>
-                  <span className="flex flex-col items-end gap-0.5 shrink-0">
-                    <span className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-white border border-[#EBEBEB] text-[#AAAAAA] text-[11px] font-semibold opacity-60 cursor-not-allowed">
-                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                        <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/>
-                      </svg>
-                      AI 정직이
-                    </span>
-                    <span className="text-[9px] text-[#AAAAAA]">(교육 이후 오픈)</span>
-                  </span>
+                  <a
+                    href="https://gemini.google.com/gem/10BK5kltDFbsSG1clOT1WV23dLA85QC33?usp=sharing"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-white border border-[#D97706] text-[#D97706] text-[11px] font-semibold shrink-0"
+                  >
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/>
+                    </svg>
+                    AI 정직이
+                  </a>
                 </div>
               </div>
               <div className="px-4 py-3 space-y-2">
