@@ -142,7 +142,7 @@ export default function RankingPage() {
         </div>
         <div className="mt-2 px-3 py-2.5 bg-[#FFF1F2] border border-[#FECDD3] rounded-xl text-center">
           <p className="text-xs text-[#DC2626] font-medium leading-relaxed">
-            🎁 열심히 참여해주시는 분들에게는 보너스 점수 드립니다! <br />인증샷으로 솜씨를 뽐내주세요.
+            🎁 열심히 참여해주시는 분들에게는 보너스 점수 드립니다! <br />** 인증샷과 서베이까지 제출해주셔야 과제 수행 완료입니다! 🎉 **
           </p>
         </div>
       </div>
