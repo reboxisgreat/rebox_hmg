@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import type { TrackingLog, MyScore, HomeworkSubmission, WeeklyProofSubmission } from '@/lib/types'
+import { HOMEWORK_ITEMS } from '@/lib/types'
 import confetti from 'canvas-confetti'
 
 type Status = '미착수' | '진행중' | '완료'
@@ -135,11 +136,13 @@ function HomeworkItem({
   locked?: boolean
 }) {
   const isDone = item.status === '완료'
-  const isQuestionItem = item.item_content.startsWith('[질문]')
+  const displayContent = HOMEWORK_ITEMS[item.item_index] ?? item.item_content
+  const isQuestionItem = displayContent.startsWith('[질문]')
+  const isSurveyItem = displayContent.startsWith('[서베이')
   return (
     <div className={`rounded-2xl border px-4 py-3 transition-colors ${isDone ? 'bg-[#FFFBEB] border-[#FDE68A]' : 'bg-white border-[#EBEBEB]'}`}>
       <div className="flex items-start justify-between gap-2 mb-3">
-        <p className="text-sm text-[#111111] leading-snug break-keep">{item.item_content}</p>
+        <p className="text-sm text-[#111111] leading-snug break-keep">{displayContent}</p>
         {isQuestionItem && (
           <a
             href="https://gemini.google.com/gem/10BK5kltDFbsSG1clOT1WV23dLA85QC33?usp=sharing"
@@ -151,6 +154,19 @@ function HomeworkItem({
               <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/>
             </svg>
             AI 정직이
+          </a>
+        )}
+        {isSurveyItem && (
+          <a
+            href="https://TODO_SURVEY_URL"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-white border border-[#D97706] text-[#D97706] text-[11px] font-semibold shrink-0"
+          >
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/>
+            </svg>
+            서베이 참여
           </a>
         )}
       </div>
@@ -170,7 +186,7 @@ function HomeworkItem({
             isDone ? 'bg-[#D97706] text-white' : 'bg-[#F3F4F6] text-[#8A8A8A]'
           }`}
         >
-          과제 완료했어요!
+          {isSurveyItem ? '제출했어요!' : '과제 완료했어요!'}
         </button>
       </div>
     </div>
@@ -600,7 +616,7 @@ export default function TrackingPage() {
           </div>
           <div className="mt-2 px-3 py-2.5 bg-[#FFF1F2] border border-[#FECDD3] rounded-xl text-center">
             <p className="text-xs text-[#DC2626] font-medium leading-relaxed">
-              🎁 열심히 참여해주시는 분들에게는 보너스 점수 드립니다! <br />인증샷으로 솜씨를 뽐내주세요.
+              🎁 열심히 참여해주시는 분들에게는 보너스 점수 드립니다! <br />** 인증샷과 서베이까지 제출해주셔야 과제 수행 완료입니다! 🎉 **
             </p>
           </div>
         </div>
@@ -676,7 +692,7 @@ export default function TrackingPage() {
                 <label className="block w-full">
                   <input type="file" accept="image/*" multiple className="hidden" onChange={(e) => e.target.files && handleProofUpload(e.target.files)} />
                   <span className="flex items-center justify-center gap-2 w-full h-11 rounded-2xl bg-[#111111] text-white text-sm font-bold cursor-pointer active:opacity-80">
-                    {uploadingProof ? '업로드 중...' : '인증샷 올리고 +50점 받기 📸'}
+                    {uploadingProof ? '업로드 중...' : '(필수) 인증샷 올리고 +50점 받기 📸'}
                   </span>
                 </label>
               ) : (
@@ -684,7 +700,7 @@ export default function TrackingPage() {
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#8A8A8A" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                     <rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/>
                   </svg>
-                  <p className="text-xs text-[#8A8A8A]">4개 항목을 모두 완료하면 인증샷을 올릴 수 있어요</p>
+                  <p className="text-xs text-[#8A8A8A]">5개 항목을 모두 완료하면 인증샷을 올릴 수 있어요</p>
                 </div>
               )}
             </div>

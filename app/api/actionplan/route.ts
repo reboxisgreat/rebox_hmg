@@ -216,9 +216,11 @@ export async function PATCH(req: NextRequest) {
       memo: null,
     }))
 
-    const { error: homeworkError } = await supabase.from('tracking_logs').insert(homeworkLogs)
+    const { error: homeworkError } = await supabase
+      .from('tracking_logs')
+      .upsert(homeworkLogs, { onConflict: 'participant_id,week_number,item_index', ignoreDuplicates: false })
     if (homeworkError) {
-      console.warn('과제 logs insert 실패 (무시):', homeworkError)
+      console.warn('과제 logs upsert 실패 (무시):', homeworkError)
     }
 
     // 5. 모든 insert 완료 후 is_confirmed = true

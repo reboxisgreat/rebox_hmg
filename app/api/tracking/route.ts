@@ -96,27 +96,32 @@ export async function GET(req: NextRequest) {
 
     if (logsResult.error) throw logsResult.error
 
-    // 과제 logs 누락 시 자동 삽입 (이전 저장 데이터 호환)
+    // 과제 logs 누락 시 자동 삽입 (이전 저장 데이터 호환 + 신규 항목 추가 대응)
     const existingLogs = logsResult.data ?? []
     const hasWeeklyLogs = existingLogs.some((l) => l.week_number > 0)
-    const hasHomeworkLogs = existingLogs.some((l) => l.week_number === 0)
-    if (hasWeeklyLogs && !hasHomeworkLogs) {
-      const homeworkLogs = HOMEWORK_ITEMS.map((content, index) => ({
+    if (hasWeeklyLogs) {
+      const existingHwIndices = new Set(
+        existingLogs.filter((l) => l.week_number === 0).map((l) => l.item_index)
+      )
+      const missingHomeworkLogs = HOMEWORK_ITEMS.map((content, index) => ({
         participant_id: participantId,
         week_number: 0,
         item_index: index,
         item_content: content,
         status: '미착수' as const,
         memo: null,
-      }))
-      const { data: inserted, error: hwError } = await supabase
-        .from('tracking_logs')
-        .insert(homeworkLogs)
-        .select()
-      if (!hwError && inserted) {
-        existingLogs.push(...inserted)
-      } else if (hwError) {
-        console.warn('과제 logs 자동 삽입 실패:', hwError)
+      })).filter((item) => !existingHwIndices.has(item.item_index))
+
+      if (missingHomeworkLogs.length > 0) {
+        const { data: inserted, error: hwError } = await supabase
+          .from('tracking_logs')
+          .insert(missingHomeworkLogs)
+          .select()
+        if (!hwError && inserted) {
+          existingLogs.push(...inserted)
+        } else if (hwError) {
+          console.warn('과제 logs 자동 삽입 실패:', hwError)
+        }
       }
     }
 
