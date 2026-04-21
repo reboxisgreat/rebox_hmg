@@ -158,7 +158,7 @@ function HomeworkItem({
         )}
         {isSurveyItem && (
           <a
-            href="https://TODO_SURVEY_URL"
+            href="https://moaform.com/q/72pB6X"
             target="_blank"
             rel="noopener noreferrer"
             className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-white border border-[#D97706] text-[#D97706] text-[11px] font-semibold shrink-0"
