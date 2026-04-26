@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import Image from 'next/image'
 import type { QuarterlyPlan, WeeklyChecklist, ChecklistItem } from '@/lib/types'
 import { HOMEWORK_ITEMS } from '@/lib/types'
+import { isAdminUser } from '@/lib/utils'
 import { buildPdf, buildActionPlanHtml } from '@/lib/pdf'
 
 
@@ -130,7 +131,11 @@ export default function ActionPlanPage() {
         if (data.error) { setErrorMsg(data.error); setPhase('error'); return }
 
         const mp = data.masterPlan
-        if (!mp || !mp.is_confirmed) { setPhase('no-masterplan'); return }
+        if (!mp || !mp.is_confirmed) {
+          if (isAdminUser()) { setPhase('editing'); return }
+          setPhase('no-masterplan')
+          return
+        }
 
         setMasterPlan(mp)
 
@@ -160,9 +165,9 @@ export default function ActionPlanPage() {
       .catch(() => { setErrorMsg('데이터를 불러오는 중 오류가 발생했어요.'); setPhase('error') })
   }, [router, generateActionPlan])
 
-  // no-masterplan 시 자동 이동
+  // no-masterplan 시 자동 이동 (관리자 계정 제외)
   useEffect(() => {
-    if (phase === 'no-masterplan') {
+    if (phase === 'no-masterplan' && !isAdminUser()) {
       const t = setTimeout(() => router.replace('/masterplan'), 2500)
       return () => clearTimeout(t)
     }

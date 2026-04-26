@@ -107,7 +107,7 @@ export default function RankingPage() {
           </button>
         </div>
 
-        <p className="text-[11px] font-bold tracking-[0.15em] uppercase mb-1">리더스러닝랩 xClass 조직관리 과정</p>
+        <p className="text-[11px] font-bold tracking-[0.15em] mb-1">현대자동차 xClass 조직관리 과정</p>
         <h1 className="text-[1.75rem] font-bold text-[#111111] tracking-tight leading-tight">실행력 랭킹 🏆</h1>
         <p className="text-sm mt-1">30일 체크리스트 완료 점수 기준<br/>전체 교육생 대상(1,2,3차수)</p>
 

@@ -13,7 +13,7 @@ export async function GET() {
 
     // 모든 참가자 + 트래킹 로그 + 과제 승인 현황 조회
     const [participantsResult, logsResult, submissionsResult, weeklyProofResult] = await Promise.all([
-      supabase.from('participants').select('id, name, department, cohort, admin_bonus'),
+      supabase.from('participants').select('id, name, department, cohort, admin_bonus, username'),
       supabase.from('tracking_logs').select('participant_id, week_number, status'),
       supabase.from('homework_submissions').select('participant_id, status'),
       supabase.from('weekly_proof_submissions').select('participant_id, week_number, status'),
@@ -22,7 +22,9 @@ export async function GET() {
     if (participantsResult.error) throw participantsResult.error
     if (logsResult.error) throw logsResult.error
 
-    const participants = participantsResult.data ?? []
+    const HIDDEN_USERNAMES = ['rebox', 'test']
+    const participants = (participantsResult.data ?? [])
+      .filter((p) => !HIDDEN_USERNAMES.includes(p.username ?? ''))
     const allLogs = logsResult.data ?? []
     const allSubmissions = submissionsResult.data ?? []
     const allWeeklyProofs = weeklyProofResult.data ?? []

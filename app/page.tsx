@@ -65,6 +65,7 @@ function LoginForm({ onLogin, onRegister }: { onLogin: (id: string, name: string
       if (!res.ok) { setError(data.error ?? '오류가 발생했어요.'); return }
       localStorage.setItem('participant_id', data.id)
       localStorage.setItem('participant_name', data.name)
+      localStorage.setItem('participant_username', trimmed)
       onLogin(data.id, data.name)
     } catch {
       setError('오류가 발생했어요. 다시 시도해주세요.')
@@ -116,7 +117,7 @@ function LoginForm({ onLogin, onRegister }: { onLogin: (id: string, name: string
           <div className="mb-23 text-center">
             <img src="/main-logo.png" alt="리더스러닝랩 xClass" className="h-16 mx-auto object-contain mb-6" />
             <h1 className="text-[2rem] font-bold text-[#111] leading-tight tracking-tight mb-1.5">
-              리더스러닝랩<br />xClass 조직관리 과정
+              xClass 조직관리 과정
             </h1>
             <p className="text-sm leading-relaxed">
               현대자동차그룹 실장급 리더 교육
@@ -241,6 +242,7 @@ function RegisterForm({ onLogin, onBack }: { onLogin: (id: string, name: string)
       if (!res.ok) { setError(data.error ?? '오류가 발생했어요.'); return }
       localStorage.setItem('participant_id', data.id)
       localStorage.setItem('participant_name', data.name)
+      localStorage.setItem('participant_username', trimmedUsername)
       onLogin(data.id, data.name)
     } catch {
       setError('오류가 발생했어요. 다시 시도해주세요.')
@@ -262,7 +264,7 @@ function RegisterForm({ onLogin, onBack }: { onLogin: (id: string, name: string)
           <div className="mb-6 text-center">
             <img src="/main-logo.png" alt="리더스러닝랩 xClass" className="h-10 mx-auto object-contain mb-3" />
             <h1 className="text-xl font-bold text-[#111]">회원가입</h1>
-            <p className="text-xs text-[#8A8A8A] mt-1">리더스러닝랩 xClass 조직관리 과정</p>
+            <p className="text-xs text-[#8A8A8A] mt-1">현대자동차 xClass 조직관리 과정</p>
           </div>
 
           <div className="bg-white rounded-3xl shadow-[0_2px_16px_rgba(0,0,0,0.07)] p-7">
@@ -417,6 +419,8 @@ function HomePage({
   }, [participantId])
 
   const isStepUnlocked = (step: number): boolean => {
+    const username = localStorage.getItem('participant_username') ?? ''
+    if (['rebox', 'test'].includes(username)) return true
     if (!progress) return step === 0
     switch (step) {
       case 0: return true
@@ -506,7 +510,7 @@ function HomePage({
           <div className="flex items-start justify-between mb-4">
             <div className="flex flex-col gap-3">
               <img src="/main-logo.png" alt="리더스러닝랩 xClass" className="h-11 object-contain" />
-              <span className="text-[15px] font-bold text-[#000000] tracking-[0.10em] pl-0.5">리더스러닝랩 xClass 조직관리 과정</span>
+              <span className="text-[15px] font-bold text-[#000000] tracking-[0.10em] pl-0.5">현대자동차 xClass 조직관리 과정</span>
             </div>
           </div>
           <div className="flex items-center justify-between gap-3">

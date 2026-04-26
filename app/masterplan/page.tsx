@@ -7,6 +7,7 @@ import Lottie from 'lottie-react'
 import { Home, ChevronLeft, ChevronRight } from 'lucide-react'
 import ChatWindow from '@/components/chat/ChatWindow'
 import { CARD_TITLES } from '@/lib/types'
+import { isAdminUser } from '@/lib/utils'
 import type { ChatMessage } from '@/lib/types'
 import gradientBg from '../../public/gradient-bg.json'
 import { buildPdf, buildMasterPlanHtml } from '@/lib/pdf'
@@ -127,11 +128,13 @@ export default function MasterPlanPage() {
           return
         }
 
-        // 마스터플랜 없을 때: 카드 3장 모두 확정되어야 함
+        // 마스터플랜 없을 때: 카드 3장 모두 확정되어야 함 (관리자 계정 제외)
         if (fetchedCards.length < 3 || fetchedCards.some((c) => !c.is_confirmed)) {
-          setErrorMsg('아직 카드 작성이 완료되지 않았습니다.')
-          setPhase('error')
-          return
+          if (!isAdminUser()) {
+            setErrorMsg('아직 카드 작성이 완료되지 않았습니다.')
+            setPhase('error')
+            return
+          }
         }
 
         // Step5가 모두 완료되었으면 도출 대기
@@ -150,9 +153,9 @@ export default function MasterPlanPage() {
       .catch(() => { setErrorMsg('데이터를 불러오는 중 오류가 발생했어요.'); setPhase('error') })
   }, [router])
 
-  // 카드 미완성 시 /chat으로 자동 이동
+  // 카드 미완성 시 /chat으로 자동 이동 (관리자 계정 제외)
   useEffect(() => {
-    if (phase === 'error' && errorMsg === '아직 카드 작성이 완료되지 않았습니다.') {
+    if (phase === 'error' && errorMsg === '아직 카드 작성이 완료되지 않았습니다.' && !isAdminUser()) {
       const t = setTimeout(() => router.replace('/chat'), 2500)
       return () => clearTimeout(t)
     }

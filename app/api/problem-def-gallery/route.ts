@@ -54,7 +54,7 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    const HIDDEN_USERNAMES = ['rebox']
+    const HIDDEN_USERNAMES = ['rebox', 'test']
     const data = defs
       .filter((d) => !HIDDEN_USERNAMES.includes((d.participants as { username?: string })?.username ?? ''))
       .map((d) => ({

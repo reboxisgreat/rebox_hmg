@@ -699,7 +699,8 @@ interface MasterPlanCard {
   people_what: string | null
   people_why: string | null
   is_confirmed: boolean
-  participants: { name: string; department: string | null } | null
+  like_count: number
+  participants: { name: string; department: string | null; cohort: number | null } | null
 }
 
 const PINNED_KEY = 'admin_pinned_masterplans'
@@ -708,6 +709,8 @@ function MasterPlanGallery({ onSelectParticipant }: { onSelectParticipant: (id: 
   const [cards, setCards] = useState<MasterPlanCard[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
+  const [selectedCohort, setSelectedCohort] = useState<'all' | 1 | 2 | 3>('all')
+  const [sortBy, setSortBy] = useState<'default' | 'likes'>('default')
   const [pinnedIds, setPinnedIds] = useState<Set<string>>(() => {
     try {
       const saved = localStorage.getItem(PINNED_KEY)
@@ -737,10 +740,13 @@ function MasterPlanGallery({ onSelectParticipant }: { onSelectParticipant: (id: 
       .finally(() => setLoading(false))
   }, [])
 
-  const sortedCards = [...cards].sort((a, b) => {
+  const filteredCards = selectedCohort === 'all' ? cards : cards.filter((c) => c.participants?.cohort === selectedCohort)
+  const sortedCards = [...filteredCards].sort((a, b) => {
     const ap = pinnedIds.has(a.id) ? 0 : 1
     const bp = pinnedIds.has(b.id) ? 0 : 1
-    return ap - bp
+    if (ap !== bp) return ap - bp
+    if (sortBy === 'likes') return b.like_count - a.like_count
+    return 0
   })
 
   const AREAS = [
@@ -784,6 +790,32 @@ function MasterPlanGallery({ onSelectParticipant }: { onSelectParticipant: (id: 
 
   return (
     <div className="space-y-4">
+      {/* 차수 필터 탭 + 정렬 */}
+      <div className="flex items-center justify-between gap-2 flex-wrap">
+        <div className="flex items-center gap-2 flex-wrap">
+          {(['all', 1, 2, 3] as const).map((c) => (
+            <button
+              key={c}
+              onClick={() => setSelectedCohort(c)}
+              className={`px-3 py-1 rounded-full text-xs font-semibold transition-colors ${
+                selectedCohort === c
+                  ? 'bg-[#111111] text-white'
+                  : 'bg-[#F5F5F5] text-[#8A8A8A] hover:bg-[#E5E5E5]'
+              }`}
+            >
+              {c === 'all' ? `전체 (${cards.length})` : `${c}차수 (${cards.filter((x) => x.participants?.cohort === c).length})`}
+            </button>
+          ))}
+        </div>
+        <button
+          onClick={() => setSortBy((prev) => prev === 'default' ? 'likes' : 'default')}
+          className={`flex items-center gap-1 px-3 py-1 rounded-full text-xs font-semibold transition-colors ${
+            sortBy === 'likes' ? 'bg-pink-100 text-pink-600' : 'bg-[#F5F5F5] text-[#8A8A8A] hover:bg-[#E5E5E5]'
+          }`}
+        >
+          ♥ {sortBy === 'likes' ? '좋아요순' : '기본순'}
+        </button>
+      </div>
       {pinnedCount > 0 && (
         <div className="flex items-center gap-2">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="#CA8A04"><path d="M16 12V4h1V2H7v2h1v8l-2 2v2h5.2v6h1.6v-6H18v-2l-2-2z"/></svg>
@@ -813,6 +845,7 @@ function MasterPlanGallery({ onSelectParticipant }: { onSelectParticipant: (id: 
                   <div className="flex items-center gap-2 mb-1">
                     <p className="text-[11px] font-bold text-white/90 truncate">{card.participants?.name ?? '-'}</p>
                     <span className="text-[9px] text-white/40 truncate shrink-0">{card.participants?.department ?? ''}</span>
+                    {card.participants?.cohort && <CohortBadge cohort={card.participants.cohort} size="xs" />}
                   </div>
                   <p className="text-[10px] font-semibold text-white/40 mb-0.5 uppercase tracking-wider">슬로건</p>
                   <p className="text-[13px] font-bold text-white leading-snug">
@@ -820,6 +853,9 @@ function MasterPlanGallery({ onSelectParticipant }: { onSelectParticipant: (id: 
                   </p>
                 </button>
                 <div className="flex flex-col items-end gap-1.5 shrink-0">
+                  {card.like_count > 0 && (
+                    <span className="text-[9px] font-bold text-pink-300 whitespace-nowrap">♥ {card.like_count}</span>
+                  )}
                   <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full whitespace-nowrap ${
                     card.is_confirmed ? 'bg-[#ECFDF5] text-[#02855B]' : 'bg-white/10 text-white/40'
                   }`}>
