@@ -1907,67 +1907,83 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
         )}
         {/* 주차 인증 탭 */}
         {activeTab === 'weekly' && (
-          <div className="p-6 max-w-3xl mx-auto space-y-4">
+          <div className="p-6 max-w-3xl mx-auto space-y-8">
             <h2 className="text-base font-bold text-[#111111]">주차별 인증샷 현황</h2>
             {weeklySubmissions.length === 0 ? (
               <p className="text-sm text-[#8A8A8A]">제출된 인증샷이 없습니다.</p>
             ) : (
-              weeklySubmissions
-                .sort((a, b) => new Date(b.submitted_at).getTime() - new Date(a.submitted_at).getTime())
-                .map((sub) => (
-                  <div key={sub.id} className="rounded-2xl border border-[#BBF7D0] bg-[#F0FDF4] p-4">
-                    <div className="flex items-center justify-between mb-3">
-                      <div>
-                        <div className="flex items-center gap-2 mb-0.5">
-                          <span className="text-base font-bold text-[#111111]">{sub.week_number}주차 인증</span>
-                        </div>
-                        <p className="text-sm font-semibold text-[#111111]">
-                          {sub.participants?.name ?? '-'}
-                          {sub.participants?.cohort && <span className="ml-1 text-xs font-normal text-[#8A8A8A]">{sub.participants.cohort}차수</span>}
-                        </p>
-                        <p className="text-xs text-[#8A8A8A]">{sub.participants?.department ?? '-'} · 제출: {new Date(sub.submitted_at).toLocaleString('ko-KR')}</p>
-                      </div>
-                      <span className="text-xs font-bold px-2 py-1 rounded-full bg-[#DCFCE7] text-[#15803D]">
-                        ✓ 제출됨 (+50점)
+              [1, 2, 3, 4].map((weekNum) => {
+                const weekSubs = weeklySubmissions
+                  .filter((s) => s.week_number === weekNum)
+                  .sort((a, b) => new Date(b.submitted_at).getTime() - new Date(a.submitted_at).getTime())
+                return (
+                  <div key={weekNum}>
+                    <div className="flex items-center gap-2 mb-3">
+                      <h3 className="text-sm font-bold text-[#111111]">{weekNum}주차 인증</h3>
+                      <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-[#F3F4F6] text-[#6B7280]">
+                        {weekSubs.length}건
                       </span>
                     </div>
+                    {weekSubs.length === 0 ? (
+                      <p className="text-xs text-[#8A8A8A] pl-1">제출 없음</p>
+                    ) : (
+                      <div className="space-y-3">
+                        {weekSubs.map((sub) => (
+                          <div key={sub.id} className="rounded-2xl border border-[#BBF7D0] bg-[#F0FDF4] p-4">
+                            <div className="flex items-center justify-between mb-3">
+                              <div>
+                                <p className="text-sm font-semibold text-[#111111]">
+                                  {sub.participants?.name ?? '-'}
+                                  {sub.participants?.cohort && <span className="ml-1 text-xs font-normal text-[#8A8A8A]">{sub.participants.cohort}차수</span>}
+                                </p>
+                                <p className="text-xs text-[#8A8A8A]">{sub.participants?.department ?? '-'} · 제출: {new Date(sub.submitted_at).toLocaleString('ko-KR')}</p>
+                              </div>
+                              <span className="text-xs font-bold px-2 py-1 rounded-full bg-[#DCFCE7] text-[#15803D]">
+                                ✓ 제출됨 (+50점)
+                              </span>
+                            </div>
 
-                    {/* 인증샷 이미지 */}
-                    <div className="flex gap-2 mb-1 overflow-x-auto pb-1">
-                      {sub.image_urls.map((url, i) => {
-                        const proxyUrl = `/api/homework/image?path=${encodeURIComponent(url)}`
-                        const name = sub.participants?.name ?? 'unknown'
-                        return (
-                          <div key={i} className="shrink-0 flex flex-col gap-1">
-                            <button onClick={() => setLightboxUrl(proxyUrl)} className="block">
-                              <img
-                                src={proxyUrl}
-                                alt={`인증샷 ${i + 1}`}
-                                className="h-28 w-auto rounded-xl object-cover border border-[#EBEBEB] hover:opacity-90 transition-opacity"
-                              />
-                            </button>
-                            <a
-                              href={proxyUrl}
-                              download={`인증샷_${name}_${sub.week_number}주차_${i + 1}.jpg`}
-                              className="text-center text-[10px] text-[#2563EB] font-medium hover:underline"
-                            >
-                              다운로드
-                            </a>
+                            {/* 인증샷 이미지 */}
+                            <div className="flex gap-2 mb-1 overflow-x-auto pb-1">
+                              {sub.image_urls.map((url, i) => {
+                                const proxyUrl = `/api/homework/image?path=${encodeURIComponent(url)}`
+                                const name = sub.participants?.name ?? 'unknown'
+                                return (
+                                  <div key={i} className="shrink-0 flex flex-col gap-1">
+                                    <button onClick={() => setLightboxUrl(proxyUrl)} className="block">
+                                      <img
+                                        src={proxyUrl}
+                                        alt={`인증샷 ${i + 1}`}
+                                        className="h-28 w-auto rounded-xl object-cover border border-[#EBEBEB] hover:opacity-90 transition-opacity"
+                                      />
+                                    </button>
+                                    <a
+                                      href={proxyUrl}
+                                      download={`인증샷_${name}_${weekNum}주차_${i + 1}.jpg`}
+                                      className="text-center text-[10px] text-[#2563EB] font-medium hover:underline"
+                                    >
+                                      다운로드
+                                    </a>
+                                  </div>
+                                )
+                              })}
+                            </div>
+                            {sub.image_urls.length > 1 && (
+                              <button
+                                onClick={() => handleBulkDownload(sub.image_urls, `인증샷_${sub.participants?.name ?? 'unknown'}_${weekNum}주차`)}
+                                disabled={bulkDownloadingId === `인증샷_${sub.participants?.name ?? 'unknown'}_${weekNum}주차`}
+                                className="text-xs text-[#8A8A8A] hover:text-[#111111] underline"
+                              >
+                                {bulkDownloadingId === `인증샷_${sub.participants?.name ?? 'unknown'}_${weekNum}주차` ? '다운로드 중...' : `전체 ${sub.image_urls.length}장 일괄 다운로드`}
+                              </button>
+                            )}
                           </div>
-                        )
-                      })}
-                    </div>
-                    {sub.image_urls.length > 1 && (
-                      <button
-                        onClick={() => handleBulkDownload(sub.image_urls, `인증샷_${sub.participants?.name ?? 'unknown'}_${sub.week_number}주차`)}
-                        disabled={bulkDownloadingId === `인증샷_${sub.participants?.name ?? 'unknown'}_${sub.week_number}주차`}
-                        className="text-xs text-[#8A8A8A] hover:text-[#111111] underline"
-                      >
-                        {bulkDownloadingId === `인증샷_${sub.participants?.name ?? 'unknown'}_${sub.week_number}주차` ? '다운로드 중...' : `전체 ${sub.image_urls.length}장 일괄 다운로드`}
-                      </button>
+                        ))}
+                      </div>
                     )}
                   </div>
-                ))
+                )
+              })
             )}
           </div>
         )}
