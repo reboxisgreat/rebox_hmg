@@ -324,6 +324,9 @@ function RegisterForm({ onLogin, onBack }: { onLogin: (id: string, name: string)
                   <option value={1}>1차수</option>
                   <option value={2}>2차수</option>
                   <option value={3}>3차수</option>
+                  <option value={4}>4차수</option>
+                  <option value={5}>5차수</option>
+                  <option value={6}>6차수</option>
                 </select>
               </div>
               <div>

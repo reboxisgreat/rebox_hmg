@@ -17,7 +17,7 @@ export async function POST(req: NextRequest) {
     if (password.length < 6) {
       return NextResponse.json({ error: '비밀번호는 6자 이상이어야 합니다.' }, { status: 400 })
     }
-    if (![1, 2, 3].includes(Number(cohort))) {
+    if (![1, 2, 3, 4, 5, 6].includes(Number(cohort))) {
       return NextResponse.json({ error: '올바른 차수를 선택해주세요.' }, { status: 400 })
     }
 

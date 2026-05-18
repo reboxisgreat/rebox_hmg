@@ -936,7 +936,7 @@ function CsvUploadModal({ onClose, onDone }: { onClose: () => void; onDone: () =
         name,
         department: department ?? '',
         username: username ?? '',
-        cohort: [1, 2, 3].includes(cohortNum) ? cohortNum : null,
+        cohort: [1, 2, 3, 4, 5, 6].includes(cohortNum) ? cohortNum : null,
       })
     }
     return parsed
@@ -1107,7 +1107,7 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
   const [selectedInitialTab, setSelectedInitialTab] = useState<'cards' | 'masterplan' | 'actionplan'>('cards')
   const [lastRefreshed, setLastRefreshed] = useState<Date>(new Date())
   const [bulkPdfLoading, setBulkPdfLoading] = useState(false)
-  const [cohortFilter, setCohortFilter] = useState<'all' | 1 | 2 | 3>('all')
+  const [cohortFilter, setCohortFilter] = useState<'all' | 1 | 2 | 3 | 4 | 5 | 6>('all')
   const [rankingSubTab, setRankingSubTab] = useState<'cohort' | 'total'>('cohort')
   const [showCsvUpload, setShowCsvUpload] = useState(false)
   const [showHidden, setShowHidden] = useState(false)
@@ -1395,7 +1395,7 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
             {/* 차수별 랭킹 */}
             {rankingSubTab === 'cohort' && (
               <div className="space-y-6">
-                {[1, 2, 3].map((cohort) => {
+                {[1, 2, 3, 4, 5, 6].map((cohort) => {
                   const cohortScores = scores.filter((s) => s.cohort === cohort)
                     .sort((a, b) => a.cohort_rank - b.cohort_rank)
                   if (cohortScores.length === 0) return null
@@ -1641,6 +1641,9 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
             { id: 1, label: '1차수' },
             { id: 2, label: '2차수' },
             { id: 3, label: '3차수' },
+            { id: 4, label: '4차수' },
+            { id: 5, label: '5차수' },
+            { id: 6, label: '6차수' },
           ] as const).map(({ id, label }) => (
             <button
               key={String(id)}
