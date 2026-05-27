@@ -115,7 +115,7 @@ export async function POST(req: NextRequest) {
   }
 }
 
-// PATCH: 비밀번호 초기화 (1234로 리셋) / 가산점 설정 / 숨김 토글
+// PATCH: 비밀번호 초기화 (123456으로 리셋) / 가산점 설정 / 숨김 토글
 export async function PATCH(req: NextRequest) {
   try {
     const body = await req.json()

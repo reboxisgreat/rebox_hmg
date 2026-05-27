@@ -250,7 +250,7 @@ function DetailModal({
   const [hiding, setHiding] = useState(false)
 
   const handleResetPassword = async () => {
-    if (!confirm(`${detail?.participant.name}님의 비밀번호를 1234로 초기화할까요?`)) return
+    if (!confirm(`${detail?.participant.name}님의 비밀번호를 123456으로 초기화할까요?`)) return
     setResetting(true)
     setResetMsg(null)
     try {
@@ -261,7 +261,7 @@ function DetailModal({
       })
       const data = await res.json()
       if (!res.ok) { setResetMsg({ type: 'err', text: data.error ?? '오류가 발생했습니다.' }); return }
-      setResetMsg({ type: 'ok', text: '비밀번호가 1234로 초기화되었습니다.' })
+      setResetMsg({ type: 'ok', text: '비밀번호가 123456으로 초기화되었습니다.' })
     } catch {
       setResetMsg({ type: 'err', text: '오류가 발생했습니다. 다시 시도해주세요.' })
     } finally {
