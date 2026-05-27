@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createSupabaseServiceClient } from '@/lib/supabase'
+import bcrypt from 'bcryptjs'
 
 export async function GET(req: NextRequest) {
   try {
@@ -85,14 +86,17 @@ export async function POST(req: NextRequest) {
     }
 
     const supabase = createSupabaseServiceClient()
-    const rows = participants.map((p: { name: string; department: string; username: string; cohort: number | null }) => ({
-      name: p.name?.trim() || '',
-      department: p.department?.trim() || '',
-      username: p.username?.trim() || '',
-      cohort: p.cohort ?? null,
-      password: '1234',
-      password_changed: false,
-    })).filter((p) => p.name)
+    const hashedDefaultPassword = await bcrypt.hash('123456', 10)
+    const rows = participants
+      .filter((p: { name: string; department: string; username: string; cohort: number | null }) => p.name?.trim())
+      .map((p: { name: string; department: string; username: string; cohort: number | null }) => ({
+        name: p.name?.trim() || '',
+        department: p.department?.trim() || '',
+        username: p.username?.trim() || '',
+        cohort: p.cohort ?? null,
+        password: hashedDefaultPassword,
+        password_changed: false,
+      }))
 
     const { data, error } = await supabase
       .from('participants')
@@ -147,9 +151,10 @@ export async function PATCH(req: NextRequest) {
     }
 
     // 비밀번호 초기화
+    const hashedPassword = await bcrypt.hash('123456', 10)
     const { error } = await supabase
       .from('participants')
-      .update({ password: '1234', password_changed: false })
+      .update({ password: hashedPassword, password_changed: false })
       .eq('id', id)
 
     if (error) throw error
