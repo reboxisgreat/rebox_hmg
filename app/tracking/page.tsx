@@ -41,6 +41,30 @@ function pick(arr: string[]) {
   return arr[Math.floor(Math.random() * arr.length)]
 }
 
+// 업로드 전 이미지 리사이즈 (최대 1920px, JPEG 변환) → Vercel 4.5MB 한도 대응
+async function resizeImage(file: File, maxPx = 1920): Promise<File> {
+  return new Promise((resolve) => {
+    const img = new Image()
+    const url = URL.createObjectURL(file)
+    img.onload = () => {
+      const scale = Math.min(1, maxPx / Math.max(img.width, img.height))
+      const canvas = document.createElement('canvas')
+      canvas.width = Math.round(img.width * scale)
+      canvas.height = Math.round(img.height * scale)
+      canvas.getContext('2d')!.drawImage(img, 0, 0, canvas.width, canvas.height)
+      URL.revokeObjectURL(url)
+      const outName = file.name.replace(/\.[^.]+$/, '.jpg')
+      canvas.toBlob(
+        (blob) => resolve(new File([blob!], outName, { type: 'image/jpeg' })),
+        'image/jpeg',
+        0.85
+      )
+    }
+    img.onerror = () => { URL.revokeObjectURL(url); resolve(file) } // 변환 실패 시 원본 사용
+    img.src = url
+  })
+}
+
 function calcLocalScore(logs: TrackingLog[], homeworkApproved = false, weeklyProofApprovedCount = 0, adminBonus = 0): number {
   const wLogs = logs.filter((l) => l.week_number > 0)
   const completedCount = wLogs.filter((l) => l.status === '완료').length
@@ -354,21 +378,27 @@ export default function TrackingPage() {
     if (!id || files.length === 0) return
     setUploadingProof(true)
     try {
+      const resized = await Promise.all(Array.from(files).map((f) => resizeImage(f)))
       const formData = new FormData()
       formData.append('participantId', id)
-      for (const file of Array.from(files)) formData.append('images', file)
+      for (const file of resized) formData.append('images', file)
       const res = await fetch('/api/homework/submit', { method: 'POST', body: formData })
       const data = await res.json()
+      if (!res.ok) {
+        showToast(data.error ?? '업로드 중 오류가 발생했어요')
+        return
+      }
       if (data.submission) {
         setHomeworkSubmission(data.submission)
-        showToast('인증샷 제출 완료!\n+50점이 부여됩니다')
+        recalcScore(logs, true)
+        showToast('+50점 획득!\n과제 인증샷 제출 완료!')
       }
     } catch {
       showToast('업로드 중 오류가 발생했어요')
     } finally {
       setUploadingProof(false)
     }
-  }, [showToast])
+  }, [showToast, logs, recalcScore])
 
   // ── 과제 인증샷 삭제
   const handleHomeworkDelete = useCallback(async () => {
@@ -433,12 +463,17 @@ export default function TrackingPage() {
     if (!id || files.length === 0) return
     setUploadingWeeklyProof(weekNumber)
     try {
+      const resized = await Promise.all(Array.from(files).map((f) => resizeImage(f)))
       const formData = new FormData()
       formData.append('participantId', id)
       formData.append('weekNumber', String(weekNumber))
-      for (const file of Array.from(files)) formData.append('images', file)
+      for (const file of resized) formData.append('images', file)
       const res = await fetch('/api/weekly/submit', { method: 'POST', body: formData })
       const data = await res.json()
+      if (!res.ok) {
+        showToast(data.error ?? '업로드 중 오류가 발생했어요')
+        return
+      }
       if (data.submission) {
         const newSubmissions = [
           ...weeklyProofSubmissions.filter((s) => s.week_number !== weekNumber),
