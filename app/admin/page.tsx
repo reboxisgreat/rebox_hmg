@@ -1108,7 +1108,7 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
   const [lastRefreshed, setLastRefreshed] = useState<Date>(new Date())
   const [bulkPdfLoading, setBulkPdfLoading] = useState(false)
   const [cohortFilter, setCohortFilter] = useState<'all' | 1 | 2 | 3 | 4 | 5 | 6>('all')
-  const [rankingSubTab, setRankingSubTab] = useState<'cohort' | 'total'>('cohort')
+  const [rankingSubTab, setRankingSubTab] = useState<'cohort' | 'total'>('total')
   const [showCsvUpload, setShowCsvUpload] = useState(false)
   const [showHidden, setShowHidden] = useState(false)
   const showHiddenRef = useRef(false)
@@ -1117,6 +1117,7 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
   const [reviewingId, setReviewingId] = useState<string | null>(null)
   const [lightboxUrl, setLightboxUrl] = useState<string | null>(null)
   const [bulkDownloadingId, setBulkDownloadingId] = useState<string | null>(null)
+  const [deletingSubmissionId, setDeletingSubmissionId] = useState<string | null>(null)
   const [adminBonusEdits, setAdminBonusEdits] = useState<Record<string, string>>({})
   const [savingBonusId, setSavingBonusId] = useState<string | null>(null)
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null)
@@ -1138,6 +1139,56 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
       setAdminBonusEdits((prev) => { const next = { ...prev }; delete next[participantId]; return next })
     }
   }
+
+  const handleAdminDeleteHomework = useCallback(async (submissionId: string, name: string) => {
+    if (!window.confirm(`${name}의 과제 인증샷을 삭제하면 점수가 차감됩니다. 정말 삭제하시겠어요?`)) return
+    const pw = sessionStorage.getItem('adminPassword') ?? ''
+    setDeletingSubmissionId(submissionId)
+    try {
+      const res = await fetch('/api/admin/homework', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ submissionId, adminPassword: pw }),
+      })
+      const data = await res.json()
+      if (data.success) {
+        setHomeworkSubmissions((prev) => prev.filter((s) => s.id !== submissionId))
+        fetchData()
+      } else {
+        alert(data.error ?? '삭제 중 오류가 발생했어요.')
+      }
+    } catch {
+      alert('삭제 중 오류가 발생했어요.')
+    } finally {
+      setDeletingSubmissionId(null)
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  const handleAdminDeleteWeekly = useCallback(async (submissionId: string, name: string, weekNumber: number) => {
+    if (!window.confirm(`${name}의 ${weekNumber}주차 인증샷을 삭제하면 점수가 차감됩니다. 정말 삭제하시겠어요?`)) return
+    const pw = sessionStorage.getItem('adminPassword') ?? ''
+    setDeletingSubmissionId(submissionId)
+    try {
+      const res = await fetch('/api/admin/weekly', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ submissionId, adminPassword: pw }),
+      })
+      const data = await res.json()
+      if (data.success) {
+        setWeeklySubmissions((prev) => prev.filter((s) => s.id !== submissionId))
+        fetchData()
+      } else {
+        alert(data.error ?? '삭제 중 오류가 발생했어요.')
+      }
+    } catch {
+      alert('삭제 중 오류가 발생했어요.')
+    } finally {
+      setDeletingSubmissionId(null)
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   const handleBulkDownload = useCallback(async (urls: string[], prefix: string) => {
     const id = prefix
@@ -1377,8 +1428,8 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
             {/* 서브탭 */}
             <div className="flex gap-1 bg-[#F5F5F5] rounded-xl p-1 w-fit mb-5">
               {([
-                { id: 'cohort', label: '차수별 랭킹' },
                 { id: 'total', label: '전체 랭킹' },
+                { id: 'cohort', label: '차수별 랭킹' },
               ] as const).map(({ id, label }) => (
                 <button
                   key={id}
@@ -1844,30 +1895,40 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
 
         {/* 과제 인증 탭 */}
         {activeTab === 'homework' && (
-          <div className="p-6 max-w-3xl mx-auto space-y-4">
-            <h2 className="text-base font-bold text-[#111111]">과제 인증샷 현황</h2>
+          <div className="p-6">
+            <h2 className="text-base font-bold text-[#111111] mb-6">과제 인증샷 현황</h2>
             {homeworkSubmissions.length === 0 ? (
               <p className="text-sm text-[#8A8A8A]">제출된 인증샷이 없습니다.</p>
             ) : (
-              homeworkSubmissions
+              <div className="grid grid-cols-4 gap-4">
+              {homeworkSubmissions
                 .sort((a, b) => new Date(b.submitted_at).getTime() - new Date(a.submitted_at).getTime())
                 .map((sub) => (
-                  <div key={sub.id} className="rounded-2xl border border-[#BBF7D0] bg-[#F0FDF4] p-4">
-                    <div className="flex items-center justify-between mb-3">
-                      <div>
-                        <p className="text-sm font-bold text-[#111111]">
+                  <div key={sub.id} className="rounded-2xl border border-[#BBF7D0] bg-[#F0FDF4] p-3">
+                    <div className="flex flex-col gap-1 mb-2">
+                      <div className="flex items-center justify-between">
+                        <p className="text-xs font-bold text-[#111111]">
                           {sub.participants?.name ?? '-'}
-                          {sub.participants?.cohort && <span className="ml-1 text-xs font-normal text-[#8A8A8A]">{sub.participants.cohort}차수</span>}
+                          {sub.participants?.cohort && <span className="ml-1 text-[10px] font-normal text-[#8A8A8A]">{sub.participants.cohort}차수</span>}
                         </p>
-                        <p className="text-xs text-[#8A8A8A]">{sub.participants?.department ?? '-'} · 제출: {new Date(sub.submitted_at).toLocaleString('ko-KR')}</p>
+                        <div className="flex items-center gap-1">
+                          <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-[#DCFCE7] text-[#15803D] whitespace-nowrap">
+                            ✓ +50점
+                          </span>
+                          <button
+                            onClick={() => handleAdminDeleteHomework(sub.id, sub.participants?.name ?? '-')}
+                            disabled={deletingSubmissionId === sub.id}
+                            className="text-[10px] font-medium px-1.5 py-0.5 rounded-lg bg-red-50 text-red-500 hover:bg-red-100 disabled:opacity-50"
+                          >
+                            {deletingSubmissionId === sub.id ? '삭제중' : '삭제'}
+                          </button>
+                        </div>
                       </div>
-                      <span className="text-xs font-bold px-2 py-1 rounded-full bg-[#DCFCE7] text-[#15803D]">
-                        ✓ 제출됨 (+50점)
-                      </span>
+                      <p className="text-[10px] text-[#8A8A8A]">{sub.participants?.department ?? '-'} · {new Date(sub.submitted_at).toLocaleString('ko-KR')}</p>
                     </div>
 
                     {/* 인증샷 이미지 */}
-                    <div className="flex gap-2 mb-1 overflow-x-auto pb-1">
+                    <div className="flex gap-1.5 mb-1 overflow-x-auto pb-1">
                       {sub.image_urls.map((url, i) => {
                         const proxyUrl = `/api/homework/image?path=${encodeURIComponent(url)}`
                         const name = sub.participants?.name ?? 'unknown'
@@ -1877,7 +1938,7 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
                               <img
                                 src={proxyUrl}
                                 alt={`인증샷 ${i + 1}`}
-                                className="h-28 w-auto rounded-xl object-cover border border-[#EBEBEB] hover:opacity-90 transition-opacity"
+                                className="h-20 w-auto rounded-xl object-cover border border-[#EBEBEB] hover:opacity-90 transition-opacity"
                               />
                             </button>
                             <a
@@ -1895,56 +1956,73 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
                       <button
                         onClick={() => handleBulkDownload(sub.image_urls, `과제인증_${sub.participants?.name ?? 'unknown'}`)}
                         disabled={bulkDownloadingId === `과제인증_${sub.participants?.name ?? 'unknown'}`}
-                        className="text-xs text-[#8A8A8A] hover:text-[#111111] underline"
+                        className="text-[10px] text-[#8A8A8A] hover:text-[#111111] underline"
                       >
                         {bulkDownloadingId === `과제인증_${sub.participants?.name ?? 'unknown'}` ? '다운로드 중...' : `전체 ${sub.image_urls.length}장 일괄 다운로드`}
                       </button>
                     )}
                   </div>
-                ))
+                ))}
+              </div>
             )}
           </div>
         )}
         {/* 주차 인증 탭 */}
         {activeTab === 'weekly' && (
-          <div className="p-6 max-w-3xl mx-auto space-y-8">
-            <h2 className="text-base font-bold text-[#111111]">주차별 인증샷 현황</h2>
+          <div className="p-6">
+            <h2 className="text-base font-bold text-[#111111] mb-6">주차별 인증샷 현황</h2>
             {weeklySubmissions.length === 0 ? (
               <p className="text-sm text-[#8A8A8A]">제출된 인증샷이 없습니다.</p>
             ) : (
-              [1, 2, 3, 4].map((weekNum) => {
+              <div className="grid grid-cols-4 items-start divide-x divide-[#E5E7EB]">
+              {[1, 2, 3, 4].map((weekNum) => {
                 const weekSubs = weeklySubmissions
                   .filter((s) => s.week_number === weekNum)
                   .sort((a, b) => new Date(b.submitted_at).getTime() - new Date(a.submitted_at).getTime())
+                const weekColors = [
+                  { bg: 'bg-[#EFF6FF]', border: 'border-[#BFDBFE]', header: 'bg-[#DBEAFE]', badge: 'bg-[#DBEAFE] text-[#1D4ED8]', cardBg: 'bg-[#EFF6FF]', cardBorder: 'border-[#BFDBFE]' },
+                  { bg: 'bg-[#F0FDF4]', border: 'border-[#BBF7D0]', header: 'bg-[#DCFCE7]', badge: 'bg-[#DCFCE7] text-[#15803D]', cardBg: 'bg-[#F0FDF4]', cardBorder: 'border-[#BBF7D0]' },
+                  { bg: 'bg-[#FFF7ED]', border: 'border-[#FED7AA]', header: 'bg-[#FFEDD5]', badge: 'bg-[#FFEDD5] text-[#C2410C]', cardBg: 'bg-[#FFF7ED]', cardBorder: 'border-[#FED7AA]' },
+                  { bg: 'bg-[#FDF4FF]', border: 'border-[#E9D5FF]', header: 'bg-[#F3E8FF]', badge: 'bg-[#F3E8FF] text-[#7E22CE]', cardBg: 'bg-[#FDF4FF]', cardBorder: 'border-[#E9D5FF]' },
+                ][weekNum - 1]
                 return (
-                  <div key={weekNum}>
-                    <div className="flex items-center gap-2 mb-3">
+                  <div key={weekNum} className={`flex flex-col gap-3 px-4 first:pl-0 last:pr-0 ${weekColors.bg} py-3 first:rounded-l-xl last:rounded-r-xl`}>
+                    <div className={`flex items-center gap-2 px-2 py-1.5 rounded-lg ${weekColors.header}`}>
                       <h3 className="text-sm font-bold text-[#111111]">{weekNum}주차 인증</h3>
-                      <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-[#F3F4F6] text-[#6B7280]">
+                      <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${weekColors.badge}`}>
                         {weekSubs.length}건
                       </span>
                     </div>
                     {weekSubs.length === 0 ? (
                       <p className="text-xs text-[#8A8A8A] pl-1">제출 없음</p>
                     ) : (
-                      <div className="space-y-3">
+                      <div className="flex flex-col gap-3">
                         {weekSubs.map((sub) => (
-                          <div key={sub.id} className="rounded-2xl border border-[#BBF7D0] bg-[#F0FDF4] p-4">
-                            <div className="flex items-center justify-between mb-3">
-                              <div>
-                                <p className="text-sm font-semibold text-[#111111]">
+                          <div key={sub.id} className={`rounded-2xl border ${weekColors.cardBorder} ${weekColors.cardBg} p-3`}>
+                            <div className="flex flex-col gap-1 mb-2">
+                              <div className="flex items-center justify-between">
+                                <p className="text-xs font-semibold text-[#111111]">
                                   {sub.participants?.name ?? '-'}
-                                  {sub.participants?.cohort && <span className="ml-1 text-xs font-normal text-[#8A8A8A]">{sub.participants.cohort}차수</span>}
+                                  {sub.participants?.cohort && <span className="ml-1 text-[10px] font-normal text-[#8A8A8A]">{sub.participants.cohort}차수</span>}
                                 </p>
-                                <p className="text-xs text-[#8A8A8A]">{sub.participants?.department ?? '-'} · 제출: {new Date(sub.submitted_at).toLocaleString('ko-KR')}</p>
+                                <div className="flex items-center gap-1">
+                                  <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-[#DCFCE7] text-[#15803D] whitespace-nowrap">
+                                    ✓ +50점
+                                  </span>
+                                  <button
+                                    onClick={() => handleAdminDeleteWeekly(sub.id, sub.participants?.name ?? '-', sub.week_number)}
+                                    disabled={deletingSubmissionId === sub.id}
+                                    className="text-[10px] font-medium px-1.5 py-0.5 rounded-lg bg-red-50 text-red-500 hover:bg-red-100 disabled:opacity-50"
+                                  >
+                                    {deletingSubmissionId === sub.id ? '삭제중' : '삭제'}
+                                  </button>
+                                </div>
                               </div>
-                              <span className="text-xs font-bold px-2 py-1 rounded-full bg-[#DCFCE7] text-[#15803D]">
-                                ✓ 제출됨 (+50점)
-                              </span>
+                              <p className="text-[10px] text-[#8A8A8A]">{sub.participants?.department ?? '-'} · {new Date(sub.submitted_at).toLocaleString('ko-KR')}</p>
                             </div>
 
                             {/* 인증샷 이미지 */}
-                            <div className="flex gap-2 mb-1 overflow-x-auto pb-1">
+                            <div className="flex gap-1.5 mb-1 overflow-x-auto pb-1">
                               {sub.image_urls.map((url, i) => {
                                 const proxyUrl = `/api/homework/image?path=${encodeURIComponent(url)}`
                                 const name = sub.participants?.name ?? 'unknown'
@@ -1954,7 +2032,7 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
                                       <img
                                         src={proxyUrl}
                                         alt={`인증샷 ${i + 1}`}
-                                        className="h-28 w-auto rounded-xl object-cover border border-[#EBEBEB] hover:opacity-90 transition-opacity"
+                                        className="h-20 w-auto rounded-xl object-cover border border-[#EBEBEB] hover:opacity-90 transition-opacity"
                                       />
                                     </button>
                                     <a
@@ -1972,7 +2050,7 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
                               <button
                                 onClick={() => handleBulkDownload(sub.image_urls, `인증샷_${sub.participants?.name ?? 'unknown'}_${weekNum}주차`)}
                                 disabled={bulkDownloadingId === `인증샷_${sub.participants?.name ?? 'unknown'}_${weekNum}주차`}
-                                className="text-xs text-[#8A8A8A] hover:text-[#111111] underline"
+                                className="text-[10px] text-[#8A8A8A] hover:text-[#111111] underline"
                               >
                                 {bulkDownloadingId === `인증샷_${sub.participants?.name ?? 'unknown'}_${weekNum}주차` ? '다운로드 중...' : `전체 ${sub.image_urls.length}장 일괄 다운로드`}
                               </button>
@@ -1983,7 +2061,8 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
                     )}
                   </div>
                 )
-              })
+              })}
+              </div>
             )}
           </div>
         )}

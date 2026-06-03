@@ -1,6 +1,47 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createSupabaseServiceClient } from '@/lib/supabase'
 
+// DELETE: 과제 인증샷 삭제 (교육생 본인)
+export async function DELETE(req: NextRequest) {
+  try {
+    const { participantId } = await req.json()
+    if (!participantId) {
+      return NextResponse.json({ error: '참가자 ID가 없습니다.' }, { status: 400 })
+    }
+
+    const supabase = createSupabaseServiceClient()
+
+    // 기존 제출 조회 (이미지 경로 획득)
+    const { data: existing } = await supabase
+      .from('homework_submissions')
+      .select('image_urls')
+      .eq('participant_id', participantId)
+      .maybeSingle()
+
+    if (!existing) {
+      return NextResponse.json({ error: '제출 내역이 없습니다.' }, { status: 404 })
+    }
+
+    // Storage 파일 삭제
+    if (existing.image_urls?.length > 0) {
+      await supabase.storage.from('homework-proofs').remove(existing.image_urls)
+    }
+
+    // DB 행 삭제
+    const { error } = await supabase
+      .from('homework_submissions')
+      .delete()
+      .eq('participant_id', participantId)
+
+    if (error) throw error
+
+    return NextResponse.json({ success: true })
+  } catch (error) {
+    console.error('Homework delete error:', error)
+    return NextResponse.json({ error: '삭제 중 오류가 발생했어요.' }, { status: 500 })
+  }
+}
+
 // POST: 과제 인증샷 업로드 + 제출
 export async function POST(req: NextRequest) {
   try {

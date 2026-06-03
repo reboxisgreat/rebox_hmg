@@ -280,6 +280,8 @@ export default function TrackingPage() {
   const [weeklyProofSubmissions, setWeeklyProofSubmissions] = useState<WeeklyProofSubmission[]>([])
   const [uploadingProof, setUploadingProof] = useState(false)
   const [uploadingWeeklyProof, setUploadingWeeklyProof] = useState<number | null>(null)
+  const [deletingProof, setDeletingProof] = useState(false)
+  const [deletingWeeklyProof, setDeletingWeeklyProof] = useState<number | null>(null)
   const [toast, setToast] = useState<string | null>(null)
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const memoTimers = useRef<Record<string, ReturnType<typeof setTimeout>>>({})
@@ -367,6 +369,63 @@ export default function TrackingPage() {
       setUploadingProof(false)
     }
   }, [showToast])
+
+  // ── 과제 인증샷 삭제
+  const handleHomeworkDelete = useCallback(async () => {
+    if (!window.confirm('인증샷을 삭제하면 점수가 차감됩니다. 정말 삭제하시겠어요?')) return
+    const id = localStorage.getItem('participant_id')
+    if (!id) return
+    setDeletingProof(true)
+    try {
+      const res = await fetch('/api/homework/submit', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ participantId: id }),
+      })
+      const data = await res.json()
+      if (data.success) {
+        setHomeworkSubmission(null)
+        recalcScore(logs, false)
+        showToast('인증샷이 삭제되었습니다')
+      } else {
+        showToast(data.error ?? '삭제 중 오류가 발생했어요')
+      }
+    } catch {
+      showToast('삭제 중 오류가 발생했어요')
+    } finally {
+      setDeletingProof(false)
+    }
+  }, [logs, recalcScore, showToast])
+
+  // ── 주차 인증샷 삭제
+  const handleWeeklyProofDelete = useCallback(async (weekNumber: number) => {
+    if (!window.confirm(`${weekNumber}주차 인증샷을 삭제하면 점수가 차감됩니다. 정말 삭제하시겠어요?`)) return
+    const id = localStorage.getItem('participant_id')
+    if (!id) return
+    setDeletingWeeklyProof(weekNumber)
+    try {
+      const res = await fetch('/api/weekly/submit', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ participantId: id, weekNumber }),
+      })
+      const data = await res.json()
+      if (data.success) {
+        const newSubmissions = weeklyProofSubmissions.filter((s) => s.week_number !== weekNumber)
+        setWeeklyProofSubmissions(newSubmissions)
+        const newApprovedCount = newSubmissions.filter((s) => s.status === 'approved').length
+        const totalScore = calcLocalScore(logs, homeworkSubmission?.status === 'approved', newApprovedCount, myScore?.admin_bonus ?? 0)
+        setMyScore((prev) => prev ? { ...prev, total_score: totalScore } : prev)
+        showToast('인증샷이 삭제되었습니다')
+      } else {
+        showToast(data.error ?? '삭제 중 오류가 발생했어요')
+      }
+    } catch {
+      showToast('삭제 중 오류가 발생했어요')
+    } finally {
+      setDeletingWeeklyProof(null)
+    }
+  }, [logs, weeklyProofSubmissions, homeworkSubmission, myScore?.admin_bonus, showToast])
 
   // ── 주차 인증샷 업로드
   const handleWeeklyProofUpload = useCallback(async (weekNumber: number, files: FileList) => {
@@ -656,19 +715,33 @@ export default function TrackingPage() {
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#16A34A" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                     <polyline points="20 6 9 17 4 12" />
                   </svg>
-                  <div>
+                  <div className="flex-1">
                     <p className="text-sm font-bold text-[#15803D]">과제 완료 인증 +50점 🎉</p>
                     <p className="text-xs text-[#16A34A]">인증샷이 정상 제출되었습니다</p>
                   </div>
+                  <button
+                    onClick={handleHomeworkDelete}
+                    disabled={deletingProof}
+                    className="text-xs text-[#8A8A8A] underline shrink-0 disabled:opacity-50"
+                  >
+                    {deletingProof ? '삭제 중...' : '삭제'}
+                  </button>
                 </div>
               ) : homeworkSubmission?.status === 'pending' ? (
                 <div className="flex items-center gap-2 bg-[#FFFBEB] border border-[#FDE68A] rounded-2xl px-4 py-3">
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#D97706" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                     <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
                   </svg>
-                  <div>
+                  <div className="flex-1">
                     <p className="text-xs text-[#D97706]">+50점이 부여됩니다</p>
                   </div>
+                  <button
+                    onClick={handleHomeworkDelete}
+                    disabled={deletingProof}
+                    className="text-xs text-[#8A8A8A] underline shrink-0 disabled:opacity-50"
+                  >
+                    {deletingProof ? '삭제 중...' : '삭제'}
+                  </button>
                 </div>
               ) : homeworkSubmission?.status === 'rejected' ? (
                 <div>
@@ -768,19 +841,33 @@ export default function TrackingPage() {
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#16A34A" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                       <polyline points="20 6 9 17 4 12" />
                     </svg>
-                    <div>
+                    <div className="flex-1">
                       <p className="text-sm font-bold text-[#15803D]">{group.week}주차 인증 완료 +50점 🎉</p>
                       <p className="text-xs text-[#16A34A]">인증샷이 정상 제출되었습니다</p>
                     </div>
+                    <button
+                      onClick={() => handleWeeklyProofDelete(group.week)}
+                      disabled={deletingWeeklyProof === group.week}
+                      className="text-xs text-[#8A8A8A] underline shrink-0 disabled:opacity-50"
+                    >
+                      {deletingWeeklyProof === group.week ? '삭제 중...' : '삭제'}
+                    </button>
                   </div>
                 ) : weekProof?.status === 'pending' ? (
                   <div className="flex items-center gap-2 bg-[#FFFBEB] border border-[#FDE68A] rounded-2xl px-4 py-3">
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#D97706" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                       <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
                     </svg>
-                    <div>
+                    <div className="flex-1">
                       <p className="text-xs text-[#D97706]">+50점이 부여됩니다</p>
                     </div>
+                    <button
+                      onClick={() => handleWeeklyProofDelete(group.week)}
+                      disabled={deletingWeeklyProof === group.week}
+                      className="text-xs text-[#8A8A8A] underline shrink-0 disabled:opacity-50"
+                    >
+                      {deletingWeeklyProof === group.week ? '삭제 중...' : '삭제'}
+                    </button>
                   </div>
                 ) : weekProof?.status === 'rejected' ? (
                   <div>

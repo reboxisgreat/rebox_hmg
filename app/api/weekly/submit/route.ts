@@ -1,6 +1,46 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createSupabaseServiceClient } from '@/lib/supabase'
 
+// DELETE: 주차 인증샷 삭제 (교육생 본인)
+export async function DELETE(req: NextRequest) {
+  try {
+    const { participantId, weekNumber } = await req.json()
+    if (!participantId || !weekNumber) {
+      return NextResponse.json({ error: '참가자 ID 또는 주차 정보가 없습니다.' }, { status: 400 })
+    }
+
+    const supabase = createSupabaseServiceClient()
+
+    const { data: existing } = await supabase
+      .from('weekly_proof_submissions')
+      .select('image_urls')
+      .eq('participant_id', participantId)
+      .eq('week_number', weekNumber)
+      .maybeSingle()
+
+    if (!existing) {
+      return NextResponse.json({ error: '제출 내역이 없습니다.' }, { status: 404 })
+    }
+
+    if (existing.image_urls?.length > 0) {
+      await supabase.storage.from('homework-proofs').remove(existing.image_urls)
+    }
+
+    const { error } = await supabase
+      .from('weekly_proof_submissions')
+      .delete()
+      .eq('participant_id', participantId)
+      .eq('week_number', weekNumber)
+
+    if (error) throw error
+
+    return NextResponse.json({ success: true })
+  } catch (error) {
+    console.error('Weekly delete error:', error)
+    return NextResponse.json({ error: '삭제 중 오류가 발생했어요.' }, { status: 500 })
+  }
+}
+
 // POST: 주차별 인증샷 업로드
 export async function POST(req: NextRequest) {
   try {
