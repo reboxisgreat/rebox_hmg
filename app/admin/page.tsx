@@ -1472,7 +1472,7 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
                                 const pct = s.total_items > 0 ? Math.round((s.completed_items / s.total_items) * 100) : 0
                                 const isTop3 = s.cohort_rank <= 3 && s.total_score > 0
                                 return (
-                                  <tr key={s.participant_id} className={`border-b border-[#F5F5F5] ${isTop3 ? 'bg-[#FAFFF8]' : idx % 2 === 0 ? '' : 'bg-[#FAFAFA]'}`}>
+                                  <tr key={s.participant_id} onClick={() => setSelectedId(s.participant_id)} className={`border-b border-[#F5F5F5] cursor-pointer hover:bg-[#F0F0F0] transition-colors ${isTop3 ? 'bg-[#FAFFF8]' : idx % 2 === 0 ? '' : 'bg-[#FAFAFA]'}`}>
                                     <td className="px-4 py-3 whitespace-nowrap">
                                       <span className={`font-bold ${s.cohort_rank === 1 ? 'text-[#B45309]' : s.cohort_rank === 2 ? 'text-[#6B7280]' : s.cohort_rank === 3 ? 'text-[#92400E]' : 'text-[#8A8A8A]'}`}>
                                         {medal ? `${medal} ` : ''}{s.cohort_rank}위
@@ -1499,13 +1499,14 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
                                           type="number"
                                           min={0}
                                           value={adminBonusEdits[s.participant_id] ?? s.admin_bonus ?? 0}
+                                          onClick={(e) => e.stopPropagation()}
                                           onChange={(e) => setAdminBonusEdits((prev) => ({ ...prev, [s.participant_id]: e.target.value }))}
                                           className="w-16 h-7 px-2 text-sm border border-[#EBEBEB] rounded-lg text-center focus:outline-none focus:border-[#111111]"
                                         />
                                         {adminBonusEdits[s.participant_id] !== undefined && (
                                           <button
                                             disabled={savingBonusId === s.participant_id}
-                                            onClick={() => handleSaveAdminBonus(s.participant_id)}
+                                            onClick={(e) => { e.stopPropagation(); handleSaveAdminBonus(s.participant_id) }}
                                             className="h-7 px-2 text-xs font-semibold bg-[#111111] text-white rounded-lg disabled:opacity-50"
                                           >
                                             {savingBonusId === s.participant_id ? '...' : '저장'}
@@ -1548,7 +1549,7 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
                               {noCohort.map((s, idx) => {
                                 const pct = s.total_items > 0 ? Math.round((s.completed_items / s.total_items) * 100) : 0
                                 return (
-                                  <tr key={s.participant_id} className={`border-b border-[#F5F5F5] ${idx % 2 === 0 ? '' : 'bg-[#FAFAFA]'}`}>
+                                  <tr key={s.participant_id} onClick={() => setSelectedId(s.participant_id)} className={`border-b border-[#F5F5F5] cursor-pointer hover:bg-[#F0F0F0] transition-colors ${idx % 2 === 0 ? '' : 'bg-[#FAFAFA]'}`}>
                                     <td className="px-4 py-3 text-[#8A8A8A] font-bold whitespace-nowrap">{s.rank}위</td>
                                     <td className="px-4 py-3 font-medium text-[#111111] whitespace-nowrap">{s.name}</td>
                                     <td className="px-4 py-3 text-[#8A8A8A] max-w-[160px] truncate">{s.department}</td>
@@ -1619,7 +1620,7 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
                           const pct = s.total_items > 0 ? Math.round((s.completed_items / s.total_items) * 100) : 0
                           const isTop3 = s.rank <= 3 && s.total_score > 0
                           return (
-                            <tr key={s.participant_id} className={`border-b border-[#F5F5F5] ${isTop3 ? 'bg-[#FAFFF8]' : idx % 2 === 0 ? '' : 'bg-[#FAFAFA]'}`}>
+                            <tr key={s.participant_id} onClick={() => setSelectedId(s.participant_id)} className={`border-b border-[#F5F5F5] cursor-pointer hover:bg-[#F0F0F0] transition-colors ${isTop3 ? 'bg-[#FAFFF8]' : idx % 2 === 0 ? '' : 'bg-[#FAFAFA]'}`}>
                               <td className="px-4 py-3 whitespace-nowrap">
                                 <span className={`font-bold ${s.rank === 1 ? 'text-[#B45309]' : s.rank === 2 ? 'text-[#6B7280]' : s.rank === 3 ? 'text-[#92400E]' : 'text-[#8A8A8A]'}`}>
                                   {medal ? `${medal} ` : ''}{s.rank}위
@@ -1651,13 +1652,14 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
                                     type="number"
                                     min={0}
                                     value={adminBonusEdits[s.participant_id] ?? s.admin_bonus ?? 0}
+                                    onClick={(e) => e.stopPropagation()}
                                     onChange={(e) => setAdminBonusEdits((prev) => ({ ...prev, [s.participant_id]: e.target.value }))}
                                     className="w-16 h-7 px-2 text-sm border border-[#EBEBEB] rounded-lg text-center focus:outline-none focus:border-[#111111]"
                                   />
                                   {adminBonusEdits[s.participant_id] !== undefined && (
                                     <button
                                       disabled={savingBonusId === s.participant_id}
-                                      onClick={() => handleSaveAdminBonus(s.participant_id)}
+                                      onClick={(e) => { e.stopPropagation(); handleSaveAdminBonus(s.participant_id) }}
                                       className="h-7 px-2 text-xs font-semibold bg-[#111111] text-white rounded-lg disabled:opacity-50"
                                     >
                                       {savingBonusId === s.participant_id ? '...' : '저장'}
