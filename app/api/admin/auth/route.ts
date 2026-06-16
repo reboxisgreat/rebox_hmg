@@ -16,7 +16,18 @@ export async function POST(req: NextRequest) {
 
     const validPasswords = adminPassword.split(',').map((p) => p.trim())
     if (validPasswords.includes(password)) {
-      return NextResponse.json({ success: true })
+      const res = NextResponse.json({ success: true })
+      // 슈퍼 관리자 비밀번호로 로그인한 경우에만 마감 후 bypass 쿠키 발급 (24시간)
+      const superPassword = process.env.SUPER_ADMIN_PASSWORD
+      if (superPassword && password === superPassword) {
+        res.cookies.set('admin_bypass', 'true', {
+          httpOnly: true,
+          sameSite: 'lax',
+          path: '/',
+          maxAge: 60 * 60 * 24,
+        })
+      }
+      return res
     }
 
     return NextResponse.json({ success: false })

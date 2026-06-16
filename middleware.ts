@@ -4,12 +4,17 @@ export function middleware(req: NextRequest) {
   const endDate = process.env.NEXT_PUBLIC_EDUCATION_END_DATE
   const { pathname } = req.nextUrl
 
-  const excluded = ['/closed', '/admin', '/api']
+  const excluded = ['/closed', '/api']
   if (excluded.some((path) => pathname.startsWith(path))) {
     return NextResponse.next()
   }
 
   if (endDate && new Date() > new Date(endDate)) {
+    // 관리자: admin_bypass 쿠키가 있으면 /admin 통과
+    if (pathname.startsWith('/admin')) {
+      const bypass = req.cookies.get('admin_bypass')?.value
+      if (bypass === 'true') return NextResponse.next()
+    }
     return NextResponse.redirect(new URL('/closed', req.url))
   }
 

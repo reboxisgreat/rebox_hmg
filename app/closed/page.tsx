@@ -46,6 +46,14 @@ export default function ClosedPage() {
           <div className="pt-2 border-t border-[#F3F4F6] w-full flex justify-center">
             <span className="text-xs text-[#C4C4C4] tracking-wider font-medium">re:BOX Consulting</span>
           </div>
+
+          {/* 관리자 접근 */}
+          <a
+            href="/admin"
+            className="text-xs text-[#E5E7EB] hover:text-[#9CA3AF] transition-colors"
+          >
+            관리자
+          </a>
         </div>
       </main>
     </div>
